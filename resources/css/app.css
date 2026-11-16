@@ -1,0 +1,4 @@
+@import 'bootstrap/dist/css/bootstrap.rtl.min.css';
+
+@keyframes cart-bump { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+.cart-bump { animation: cart-bump .4s ease; }

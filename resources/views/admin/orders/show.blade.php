@@ -1,0 +1,163 @@
+@extends('layouts.app')
+
+@section('title', 'تفاصيل الطلب - لوحة المدير')
+
+@section('content')
+<nav class="navbar ts-header mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - طلب {{ $order->order_number }}</span>
+        <div>
+            <a href="{{ route('invoices.show', $order) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> الفاتورة
+            </a>
+            <a href="{{ route($employeeMode ? 'employee.orders.index' : 'admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">كل الطلبات</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mb-5">
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    <div class="row g-4">
+        <div class="col-md-7">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">المنتجات</h2>
+                    <div class="table-responsive">
+                    <table class="table small">
+                        <thead><tr><th>المنتج</th><th>البائع</th><th>الكمية</th><th>الإجمالي</th><th>حالة العمولة</th></tr></thead>
+                        <tbody>
+                            @foreach ($order->items as $item)
+                                <tr>
+                                    <td translate="no">{{ $item->product_name }} @if ($item->is_gift) <span class="badge text-bg-warning">هدية</span>@endif</td>
+                                    <td translate="no">{{ $item->vendor->store_name }}</td>
+                                    <td>{{ $item->quantity }}</td>
+                                    <td>{{ $item->formatted_subtotal }}</td>
+                                    <td>
+                                        @if ($item->commission_settled_at)
+                                            <span class="badge bg-success">تمت التسوية</span>
+                                        @else
+                                            <span class="badge bg-secondary">بانتظار التسليم</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6 mb-2">عنوان التوصيل</h2>
+                    <p class="mb-1">{{ $order->shipping_name }} — {{ $order->shipping_phone }}</p>
+                    <p class="text-muted mb-0">{{ $order->shipping_address }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">تحديث حالة الطلب</h2>
+                    <form action="{{ route($employeeMode ? 'employee.orders.updateStatus' : 'admin.orders.updateStatus', $order) }}" method="POST" class="d-flex gap-2">
+                        @csrf @method('PUT')
+                        <select name="status" class="form-select">
+                            @foreach (['pending' => 'قيد المراجعة', 'paid' => 'مدفوع', 'processing' => 'قيد التجهيز', 'shipped' => 'تم الشحن', 'delivered' => 'تم التسليم', 'cancelled' => 'ملغي'] as $value => $label)
+                                <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <button class="btn btn-primary">حفظ</button>
+                    </form>
+                    <p class="text-muted small mt-2 mb-0">تحديد "تم التسليم" يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.</p>
+                    @if ($employeeMode && ! $order->archived_at)
+                        <form action="{{ route('employee.orders.archive', $order) }}" method="POST" class="mt-3" data-confirm="أرشفة الطلب مع الاحتفاظ بسجله؟">
+                            @csrf
+                            <button class="btn btn-outline-secondary btn-sm w-100">أرشفة الطلب</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            @if (! $employeeMode && $order->payment)
+                @php $methodLabels = ['cash_on_delivery' => 'الدفع عند الاستلام', 'card' => 'بطاقة بنكية', 'wallet' => 'محفظة إلكترونية']; @endphp
+                @php $paymentStatusLabels = ['pending' => 'بانتظار الدفع', 'paid' => 'مدفوع', 'failed' => 'فشل', 'refunded' => 'مسترجع']; @endphp
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h2 class="h6 mb-2">الدفع</h2>
+                        <p class="small mb-1">الطريقة: {{ $methodLabels[$order->payment->method] ?? $order->payment->method }}</p>
+                        <p class="small mb-2">
+                            الحالة:
+                            <span class="badge bg-{{ $order->payment->status === 'paid' ? 'success' : ($order->payment->status === 'failed' ? 'danger' : 'secondary') }}">
+                                {{ $paymentStatusLabels[$order->payment->status] ?? $order->payment->status }}
+                            </span>
+                        </p>
+
+                        @if ($order->payment->status === 'pending')
+                            <form action="{{ route('admin.payments.markPaid', $order) }}" method="POST" class="d-flex gap-2 mb-2">
+                                @csrf
+                                <input type="text" name="transaction_ref" class="form-control form-control-sm" placeholder="رقم مرجع العملية (اختياري)">
+                                <button class="btn btn-sm btn-success">تأكيد الدفع</button>
+                            </form>
+                            <form action="{{ route('admin.payments.markFailed', $order) }}" method="POST">
+                                @csrf
+                                <button class="btn btn-sm btn-outline-danger w-100">تعليم كفاشل</button>
+                            </form>
+                        @elseif ($order->payment->transaction_ref)
+                            <p class="text-muted small mb-0">رقم المرجع: {{ $order->payment->transaction_ref }}</p>
+                        @endif
+
+                        <p class="text-muted small mt-2 mb-0">
+                            هذا تأكيد يدوي (تحويل بنكي أو دفع عند الاستلام) بانتظار ربط بوابة دفع إلكترونية فعلية.
+                        </p>
+                    </div>
+                </div>
+            @endif
+
+            @if (! $employeeMode && $order->shipments->isNotEmpty())
+                @foreach ($order->shipments as $shipment)
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h2 class="h6 mb-3">الشحن</h2>
+                            @if ($shipment->seller)
+                                <p class="small mb-2 text-muted">البائع: {{ $shipment->seller->name }}</p>
+                            @endif
+                            <form action="{{ route('admin.shipments.update', [$order, $shipment]) }}" method="POST">
+                                @csrf @method('PUT')
+                                <div class="mb-2">
+                                    <label class="form-label small">شركة الشحن</label>
+                                    <select name="shipping_company_id" class="form-select form-select-sm">
+                                        <option value="">— بدون —</option>
+                                        @foreach (\App\Models\ShippingCompany::where('is_active', true)->get() as $company)
+                                            <option value="{{ $company->id }}" @selected($shipment->shipping_company_id === $company->id)>{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">رقم التتبع</label>
+                                    <input type="text" name="tracking_number" class="form-control form-control-sm" value="{{ $shipment->tracking_number }}">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">حالة الشحنة</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        @foreach (['pending' => 'بانتظار الشحن', 'shipped' => 'تم الشحن', 'in_transit' => 'في الطريق', 'delivered' => 'تم التسليم', 'returned' => 'مرتجع'] as $value => $label)
+                                            <option value="{{ $value }}" @selected($shipment->status === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100">حفظ بيانات الشحن</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+</div>
+@endsection

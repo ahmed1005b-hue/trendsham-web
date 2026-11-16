@@ -1,0 +1,314 @@
+/*
+ * الوضع الداكن لموقع تريندشام.
+ * يُفعَّل بالصنف html.dark و data-bs-theme="dark" (انظر partials/theme-head.blade.php).
+ * Bootstrap 5.3 يتكفّل بمكوّناته؛ هذا الملف يغطي ألوان الموقع الثابتة وتنسيقات الصفحات.
+ */
+
+/* ===== لوحة الألوان ===== */
+html.dark {
+    --tsd-bg: #141816;
+    --tsd-surface: #1f2622;
+    --tsd-surface-2: #262f2a;
+    --tsd-border: #2e3833;
+    --tsd-text: #e8ece9;
+    --tsd-muted: #a8b3ac;
+    --tsd-accent: #5cc8a0;   /* أخضر فاتح مقروء على الخلفية الداكنة */
+    --tsd-gold: #e0b45a;
+
+    /* متغيرات الموقع المستخدمة كخلفية/نص عام */
+    --ts-cream: var(--tsd-bg);
+    --ts-ink: var(--tsd-text);
+    --ts-muted: var(--tsd-muted);
+}
+
+/* ألوان Bootstrap الداكنة بهوية الموقع بدل الرمادي الافتراضي */
+html[data-bs-theme="dark"] {
+    --bs-body-bg: #141816;
+    --bs-body-bg-rgb: 20, 24, 22;
+    --bs-body-color: #e8ece9;
+    --bs-body-color-rgb: 232, 236, 233;
+    --bs-emphasis-color: #ffffff;
+    --bs-secondary-color: rgba(232, 236, 233, .72);
+    --bs-tertiary-color: rgba(232, 236, 233, .5);
+    --bs-secondary-bg: #1f2622;
+    --bs-tertiary-bg: #1a201c;
+    --bs-border-color: #2e3833;
+    --bs-border-color-translucent: rgba(255, 255, 255, .12);
+    --bs-heading-color: #f2f5f3;
+    --bs-link-color: #5cc8a0;
+    --bs-link-color-rgb: 92, 200, 160;
+    --bs-link-hover-color: #e0b45a;
+    --bs-link-hover-color-rgb: 224, 180, 90;
+}
+
+html.dark body { background: var(--tsd-bg); color: var(--tsd-text); }
+/* :where يُبقي وزن القاعدة منخفضاً كي تغلبها قواعد المكوّنات الأدق */
+html.dark a:where(:not(.btn, .ts-header-icon, .ts-logo, .dropdown-item, .nav-link, .page-link)) { color: var(--tsd-accent); }
+html.dark .text-muted, html.dark .text-secondary { color: var(--tsd-muted) !important; }
+html.dark hr { border-color: var(--tsd-border); opacity: 1; }
+
+/* أدوات Bootstrap ذات اللون الثابت */
+html.dark .bg-white, html.dark .bg-light, html.dark .bg-body { background-color: var(--tsd-surface) !important; color: var(--tsd-text); }
+html.dark .text-dark:not(.badge):not([class*="bg-warning"]):not([class*="bg-info"]):not(.btn-warning):not(.btn-info) { color: var(--tsd-text) !important; }
+html.dark .text-black { color: var(--tsd-text) !important; }
+html.dark .table-light { --bs-table-bg: var(--tsd-surface-2); --bs-table-color: var(--tsd-text); --bs-table-border-color: var(--tsd-border); }
+html.dark .btn-light { --bs-btn-bg: var(--tsd-surface-2); --bs-btn-color: var(--tsd-text); --bs-btn-border-color: var(--tsd-border); --bs-btn-hover-bg: var(--tsd-border); --bs-btn-hover-color: #fff; }
+html.dark .btn-outline-dark { --bs-btn-color: var(--tsd-text); --bs-btn-border-color: var(--tsd-muted); --bs-btn-hover-bg: var(--tsd-text); --bs-btn-hover-color: var(--tsd-bg); }
+html.dark .btn-outline-primary { --bs-btn-color: var(--tsd-accent); --bs-btn-border-color: var(--tsd-accent); }
+html.dark .border, html.dark .border-top, html.dark .border-bottom, html.dark .border-start, html.dark .border-end { border-color: var(--tsd-border) !important; }
+html.dark .shadow, html.dark .shadow-sm { box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .35) !important; }
+html.dark .form-control, html.dark .form-select { background-color: var(--tsd-bg); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .form-control::placeholder { color: rgba(232, 236, 233, .45); }
+html.dark .form-control:disabled, html.dark .form-select:disabled { background-color: var(--tsd-surface-2); }
+html.dark .alert-light { background: var(--tsd-surface-2); color: var(--tsd-text); border-color: var(--tsd-border); }
+
+/* صور المنتجات بخلفيات بيضاء: تبقى على سطح فاتح خافت كي لا تبدو مقطوعة */
+html.dark img { color-scheme: normal; }
+
+/* ===== الهيدر والفوتر ===== */
+html.dark .ts-header { background: #0d2e25; }
+html.dark .ts-hover-panel, html.dark .ts-lang-panel { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .ts-hover-links a, html.dark .ts-lang-option { color: var(--tsd-text); }
+html.dark .ts-hover-links a:hover, html.dark .ts-lang-option:hover, html.dark .ts-hover-item:hover { background: var(--tsd-surface-2); color: var(--tsd-accent); }
+html.dark .ts-lang-option.active { color: var(--tsd-accent); }
+html.dark .ts-hover-thumb { background: var(--tsd-surface-2); }
+/* الفوتر: أخضر عميق بدل الأسود كي تبقى الزخرفة الدمشقية ظاهرة (الزخرفة نفسها معرّفة في ts-app.css للوضعين) */
+html.dark .ts-footer { background: #0A2E24; }
+
+/* ===== بطاقات المنتجات والتصفح (layouts/app) ===== */
+html.dark .card { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .card-header, html.dark .card-footer { background: var(--tsd-surface-2); border-color: var(--tsd-border); }
+html.dark .ts-product-card, html.dark .ts-market-card, html.dark .ts-market-card__body { background: var(--tsd-surface); border-color: var(--tsd-border); }
+html.dark .ts-market-card__media-wrap, html.dark .ts-market-card__media { background: #f4f4f2; } /* صور بخلفية بيضاء */
+html.dark .ts-market-card:hover { border-color: #3a4740; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+html.dark .ts-product-thumb, html.dark .ts-thumb { background: linear-gradient(160deg, #26302b, #1d2521); color: var(--tsd-accent); }
+html.dark .ts-product-card__title-link, html.dark .ts-market-card__title-link { color: var(--tsd-text); }
+html.dark .ts-product-card__details { border-top-color: var(--tsd-border); }
+html.dark .ts-market-card__brand, html.dark .ts-market-card__rating-row, html.dark .ts-market-card__meta, html.dark .ts-market-card__reviews { color: var(--tsd-muted); }
+html.dark .ts-market-card__stars { color: var(--tsd-text); }
+html.dark .ts-market-card__old { color: #8d978f; }
+html.dark .ts-market-chip--coupon { background: rgba(224, 180, 90, .16); color: var(--tsd-gold); }
+html.dark .ts-market-chip--ship { background: rgba(21, 115, 71, .25); color: #7ed8a8; }
+html.dark .ts-market-cart-btn { background: transparent; }
+html.dark .ts-market-cart-btn:disabled { background: var(--tsd-surface-2); border-color: var(--tsd-border); color: var(--tsd-muted); }
+html.dark .ts-market-card__compare { background: rgba(31, 38, 34, .94); color: var(--tsd-text); }
+html.dark .ts-price, html.dark .ts-browse-heading h1, html.dark .ts-browse-empty h2 { color: var(--tsd-accent); }
+html.dark .ts-browse-heading { background: linear-gradient(100deg, #1f2622, #1a201c); }
+html.dark .ts-filter-bar, html.dark .ts-filter-panel { background: var(--tsd-surface); border-color: var(--tsd-border); }
+html.dark .ts-filter-bar__field .form-control, html.dark .ts-filter-bar__field .form-select { border-color: var(--tsd-border); }
+html.dark .ts-browse-empty { background: rgba(31, 38, 34, .6); border-color: var(--tsd-border); }
+html.dark .ts-browse-empty__icon { background: var(--tsd-surface); border-color: var(--tsd-border); }
+html.dark .ts-browse-page .page-link { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-accent); }
+
+/* ===== الصفحة الرئيسية (home) ===== */
+html.dark .ts-flash { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .ts-hero-product { background: #26302b; }
+
+/* ===== حساب العميل (layouts/customer-account) ===== */
+html.dark .ts-account-sidebar, html.dark .ts-account-card, html.dark .ts-account-stat { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .ts-account-avatar { background: var(--tsd-surface-2); }
+html.dark .ts-account-link { color: var(--tsd-text); }
+html.dark .ts-account-link:hover { background: var(--tsd-surface-2); }
+html.dark .ts-account-link.active { background: rgba(242, 122, 26, .14); }
+html.dark .ts-order-chip { background: var(--tsd-surface-2); color: var(--tsd-text); }
+
+/* شارات الحالات الفاتحة (الطلبات، المتاجر) — خلفية شفافة ونص فاتح بنفس الدلالة */
+html.dark .ts-order-chip.pending, html.dark .ts-order-chip.processing, html.dark .ts-order-chip.paid, html.dark .ts-order-chip.shipped,
+html.dark .ts-status-pending, html.dark .ts-badge.pending { background: rgba(255, 193, 7, .16); color: #ffd666; }
+html.dark .ts-order-chip.delivered, html.dark .ts-status-delivered, html.dark .ts-badge.delivered,
+html.dark .ts-open-state.open { background: rgba(40, 167, 69, .18); color: #7ed8a8; }
+html.dark .ts-order-chip.cancelled, html.dark .ts-status-cancelled, html.dark .ts-badge.cancelled,
+html.dark .ts-open-state.closed { background: rgba(220, 53, 69, .18); color: #ff8f8f; }
+html.dark .ts-status-paid { background: rgba(13, 110, 253, .18); color: #8bb9ff; }
+html.dark .ts-status-processing, html.dark .ts-open-state.unknown { background: rgba(255, 255, 255, .08); color: var(--tsd-text); }
+html.dark .ts-status-shipped { background: rgba(23, 162, 184, .18); color: #7fd6e3; }
+
+/* ===== لوحة البائع وصفحاته ===== */
+html.dark .ts-seller-header, html.dark .ts-card, html.dark .ts-action-card, html.dark .ts-table,
+html.dark .ts-stat-card, html.dark .ts-order-row, html.dark .ts-order-header-card, html.dark .ts-order-item-card,
+html.dark .ts-payment-card, html.dark .ts-form-card, html.dark .ts-question-card, html.dark .ts-status-select,
+html.dark .preview-container, html.dark .product-select-item { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .ts-action-card:hover { background: var(--tsd-surface-2); }
+html.dark .ts-table thead th { background: var(--tsd-surface-2); color: var(--tsd-muted); }
+html.dark .ts-table tbody td { background: var(--tsd-surface); border-bottom-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .ts-table tbody tr:hover td { background: var(--tsd-surface-2); }
+html.dark .ts-shipping-card { background: var(--tsd-surface-2); border-color: var(--tsd-border); }
+html.dark .section-title h2 { color: var(--tsd-text); }
+html.dark .section-title .line { background: var(--tsd-border); }
+html.dark .preset-btn { border-color: var(--tsd-border); }
+html.dark .step-indicator::before, html.dark .step-indicator .step .circle { background: var(--tsd-border); border-color: var(--tsd-bg); }
+html.dark .step-indicator .step.active .circle, html.dark .step-indicator .step.completed .circle { background: #0F3D2E; border-color: var(--tsd-accent); }
+html.dark .step-indicator .step label { color: var(--tsd-muted); }
+html.dark .step-indicator .step.active label { color: var(--tsd-accent); }
+html.dark .contrast-warning { background: rgba(255, 152, 0, .14); color: #ffb74d; }
+html.dark .contrast-ok { background: rgba(76, 175, 80, .14); color: #81c784; }
+
+/* ===== المحادثات والدعم ===== */
+html.dark .ts-conversation-area, html.dark .ts-reply-form { background: var(--tsd-bg); border-color: var(--tsd-border); }
+html.dark .ts-message.them { background: var(--tsd-surface-2); color: var(--tsd-text); border-color: var(--tsd-border); }
+html.dark .ts-message.them .ts-message-sender { color: var(--tsd-accent); }
+
+/* ===== مساعد الدردشة (components/chat-widget) ===== */
+html.dark .ts-chat-window, html.dark .ts-chat-composer { background: var(--tsd-surface); border-color: var(--tsd-border); }
+html.dark .ts-chat-messages { background: var(--tsd-bg); }
+html.dark .ts-chat-message:not(.ts-chat-user) { background: var(--tsd-surface-2); color: var(--tsd-text); border-color: var(--tsd-border); }
+html.dark .ts-chat-input { background: var(--tsd-bg); color: var(--tsd-text); border-color: var(--tsd-border); }
+html.dark .ts-chat-input::placeholder { color: rgba(232, 236, 233, .45); }
+html.dark .ts-chat-load-error, html.dark .ts-chat-retry { background: rgba(220, 53, 69, .14); color: #ffb3a8; border-color: rgba(220, 53, 69, .35); }
+
+/* ===== المعاينة السريعة والنوافذ ===== */
+html.dark .modal-content { background: var(--tsd-surface); color: var(--tsd-text); }
+html.dark .qv-color { border-color: var(--tsd-border); }
+
+/* ===== ألوان مكتوبة داخل style="" في بعض الصفحات (تحتاج !important لتغلب الخاصية المضمّنة) ===== */
+html.dark [style*="color:#333" i], html.dark [style*="color: #333" i],
+html.dark [style*="color:#0f3d2e" i], html.dark [style*="color: #0f3d2e" i],
+html.dark [style*="color:#1f2a24" i], html.dark [style*="color: #1f2a24" i] { color: var(--tsd-text) !important; }
+html.dark [style*="background:#fff;" i], html.dark [style*="background: #fff;" i],
+html.dark [style*="background:#fffaf4" i], html.dark [style*="background: #fffaf4" i],
+html.dark [style*="background:#f8f9fa" i], html.dark [style*="background: #f8f9fa" i],
+html.dark [style*="background:#f3eee1" i], html.dark [style*="background: #f3eee1" i] { background: var(--tsd-surface-2) !important; }
+html.dark [style*="border-color:#ededed" i], html.dark [style*="border-color: #ededed" i] { border-color: var(--tsd-border) !important; }
+
+/* ===== الصفحات المستقلة (من نحن، مركز المساعدة) ===== */
+html.dark .ts-value-card, html.dark .ts-cat-pill { background: var(--tsd-surface); border-color: var(--tsd-border); color: var(--tsd-text); }
+html.dark .accordion-button:not(.collapsed) { background: var(--tsd-surface-2); color: var(--tsd-accent); }
+html.dark .accordion-item { border-color: var(--tsd-border) !important; background: var(--tsd-surface); }
+html.dark .accordion-button { background: var(--tsd-surface); color: var(--tsd-text); }
+/* سهم الأكورديون بلون الموقع بدل الأزرق الافتراضي لـ Bootstrap الداكن */
+html.dark .accordion-button::after {
+    --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235cc8a0' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e");
+    --bs-accordion-btn-active-icon: var(--bs-accordion-btn-icon);
+}
+
+/* ===== نصوص داكنة ثابتة في تنسيقات الصفحات ===== */
+html.dark .ts-account-head h1, html.dark .ts-account-name, html.dark .ts-account-stat .v,
+html.dark .ts-action-title, html.dark .ts-card-value, html.dark .ts-section-title,
+html.dark .ts-stat-info h5, html.dark .ts-payment-info h6 { color: var(--tsd-text); }
+html.dark .ts-account-link.active { color: #ffad66; }
+html.dark .ts-hover-title, html.dark .ts-hover-section-title, html.dark .ts-hover-item-price,
+html.dark .ts-seller-header .ts-logo, html.dark .ts-action-icon.emerald,
+html.dark .ts-stat-icon.bg-info, html.dark .ts-stat-icon.bg-primary, html.dark .ts-icon-circle.bank { color: var(--tsd-accent); }
+html.dark .ts-badge.processing { background: rgba(13, 110, 253, .18); color: #8bb9ff; }
+
+/* حدود فاتحة مكتوبة داخل style="... !important" (لا يغلبها ملف خارجي) تقرأ هذا المتغير */
+html.dark { --ts-soft-border: var(--tsd-border); }
+html.dark .ts-account-user, html.dark .ts-account-head { border-bottom-color: var(--tsd-border); }
+
+/* ===== واجهة السوق: الهيدر، الرئيسية، بطاقة المنتج (تحديث المتجر) ===== */
+html.dark {
+    --ts-surface: var(--tsd-surface);
+    --ts-surface-2: var(--tsd-surface-2);
+    --ts-border: var(--tsd-border);
+    --ts-media-bg: #f1efea;              /* صور المنتجات غالباً بخلفية بيضاء */
+    --ts-emerald-soft: rgba(92, 200, 160, .12);
+    --ts-deal-soft: rgba(224, 180, 90, .14);
+    --ts-deal-ink: var(--tsd-gold);
+    --ts-shadow-lift: 0 14px 28px -12px rgba(0, 0, 0, .65);
+}
+
+/* الهيدر اللاصق */
+html.dark .ts-header.ts-masthead { background: #17201c; border-bottom-color: var(--tsd-border); box-shadow: 0 6px 18px -12px rgba(0, 0, 0, .7); }
+html.dark .ts-masthead .ts-masthead__logo { color: #fff; }
+html.dark .ts-masthead .ts-masthead__logo span { color: var(--tsd-gold); }
+html.dark .ts-masthead__search { background: var(--tsd-bg); border-color: var(--tsd-border); }
+html.dark .ts-masthead__search:focus-within { background: var(--tsd-bg); border-color: var(--tsd-accent); box-shadow: 0 0 0 4px rgba(92, 200, 160, .12); }
+html.dark .ts-masthead .ts-masthead__search input { background: transparent; color: var(--tsd-text); }
+html.dark .ts-masthead .ts-masthead__search input::placeholder { color: rgba(232, 236, 233, .5); }
+html.dark .ts-masthead .ts-masthead__search button { background: var(--tsd-accent); color: #0b1a15; }
+html.dark .ts-masthead .ts-masthead__search button:hover { background: #7fd8b6; color: #0b1a15; }
+html.dark .ts-header-icon { background: transparent; color: var(--tsd-text); }
+html.dark .ts-header-icon:hover, html.dark .ts-hover-menu:focus-within > .ts-header-icon { background: rgba(92, 200, 160, .12); color: var(--tsd-accent); }
+html.dark .ts-hicon__badge { border-color: #17201c; background: var(--tsd-gold); color: #14251e; }
+
+/* الشريط العلوي */
+html.dark .ts-topbar { background-color: #0b1a15; }
+
+/* عناوين الأقسام */
+html.dark a.ts-sh__more { color: var(--tsd-accent); }
+html.dark a.ts-sh__more:hover { color: var(--tsd-gold); }
+
+/* البانر والبلاطات */
+html.dark .ts-banner { box-shadow: 0 0 0 1px var(--tsd-border); }
+html.dark .ts-slide--gold { filter: saturate(.9) brightness(.92); }
+html.dark a.ts-promo-tile--new { color: var(--tsd-text); }
+html.dark .ts-promo-tile--new .ts-promo-tile__icon { color: var(--tsd-accent); }
+html.dark a.ts-promo-tile--deal { color: #14251e; }
+
+
+/* شريط عروض اليوم */
+html.dark .ts-flash { border-color: rgba(224, 180, 90, .35); }
+html.dark .ts-flash__bar { background: var(--ts-lattice) 0 0/44px, linear-gradient(100deg, #3b3015, #5b4619 60%, #6b521c); color: var(--ts-gold-light); }
+html.dark .ts-flash__bolt { background: var(--tsd-gold); color: #14251e; box-shadow: 0 0 0 4px rgba(224, 180, 90, .2); }
+html.dark .ts-flash__clock { background: #0b1a15; color: var(--tsd-gold); }
+html.dark .ts-flash__timer { border-top-color: rgba(241, 217, 160, .15); }
+html.dark .ts-rail__nav { color: var(--tsd-text); }
+html.dark .ts-rail__nav:hover { background: var(--tsd-accent); border-color: var(--tsd-accent); color: #0b1a15; }
+html.dark a.ts-rail__more { border-color: rgba(224, 180, 90, .4); color: var(--ts-gold-light); }
+html.dark .ts-rail__more-go { color: var(--tsd-accent); }
+
+/* شريط الثقة */
+html.dark .ts-trust__icon { color: var(--tsd-accent); }
+
+/* بطاقة المنتج */
+html.dark .ts-market-card.is-deal { border-color: rgba(224, 180, 90, .4); }
+html.dark .ts-market-card__price { color: var(--tsd-accent); }
+html.dark .ts-market-icon-btn { background: rgba(31, 38, 34, .9); color: var(--tsd-text); }
+html.dark .ts-market-icon-btn:hover { color: #ff8f8f; }
+html.dark .ts-market-card__quickview:hover { color: var(--tsd-accent); }
+html.dark .ts-market-card__title-link:hover .ts-market-card__title { color: var(--tsd-accent); }
+html.dark .ts-market-cart-btn { border-color: var(--tsd-accent); color: var(--tsd-accent); }
+html.dark .ts-market-cart-btn:hover:not(:disabled), html.dark .ts-market-cart-btn:focus-visible:not(:disabled) { background: var(--tsd-accent); color: #0b1a15; }
+html.dark .ts-market-card__placeholder { background: var(--ts-lattice) center/44px, radial-gradient(circle at 50% 42%, #2a3530 0, #1b231f 78%); }
+html.dark .ts-market-card__initial { background: var(--tsd-surface-2); color: var(--tsd-accent); box-shadow: 0 0 0 1px rgba(224, 180, 90, .45), 0 0 0 6px rgba(255, 255, 255, .04); }
+html.dark .ts-market-card__media-wrap:has(.ts-market-card__placeholder) { background: #1b231f; }
+/* روابط بألوان خاصة تغلب قاعدة html.dark a العامة */
+html.dark .ts-topbar a { color: #EFE7D6; }
+html.dark .ts-topbar a:hover { color: var(--ts-gold-light); }
+html.dark a.ts-slide__cta { color: var(--ts-emerald-dark); }
+html.dark .ts-slide--gold a.ts-slide__cta { color: #fff; }
+html.dark a.ts-slide__link { color: #fff; }
+html.dark a.ts-slide__link:hover { color: var(--ts-gold-light); }
+html.dark a.ts-arch { color: var(--ts-ink); }
+html.dark .ts-footer a { color: #EFE7D6; }
+html.dark .ts-footer a:hover, html.dark .ts-footer a:focus-visible { color: var(--ts-gold-light); }
+html.dark .ts-footer__social a:hover { color: var(--ts-emerald-dark); }
+
+/* شريط فقاعات الأقسام تحت الهيدر */
+html.dark .ts-catstrip { background: #17201c; border-bottom-color: var(--tsd-border); }
+html.dark a.ts-catbub { color: var(--tsd-text); }
+html.dark .ts-catbub__disc { color: var(--tsd-accent); box-shadow: inset 0 0 0 1px rgba(92, 200, 160, .2); }
+html.dark .ts-catbub--1 .ts-catbub__disc { color: var(--tsd-gold); box-shadow: inset 0 0 0 1px rgba(224, 180, 90, .25); }
+html.dark .ts-catbub--2 .ts-catbub__disc { color: var(--tsd-text); box-shadow: inset 0 0 0 1px var(--tsd-border); }
+html.dark .ts-catbub:hover .ts-catbub__disc, html.dark .ts-catbub:focus-visible .ts-catbub__disc { box-shadow: 0 0 0 2px #17201c, 0 0 0 4px var(--tsd-gold); }
+html.dark a.ts-catbub:hover .ts-catbub__label, html.dark a.ts-catbub.is-active .ts-catbub__label { color: var(--tsd-accent); }
+html.dark .ts-catbub.is-active .ts-catbub__disc { background: var(--tsd-accent); color: #0b1a15; box-shadow: 0 0 0 2px #17201c, 0 0 0 4px var(--tsd-accent); }
+html.dark .ts-catstrip__nav { background: var(--tsd-surface-2); border-color: var(--tsd-border); color: var(--tsd-text); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .7); }
+html.dark .ts-catstrip__nav:hover { background: var(--tsd-accent); border-color: var(--tsd-accent); color: #0b1a15; }
+
+/* عرض اليوم المميز (عرض واحد) */
+html.dark .ts-spot__main { border-color: rgba(224, 180, 90, .4); }
+html.dark .ts-spot__media:has(.ts-market-card__placeholder) { background: #1b231f; }
+html.dark .ts-spot__info { background: var(--ts-lattice) 0 0/44px, linear-gradient(160deg, var(--tsd-surface), #2a2716); }
+html.dark .ts-spot__name a { color: var(--tsd-text); }
+html.dark .ts-spot__name a:hover { color: var(--tsd-accent); }
+html.dark .ts-spot__prices strong { color: var(--tsd-accent); }
+html.dark .ts-spot__buy { background: var(--tsd-accent); color: #0b1a15; }
+html.dark .ts-spot__buy:hover:not(:disabled) { background: #7fd8b6; }
+html.dark a.ts-spot__more { color: var(--tsd-accent); }
+
+/* ترقيم Bootstrap في صفحات البحث والمتجر */
+html.dark .pagination { --bs-pagination-bg: var(--tsd-surface); --bs-pagination-border-color: var(--tsd-border); --bs-pagination-color: var(--tsd-accent); --bs-pagination-hover-bg: var(--tsd-surface-2); --bs-pagination-disabled-bg: var(--tsd-surface); --bs-pagination-active-bg: #0B5F4A; --bs-pagination-active-border-color: #0B5F4A; }
+
+/* ---- حسابي: بطاقات اللغة والمظهر ---- */
+html.dark .ts-prefs { background: var(--tsd-surface); border-color: var(--tsd-border); }
+html.dark .ts-prefs__title, html.dark .ts-prefs__label, html.dark .ts-prefs__opt { color: var(--tsd-text); }
+html.dark .ts-prefs__sub { color: var(--tsd-muted); }
+html.dark .ts-prefs__group + .ts-prefs__group { border-top-color: var(--tsd-border); }
+html.dark .ts-prefs__label i, html.dark .ts-prefs__check { color: var(--tsd-gold); }
+html.dark .ts-prefs__opt { background: var(--tsd-surface-2); border-color: var(--tsd-border); }
+html.dark .ts-prefs__opt:hover { border-color: var(--tsd-gold); }
+html.dark .ts-prefs__badge { background: var(--tsd-surface); box-shadow: inset 0 0 0 1px var(--tsd-border); color: var(--tsd-gold); }
+html.dark .ts-prefs__opt--dark .ts-prefs__badge { background: #0A1814; }
+html.dark .ts-prefs__opt.is-active { border-color: var(--tsd-gold); background: rgba(201,150,44,.12); box-shadow: none; }
+html.dark .ts-prefs__opt.is-active .ts-prefs__name { color: var(--tsd-gold); }

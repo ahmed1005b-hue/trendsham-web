@@ -1,0 +1,18 @@
+# حماية: يُمنع الوصول عبر الويب لأي شيء خارج مجلد public
+# (ملف .env وسجلات Laravel ومجلد .git والكود المصدري كانت مكشوفة على الشبكة).
+# الموقع يعمل من /trendsham/public كما هو، وفتح /trendsham/ يحوّل إليه.
+# public/.htaccess له قواعده الخاصة، فلا تؤثر هذه القواعد على الموقع نفسه.
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # NS = لا تُطبَّق على فحص Apache الداخلي حين يبني قائمة المجلدات في http://localhost/
+    # (بدونها يختفي مجلد trendsham من القائمة). أي طلب حقيقي من المتصفح تمر عليه القاعدتان دائماً.
+    RewriteRule ^$ %{REQUEST_URI}public/ [R=302,L,NS]
+    RewriteRule ^(?!public(?:/|$)). - [F,L,NS]
+</IfModule>
+
+# بدون mod_rewrite لا يعمل الموقع أصلاً؛ نمنع الكل احتياطاً بدل كشف الملفات
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

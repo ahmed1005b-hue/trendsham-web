@@ -1,0 +1,49 @@
+import 'package:flutter/material.dart';
+
+/// تقييم البائع (نجوم المتجر)
+class SellerReviewModel {
+  final int id;
+  final int rating;
+  final String? comment;
+  final String? userName;
+  final String? createdAt;
+  final String? productName;
+  const SellerReviewModel({
+    required this.id,
+    required this.rating,
+    this.comment,
+    this.userName,
+    this.createdAt,
+    this.productName,
+  });
+  factory SellerReviewModel.fromJson(Map<String, dynamic> json) {
+    return SellerReviewModel(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      rating: (json['rating'] as num?)?.toInt() ?? 0,
+      comment: json['comment'] as String?,
+      userName: json['user'] is Map
+          ? (json['user'] as Map)['name'] as String?
+          : null,
+      createdAt: json['created_at'] as String?,
+      productName: json['product_name'] as String?,
+    );
+  }
+}
+
+/// صفحة تقييمات متجر
+class StoreReviewsPage {
+  final List<SellerReviewModel> reviews;
+  final int currentPage;
+  final int lastPage;
+  final double? averageRating;
+  final int reviewsCount;
+  final Map<String, dynamic> ratingBreakdown;
+  const StoreReviewsPage({
+    required this.reviews,
+    required this.currentPage,
+    required this.lastPage,
+    this.averageRating,
+    required this.reviewsCount,
+    this.ratingBreakdown = const {},
+  });
+}
