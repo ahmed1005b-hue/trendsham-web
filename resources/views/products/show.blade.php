@@ -114,11 +114,17 @@
             @auth
                 @if (auth()->user()->role === 'customer')
                     <div class="d-flex gap-2 mb-2">
-                        <form action="{{ route('customer.cart.store') }}" method="POST" class="flex-grow-1" id="add-to-cart-form">
+                        <form action="{{ route('customer.cart.store') }}" method="POST" class="flex-grow-1 d-flex gap-2" id="add-to-cart-form">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="variant_id" id="selected-variant-id" value="">
-                            <button id="add-to-cart-btn" class="btn btn-buy w-100" {{ !$hasVariants && $product->stock_quantity <= 0 ? 'disabled' : '' }}>
+                            <div class="ts-qty">
+                                <button type="button" class="ts-qty__btn" id="qty-minus" aria-label="{{ __('إنقاص الكمية') }}"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
+                                <input type="number" name="quantity" id="qty-input" value="1" min="1" max="{{ max(1, (int) $product->stock_quantity) }}"
+                                       class="ts-qty__input" inputmode="numeric" aria-label="{{ __('الكمية') }}">
+                                <button type="button" class="ts-qty__btn" id="qty-plus" aria-label="{{ __('زيادة الكمية') }}"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
+                            </div>
+                            <button id="add-to-cart-btn" class="btn btn-buy flex-grow-1" {{ !$hasVariants && $product->stock_quantity <= 0 ? 'disabled' : '' }}>
                                 <i class="bi bi-bag-plus"></i> أضف إلى السلة
                             </button>
                         </form>
@@ -340,6 +346,22 @@
     const stockEl = document.getElementById('variant-stock');
     const priceEl = document.getElementById('product-display-price');
     const cartBtn = document.getElementById('add-to-cart-btn');
+    const qtyInput = document.getElementById('qty-input');
+
+    function clampQty() {
+        if (!qtyInput) return;
+        const max = Number(qtyInput.max) || 1;
+        const value = Math.floor(Number(qtyInput.value)) || 1;
+        qtyInput.value = Math.min(max, Math.max(1, value));
+        document.getElementById('qty-minus').disabled = Number(qtyInput.value) <= 1;
+        document.getElementById('qty-plus').disabled = Number(qtyInput.value) >= max;
+    }
+    if (qtyInput) {
+        document.getElementById('qty-minus')?.addEventListener('click', () => { qtyInput.value = Number(qtyInput.value) - 1; clampQty(); });
+        document.getElementById('qty-plus')?.addEventListener('click', () => { qtyInput.value = Number(qtyInput.value) + 1; clampQty(); });
+        qtyInput.addEventListener('change', clampQty);
+        clampQty();
+    }
 
     function selectedColor() {
         const active = document.querySelector('.variant-color-btn.active');
@@ -390,6 +412,10 @@
             priceEl.textContent = fmt(effective);
         }
         if (cartBtn) cartBtn.disabled = !match || match.stock_quantity <= 0;
+        if (qtyInput && match) {
+            qtyInput.max = Math.max(1, match.stock_quantity);
+            clampQty();
+        }
     }
 
     colorBtns.forEach(btn => btn.addEventListener('click', () => {

@@ -3407,5 +3407,7 @@
     "بطاقات الهدايا - لوحة المدير": "Gift cards - Admin panel",
     "استرداد منتجات مرتجعة من الطلب :order": "Refund for items returned from order :order",
     "المبلغ أكبر مما دُفع برصيد الهدايا في هذا الطلب (:amount). استرد الباقي بطريقة أخرى.": "The amount is more than what was paid with gift balance on this order (:amount). Refund the rest another way.",
-    "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": ":amount of this order was paid with gift balance. Refunding to it adds to the customer's balance right away (remaining :left)."
+    "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": ":amount of this order was paid with gift balance. Refunding to it adds to the customer's balance right away (remaining :left).",
+    "إنقاص الكمية": "Decrease quantity",
+    "زيادة الكمية": "Increase quantity"
 }

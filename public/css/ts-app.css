@@ -48,6 +48,25 @@
         .btn-buy { background: var(--ts-gold); border-color: var(--ts-gold); color: var(--ts-emerald-dark); font-weight: 700; }
         .btn-buy:hover { background: #d9a53a; border-color: #d9a53a; color: var(--ts-emerald-dark); }
 
+        /* عدّاد الكمية في صفحة المنتج */
+        .ts-qty { display: inline-flex; align-items: center; gap: 4px; padding: 4px; flex-shrink: 0;
+            background: var(--ts-surface); border: 1.5px solid var(--ts-border); border-radius: 999px; transition: border-color .2s; }
+        .ts-qty:focus-within { border-color: var(--ts-emerald); }
+        .ts-qty__btn { inline-size: 36px; block-size: 36px; display: grid; place-items: center; border: 0; border-radius: 50%;
+            background: var(--ts-emerald-soft); color: var(--ts-emerald); font-size: 1.05rem; -webkit-text-stroke: .6px currentColor; cursor: pointer;
+            transition: background-color .15s, color .15s, transform .1s; }
+        .ts-qty__btn:hover:not(:disabled) { background: var(--ts-emerald); color: #fff; }
+        .ts-qty__btn:active:not(:disabled) { transform: scale(.92); }
+        .ts-qty__btn:focus-visible { outline: 2px solid var(--ts-gold); outline-offset: 2px; }
+        .ts-qty__btn:disabled { opacity: .4; cursor: not-allowed; }
+        .ts-qty__input { inline-size: 40px; border: 0; background: transparent; text-align: center;
+            font-weight: 700; font-size: 1.05rem; color: var(--ts-ink); -moz-appearance: textfield; appearance: textfield; }
+        .ts-qty__input:focus { outline: none; }
+        .ts-qty__input::-webkit-outer-spin-button, .ts-qty__input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        html.dark .ts-qty__btn { color: var(--tsd-accent); }
+        html.dark .ts-qty__btn:hover:not(:disabled) { background: var(--tsd-accent); color: #0f1a15; }
+        html.dark .ts-qty:focus-within { border-color: var(--tsd-accent); }
+
         .ts-product-card { border: 1px solid #ECE4D3; border-radius: 12px; background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
         .ts-product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(11,95,74,.12); }
         .ts-product-thumb { aspect-ratio: 1/1; background: linear-gradient(160deg, #F3EEE1, #E9E1CC); border-radius: 12px 12px 0 0; display:flex; align-items:center; justify-content:center; color: var(--ts-emerald); font-size: 1.6rem; overflow:hidden; }

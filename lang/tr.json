@@ -3408,5 +3408,7 @@
     "بطاقات الهدايا - لوحة المدير": "Hediye kartları - Yönetici paneli",
     "استرداد منتجات مرتجعة من الطلب :order": ":order siparişinden iade edilen ürünlerin iadesi",
     "المبلغ أكبر مما دُفع برصيد الهدايا في هذا الطلب (:amount). استرد الباقي بطريقة أخرى.": "Tutar, bu siparişte hediye bakiyesiyle ödenenden (:amount) fazla. Kalanını başka bir yolla iade et.",
-    "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": "Bu siparişin :amount kadarı hediye bakiyesiyle ödendi. Bakiyeye iade, müşterinin bakiyesine hemen eklenir (kalan :left)."
+    "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": "Bu siparişin :amount kadarı hediye bakiyesiyle ödendi. Bakiyeye iade, müşterinin bakiyesine hemen eklenir (kalan :left).",
+    "إنقاص الكمية": "Miktarı azalt",
+    "زيادة الكمية": "Miktarı artır"
 }
