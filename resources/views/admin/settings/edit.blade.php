@@ -45,6 +45,26 @@
 
                 <hr class="my-4">
 
+                <h2 class="h5 mb-3" id="shipping">أجور الشحن (شركة كرم)</h2>
+                <p class="text-muted small mb-3">
+                    كل متجر في الطلب يُشحن بطرد مستقل، فيدفع الزبون أجرة لكل طرد. اكتب ما يعادل سعر الشركة بالليرة، وعدّله عند تغيّر سعر الدولار.
+                </p>
+                @foreach ([
+                    'shipping_parcel_fee' => ['أجرة الطرد (أقل من 10 كغ)', null],
+                    'shipping_heavy_parcel_fee' => ['أجرة الطرد الثقيل (10 كغ أو أكثر)', null],
+                    'shipping_home_extra' => ['مبلغ إضافي للتوصيل إلى البيت', 'لكل طرد. اكتب 0 إذا كان التوصيل للبيت بنفس سعر الاستلام من المركز.'],
+                ] as $field => [$label, $hint])
+                    <label class="form-label small mb-1" for="{{ $field }}">{{ $label }}</label>
+                    <div class="input-group {{ $hint ? 'mb-1' : 'mb-3' }}">
+                        <input type="number" step="0.01" name="{{ $field }}" id="{{ $field }}" class="form-control" value="{{ old($field, $setting->{$field} / 100) }}" min="0" required>
+                        <span class="input-group-text">ل.س</span>
+                    </div>
+                    @if ($hint) <div class="form-text mb-3">{{ $hint }}</div> @endif
+                    @error($field) <div class="text-danger small mb-3">{{ $message }}</div> @enderror
+                @endforeach
+
+                <hr class="my-4">
+
                 <h2 class="h5 mb-3">مهل المرتجعات</h2>
                 <p class="text-muted small mb-3">
                     عدد الأيام لكل مرحلة من مسار الإرجاع. التغيير يطبّق على المهل اللي تبدأ بعد الحفظ.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\Order;
+use App\Shipping\ShippingDebt;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -53,6 +54,20 @@ class OrderController extends Controller
         );
 
         return back()->with('success', 'تم تحديث حالة الطلب.');
+    }
+
+    /** الزبون رفض استلام الطلب: يُلغى، والمنصة تدفع الشحن وتسجّله ديناً عليه. */
+    public function markRefused(Order $order)
+    {
+        try {
+            $debt = app(ShippingDebt::class)->recordRefusal($order);
+        } catch (\DomainException $e) {
+            return back()->with('error', __($e->getMessage()));
+        }
+
+        return back()->with('success', $debt > 0
+            ? __('سُجّل رفض الاستلام وأُلغي الطلب. أُضيف :fee ديناً على الزبون ومُنع من الدفع عند الاستلام شهراً.', ['fee' => number_format($debt / 100).' ل.س'])
+            : __('سُجّل رفض الاستلام وأُلغي الطلب. الطلب كان مدفوعاً: اخصم أجرة الشحن (:fee) مما تعيده للزبون.', ['fee' => number_format($order->shipping_cost / 100).' ل.س']));
     }
 
     public function archive(Order $order)

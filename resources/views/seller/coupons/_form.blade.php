@@ -59,7 +59,7 @@
 
     <div class="ts-cp-sec" data-cp-show="free_shipping">
         <div class="alert alert-light border small mb-0">
-            {{ __('الشحن المجاني يعمل عندما تكون كل منتجات السلة من متجرك، وتُخصم أجرة الشحن (:fee ل.س) من أرباحك عند تسليم الطلب.', ['fee' => number_format(\App\Http\Controllers\Customer\CheckoutController::SHIPPING_FEE / 100)]) }}
+            {{ __('الشحن المجاني يعمل عندما تكون كل منتجات السلة من متجرك، وتُخصم أجرة الشحن (:fee ل.س) من أرباحك عند تسليم الطلب.', ['fee' => number_format(\App\Models\PlatformSetting::current()->shipping_parcel_fee / 100)]) }}
         </div>
     </div>
 

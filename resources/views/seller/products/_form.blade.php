@@ -107,6 +107,16 @@
         <label for="product-low-stock-threshold" class="form-label">حد التنبيه لانخفاض المخزون</label>
         <input id="product-low-stock-threshold" type="number" name="low_stock_threshold" autocomplete="off" class="form-control" value="{{ old('low_stock_threshold', $product->low_stock_threshold ?? 5) }}">
     </div>
+    <div class="col-md-3">
+        <label for="product-weight" class="form-label">{{ __('وزن القطعة مع التغليف') }}</label>
+        <div class="input-group">
+            <input id="product-weight" type="number" step="0.01" min="0" max="1000" name="weight_kg" autocomplete="off" class="form-control @error('weight_kg') is-invalid @enderror"
+                value="{{ old('weight_kg', isset($product) && $product->weight_grams !== null ? rtrim(rtrim(number_format($product->weight_grams / 1000, 2, '.', ''), '0'), '.') : '') }}" placeholder="0.5">
+            <span class="input-group-text">{{ __('كغ') }}</span>
+        </div>
+        <div class="form-text">{{ __('لحساب أجرة الشحن: الطرد من 10 كغ فأكثر أجرته أعلى.') }}</div>
+        @error('weight_kg') <div class="text-danger small">{{ $message }}</div> @enderror
+    </div>
 
     @include('seller.products._options')
 

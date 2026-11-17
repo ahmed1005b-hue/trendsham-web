@@ -80,6 +80,29 @@
                         @error('business_hours') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-12">
+                        <div class="border rounded-3 p-3">
+                            <h3 class="h6 mb-1"><i class="bi bi-truck" aria-hidden="true"></i> {{ __('الشحن مع شركة كرم') }}</h3>
+                            <p class="small text-muted mb-2">{{ __('اختر مركز كرم الذي تسلّم فيه طرودك، أو اطلب أن يستلمها المندوب من متجرك.') }}</p>
+                            <label for="dropoff_center_id" class="form-label small mb-1">{{ __('مركز التسليم') }}</label>
+                            <select id="dropoff_center_id" name="dropoff_center_id" class="form-select mb-2 @error('dropoff_center_id') is-invalid @enderror">
+                                <option value="">{{ __('اختر المركز الأقرب لك') }}</option>
+                                @foreach (\App\Models\ShippingCenter::groupedForSelect() as $governorate => $governorateCenters)
+                                    <optgroup label="{{ __($governorate) }}">
+                                        @foreach ($governorateCenters as $center)
+                                            <option value="{{ $center->id }}" translate="no" @selected((int) old('dropoff_center_id', $profile->dropoff_center_id) === $center->id)>{{ $center->name }} - {{ $center->address }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('dropoff_center_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <input type="hidden" name="courier_pickup" value="0">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="courier_pickup" value="1" id="courier_pickup" @checked(old('courier_pickup', $profile->courier_pickup))>
+                                <label class="form-check-label small" for="courier_pickup">{{ __('أريد أن يستلم المندوب الطرود من متجري') }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
                         <label for="shipping_policy" class="form-label">سياسة الشحن</label>
                         <textarea id="shipping_policy" name="shipping_policy" rows="3" maxlength="4000" class="form-control @error('shipping_policy') is-invalid @enderror">{{ old('shipping_policy', $profile->shipping_policy) }}</textarea>
                         @error('shipping_policy') <div class="invalid-feedback">{{ $message }}</div> @enderror

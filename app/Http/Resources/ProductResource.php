@@ -34,6 +34,7 @@ class ProductResource extends JsonResource
             ] : null,
             'currency' => 'SYP',
             'stock_quantity' => $this->stock_quantity,
+            'weight_grams' => $this->weight_grams,
             'status' => $this->status,
             'in_stock' => $this->stock_quantity > 0,
             'average_rating' => $this->average_rating,

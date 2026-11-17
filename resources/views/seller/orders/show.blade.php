@@ -136,7 +136,17 @@
                 </div>
                 <hr class="my-3">
                 <h6 class="mb-3"><i class="bi bi-geo-alt me-1"></i> عنوان التوصيل</h6>
+                <p class="mb-2"><span class="badge bg-light text-dark border"><i class="bi {{ $order->delivery_method === 'center' ? 'bi-shop' : 'bi-house-door' }}" aria-hidden="true"></i>
+                    {{ $order->delivery_method === 'center' ? __('الزبون يستلم من مركز شحن') : __('توصيل للبيت') }}</span></p>
                 <p class="mb-0">{{ $order->shipping_address }}</p>
+                @php $sellerProfile = auth()->user()->sellerProfile; @endphp
+                @if ($sellerProfile?->courier_pickup)
+                    <p class="small text-muted mt-2 mb-0"><i class="bi bi-truck" aria-hidden="true"></i> {{ __('سيأتي مندوب كرم لاستلام الطرد من متجرك.') }}</p>
+                @elseif ($sellerProfile?->dropoffCenter)
+                    <p class="small text-muted mt-2 mb-0"><i class="bi bi-truck" aria-hidden="true"></i> {{ __('سلّم الطرد في مركز كرم:') }} <span translate="no">{{ $sellerProfile->dropoffCenter->name }} - {{ $sellerProfile->dropoffCenter->address }} ({{ $sellerProfile->dropoffCenter->phone }})</span></p>
+                @else
+                    <p class="small text-warning mt-2 mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ __('لم تختر مركز تسليم بعد.') }} <a href="{{ route('seller.store.edit') }}">{{ __('اختره من إعدادات المتجر') }}</a></p>
+                @endif
             </div>
         </div>
         <div class="col-lg-4">

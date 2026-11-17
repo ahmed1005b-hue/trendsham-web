@@ -30,21 +30,57 @@
                             <label for="f-shipping_phone" class="form-label">رقم الهاتف</label>
                             <input id="f-shipping_phone" type="tel" name="shipping_phone" class="form-control" value="{{ old('shipping_phone', auth()->user()->phone) }}" required>
                         </div>
-                        <div class="mb-3">
+                        <fieldset class="mb-3">
+                            <legend class="form-label fs-6 mb-2">{{ __('طريقة الاستلام') }}</legend>
+                            <div class="ts-delivery">
+                                @foreach (['home' => ['bi-house-door', __('توصيل للبيت'), __('يصلك المندوب إلى عنوانك')], 'center' => ['bi-shop', __('استلام من مركز شحن'), __('تستلمه من مركز كرم الأقرب لك')]] as $method => [$icon, $title, $hint])
+                                    <label class="ts-delivery__opt">
+                                        <input type="radio" name="delivery_method" value="{{ $method }}" class="ts-delivery__radio" @checked($deliveryMethod === $method)
+                                            data-fee="{{ $shippingByMethod[$method] }}" data-base-fee="{{ $baseShippingByMethod[$method] }}">
+                                        <i class="bi {{ $icon }}" aria-hidden="true"></i>
+                                        <span class="flex-grow-1"><strong class="d-block">{{ $title }}</strong><small class="text-muted">{{ $hint }}</small></span>
+                                        <span class="small fw-bold text-nowrap">{{ $shippingByMethod[$method] === 0 ? __('مجاني') : number_format($shippingByMethod[$method] / 100).' ل.س' }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('delivery_method') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </fieldset>
+                        <div class="mb-3" id="tsCenterBox" @if ($deliveryMethod !== 'center') hidden @endif>
+                            <label for="f-pickup_center_id" class="form-label">{{ __('مركز الاستلام') }}</label>
+                            <select id="f-pickup_center_id" name="pickup_center_id" class="form-select @error('pickup_center_id') is-invalid @enderror">
+                                <option value="">{{ __('اختر المركز الأقرب لك') }}</option>
+                                @foreach ($centers as $governorate => $governorateCenters)
+                                    <optgroup label="{{ __($governorate) }}">
+                                        @foreach ($governorateCenters as $center)
+                                            <option value="{{ $center->id }}" translate="no" @selected((int) old('pickup_center_id') === $center->id)>{{ $center->name }} - {{ $center->address }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('pickup_center_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="mb-3" id="tsAddressBox" @if ($deliveryMethod === 'center') hidden @endif>
                             <label for="f-shipping_address" class="form-label">عنوان التوصيل الكامل</label>
                             @php $tsAddresses = auth()->user()->addresses()->orderByDesc('is_default')->orderBy('id')->get(); @endphp
                             @include('customer.checkout._saved-addresses', ['addresses' => $tsAddresses])
-                            <textarea id="f-shipping_address" name="shipping_address" class="form-control" rows="3" required>{{ old('shipping_address', $tsAddresses->firstWhere('is_default', true)?->shippingText() ?? auth()->user()->address) }}</textarea>
+                            <textarea id="f-shipping_address" name="shipping_address" class="form-control" rows="3" @if ($deliveryMethod !== 'center') required @endif>{{ old('shipping_address', $tsAddresses->firstWhere('is_default', true)?->shippingText() ?? auth()->user()->address) }}</textarea>
+                            @error('shipping_address') <div class="text-danger small">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">
                             <label for="f-payment_method" class="form-label">طريقة الدفع</label>
-                            <select id="f-payment_method" name="payment_method" class="form-select">
-                                <option value="cash_on_delivery">الدفع عند الاستلام</option>
+                            @if ($codBlocked)
+                                <div class="alert alert-warning small py-2 mb-2"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ \App\Shipping\ShippingDebt::codBlockedMessage(auth()->user()) }}</div>
+                            @endif
+                            <select id="f-payment_method" name="payment_method" class="form-select @error('payment_method') is-invalid @enderror">
+                                @unless ($codBlocked)
+                                    <option value="cash_on_delivery">الدفع عند الاستلام</option>
+                                @endunless
                                 @if (app(\App\Services\PaymentService::class)->onlineEnabled())
                                     <option value="card" @selected(old('payment_method') === 'card')>بطاقة بنكية (دفع إلكتروني آمن)</option>
                                 @endif
                                 <option value="wallet">محفظة إلكترونية</option>
                             </select>
+                            @error('payment_method') <div class="text-danger small">{{ $message }}</div> @enderror
                         </div>
                         @if ($loyalty['enabled'] && $loyalty['balance'] > 0)
                             <div class="ts-pts-use mb-3" id="tsPointsBox">
@@ -170,9 +206,13 @@
                             <span>- {{ number_format($discount / 100) }} ل.س</span>
                         </div>
                     @endif
-                    <div class="d-flex justify-content-between small mb-2">
-                        <span>رسوم الشحن</span>
-                        <span>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>رسوم الشحن
+                            @if (count($parcels) > 1)
+                                <span class="text-muted">({{ __(':n طرود، طرد من كل متجر', ['n' => count($parcels)]) }})</span>
+                            @endif
+                        </span>
+                        <span id="tsShippingLine">
                             @if ($shippingFee < $baseShippingFee)
                                 <del class="text-muted">{{ number_format($baseShippingFee / 100) }}</del>
                                 <span class="text-success fw-bold">{{ $shippingFee === 0 ? __('مجاني') : number_format($shippingFee / 100).' ل.س' }}</span>
@@ -181,6 +221,16 @@
                             @endif
                         </span>
                     </div>
+                    @if (collect($parcels)->contains('heavy', true))
+                        <p class="small text-muted mb-1"><i class="bi bi-box-seam" aria-hidden="true"></i> {{ __('طرد وزنه 10 كغ أو أكثر له أجرة شحن أعلى.') }}</p>
+                    @endif
+                    @if ($shippingDebt > 0)
+                        <div class="d-flex justify-content-between small mb-1 text-danger">
+                            <span>{{ __('أجرة شحن طلب رفضت استلامه') }}</span>
+                            <span>+ {{ number_format($shippingDebt / 100) }} ل.س</span>
+                        </div>
+                    @endif
+                    <div class="mb-1"></div>
                     <div class="d-flex justify-content-between small mb-1 text-success d-none" id="tsPointsLine">
                         <span>خصم النقاط <span class="text-muted">(من تريندشام)</span></span>
                         <span>- <span id="tsPointsDiscount">0</span> ل.س</span>
@@ -188,7 +238,7 @@
                     <hr>
                     <div class="d-flex justify-content-between fw-bold h6">
                         <span>الإجمالي</span>
-                        <span><span id="tsGrandTotal" data-base="{{ $subtotal + $shippingFee - $discount }}">{{ number_format(($subtotal + $shippingFee - $discount) / 100) }}</span> ل.س</span>
+                        <span><span id="tsGrandTotal" data-base="{{ $subtotal + $shippingFee - $discount + $shippingDebt }}" data-goods="{{ $subtotal - $discount + $shippingDebt }}">{{ number_format(($subtotal + $shippingFee - $discount + $shippingDebt) / 100) }}</span> ل.س</span>
                     </div>
                     @if ($loyalty['enabled'])
                         <p class="small mb-2" style="color:#9A7425"><i class="bi bi-gem" aria-hidden="true"></i>
@@ -203,6 +253,37 @@
         </div>
     </div>
 </div>
+
+<script>
+(() => {
+    // طريقة الاستلام: تُظهر المركز أو العنوان وتحدّث أجرة الشحن والإجمالي
+    const radios = document.querySelectorAll('.ts-delivery__radio');
+    const centerBox = document.getElementById('tsCenterBox');
+    const addressBox = document.getElementById('tsAddressBox');
+    const address = document.getElementById('f-shipping_address');
+    const center = document.getElementById('f-pickup_center_id');
+    const line = document.getElementById('tsShippingLine');
+    const total = document.getElementById('tsGrandTotal');
+    const points = document.getElementById('tsUsePoints');
+    const T = {{ Js::from(['free' => __('مجاني'), 'cur' => 'ل.س']) }};
+    const fmt = (minor) => Math.round(minor / 100).toLocaleString('en-US');
+    const sync = () => {
+        const picked = [...radios].find(r => r.checked) || radios[0];
+        const isCenter = picked.value === 'center';
+        centerBox.hidden = !isCenter;
+        addressBox.hidden = isCenter;
+        address.required = !isCenter;
+        center.required = isCenter;
+        const fee = +picked.dataset.fee, base = +picked.dataset.baseFee;
+        line.innerHTML = fee < base
+            ? `<del class="text-muted">${fmt(base)}</del> <span class="text-success fw-bold">${fee === 0 ? T.free : fmt(fee) + ' ' + T.cur}</span>`
+            : `${fmt(fee)} ${T.cur}`;
+        total.dataset.base = +total.dataset.goods + fee;
+        if (points) { points.dispatchEvent(new Event('input')); } else { total.textContent = fmt(+total.dataset.base); }
+    };
+    radios.forEach(r => r.addEventListener('change', sync));
+})();
+</script>
 
 @if ($loyalty['enabled'] && $loyalty['max_usable'] > 0)
 <script>

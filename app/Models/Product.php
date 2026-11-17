@@ -16,11 +16,18 @@ class Product extends Model
         'price',
         'compare_at_price',
         'stock_quantity',
+        'weight_grams',
         'low_stock_threshold',
         'status',
         'admin_approved_at',
         'rejection_note',
     ];
+
+    /** الوزن كما يكتبه البائع (كغ) إلى غرامات؛ الفارغ يبقى بلا وزن. */
+    public static function gramsFromKg(mixed $kg): ?int
+    {
+        return $kg === null || $kg === '' ? null : (int) round((float) $kg * 1000);
+    }
 
     protected function casts(): array
     {

@@ -100,7 +100,7 @@ class SellerCouponMoneyTest extends TestCase
         $this->assertStringContainsString('كل السلة من '.$seller->store_name, collect($res['unusable'] ?? [])->pluck('reason')->implode(' | ').json_encode($res, JSON_UNESCAPED_UNICODE));
 
         $order = $this->checkout($u);
-        $this->assertSame($this->shipping, (int) $order->shipping_fee);
+        $this->assertSame(2 * $this->shipping, (int) $order->shipping_fee); // متجران = طردان، بلا خصم شحن
     }
 
     public function test_seller_free_shipping_is_charged_to_seller_once_and_refunded(): void

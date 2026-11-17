@@ -79,6 +79,12 @@
                                 <span>- {{ number_format($order->points_discount / 100) }} ل.س</span>
                             </div>
                         @endif
+                        @if ((int) $order->shipping_debt_charged > 0)
+                            <div class="d-flex justify-content-between small text-danger mt-1">
+                                <span>{{ __('أجرة شحن طلب رفضت استلامه') }}</span>
+                                <span>+ {{ number_format($order->shipping_debt_charged / 100) }} ل.س</span>
+                            </div>
+                        @endif
                         @if ($order->gift_balance_used > 0)
                             <div class="d-flex justify-content-between small text-success mt-1">
                                 <span><i class="bi bi-gift" aria-hidden="true"></i> دُفع من رصيد الهدايا</span>
@@ -101,9 +107,12 @@
 
                 <div class="card">
                     <div class="card-body">
-                        <h2 class="h6 mb-2">عنوان التوصيل</h2>
+                        <h2 class="h6 mb-2">{{ $order->delivery_method === 'center' ? __('الاستلام من مركز شحن') : __('عنوان التوصيل') }}</h2>
                         <p class="mb-1">{{ $order->shipping_name }} — {{ $order->shipping_phone }}</p>
                         <p class="text-muted mb-0">{{ $order->shipping_address }}</p>
+                        @if ($order->refused_at)
+                            <p class="small text-danger mt-2 mb-0"><i class="bi bi-x-octagon" aria-hidden="true"></i> {{ __('رفضت استلام هذا الطلب.') }}</p>
+                        @endif
                     </div>
                 </div>
             </div>

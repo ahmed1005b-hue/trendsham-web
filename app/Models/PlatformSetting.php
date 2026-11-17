@@ -11,7 +11,8 @@ class PlatformSetting extends Model
     protected $fillable = ['commission_rate', 'story_fee', 'loyalty_enabled', 'loyalty_spend_per_point',
         'loyalty_point_value', 'loyalty_min_redeem', 'loyalty_expiry_months', 'loyalty_coupon_valid_days',
         'returns_window_days', 'returns_seller_response_days', 'returns_dispute_days', 'returns_ship_back_days',
-        'social_instagram', 'social_facebook', 'social_tiktok', 'social_x', 'social_whatsapp'];
+        'social_instagram', 'social_facebook', 'social_tiktok', 'social_x', 'social_whatsapp',
+        'shipping_parcel_fee', 'shipping_heavy_parcel_fee', 'shipping_home_extra'];
 
     /**
      * حسابات المتجر على مواقع التواصل بالترتيب الظاهر أسفل الموقع.

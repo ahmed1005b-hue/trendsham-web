@@ -89,6 +89,8 @@ class User extends Authenticatable implements HasLocalePreference
             'notification_prefs' => 'array',
             'offers_prompted_at' => 'datetime',
             'deactivated_at' => 'datetime',
+            'cod_blocked_until' => 'datetime',
+            'shipping_debt' => 'integer',
             'deletion_requested_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',

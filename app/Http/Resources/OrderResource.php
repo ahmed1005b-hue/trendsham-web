@@ -38,6 +38,13 @@ class OrderResource extends JsonResource
             'shipping_name' => $this->shipping_name,
             'shipping_phone' => $this->shipping_phone,
             'shipping_address' => $this->shipping_address,
+            'delivery_method' => $this->delivery_method ?? 'home', // home | center
+            'pickup_center' => $this->pickupCenter ? [
+                'id' => $this->pickupCenter->id, 'name' => $this->pickupCenter->name,
+                'address' => $this->pickupCenter->address, 'phone' => $this->pickupCenter->phone, 'hours' => $this->pickupCenter->hours,
+            ] : null,
+            'shipping_debt_charged' => (int) $this->shipping_debt_charged / 100, // أجرة طلب رُفض سابقاً أُضيفت لهذا الطلب
+            'refused' => $this->refused_at !== null,
             'can_be_cancelled' => $this->status === 'pending',
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),

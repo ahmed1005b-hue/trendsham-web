@@ -15,12 +15,12 @@ final class NotificationGroups
     public const OFFERS = 'offers';
 
     /** تُرسل دائماً مهما كانت الإعدادات (أمان ومال). */
-    public const CRITICAL = ['store_suspended', 'store_unsuspended', 'withdrawal_failed', 'payment_duplicate'];
+    public const CRITICAL = ['store_suspended', 'store_unsuspended', 'withdrawal_failed', 'payment_duplicate', 'order_refused'];
 
     /** دور ← مجموعة ← أنواع. نوع ينتهي بـ * = بادئة. */
     public const MAP = [
         'customer' => [
-            'orders' => ['order_created', 'order_status_changed', 'order_cancelled', 'shipment_updated', 'payment_confirmed', 'payment', 'cart_reminder'],
+            'orders' => ['order_created', 'order_status_changed', 'order_cancelled', 'order_refused', 'shipment_updated', 'payment_confirmed', 'payment', 'cart_reminder'],
             'messages' => ['new_message', 'staff_message', 'product_question_answer'],
             'coupons_points' => ['coupon_received', 'loyalty_expiring', 'referral_*', 'gift_card_*'],
             'favorites' => ['price_drop'],

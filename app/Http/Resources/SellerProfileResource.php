@@ -10,6 +10,7 @@ class SellerProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         $isAdmin = $request->user()?->role === 'admin';
+
         return [
             'id' => $this->id,
             'store_name' => $this->store_name,
@@ -21,6 +22,9 @@ class SellerProfileResource extends JsonResource
             'store_instagram' => $this->store_instagram,
             'business_hours' => $this->business_hours,
             'shipping_policy' => $this->shipping_policy,
+            // إعدادات الشحن مع كرم: لصاحب المتجر والمدير فقط
+            'dropoff_center_id' => $this->when($isAdmin || $request->user()?->id === $this->user_id, $this->dropoff_center_id),
+            'courier_pickup' => $this->when($isAdmin || $request->user()?->id === $this->user_id, (bool) $this->courier_pickup),
             'return_policy' => $this->return_policy,
             'commercial_register' => $isAdmin ? $this->commercial_register : null,
             'status' => $this->status,

@@ -44,6 +44,7 @@ class ProductController extends Controller
 
         $product = $request->user()->sellerProfile->products()->create([
             ...$validated,
+            'weight_grams' => Product::gramsFromKg($validated['weight_kg'] ?? null),
             'slug' => Str::slug($validated['name']).'-'.Str::random(6),
             'price' => (int) round($validated['price'] * 100),
             'compare_at_price' => $validated['compare_at_price'] ? (int) round($validated['compare_at_price'] * 100) : null,
@@ -91,6 +92,7 @@ class ProductController extends Controller
 
         $product->update([
             ...$validated,
+            'weight_grams' => Product::gramsFromKg($validated['weight_kg'] ?? null),
             'price' => (int) round($validated['price'] * 100),
             'compare_at_price' => $validated['compare_at_price'] ? (int) round($validated['compare_at_price'] * 100) : null,
         ]);
@@ -242,6 +244,7 @@ class ProductController extends Controller
             'compare_at_price' => ['nullable', 'numeric', 'min:0'],
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:1000'], // للشحن: طرد 10 كغ فأكثر أجرته أعلى
             'status' => ['required', 'in:draft,active,inactive'],
             'images.*' => ImageUploadService::validationRules(required: false),
             'image_color' => ['nullable', 'array'],

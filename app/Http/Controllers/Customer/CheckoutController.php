@@ -18,15 +18,17 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Shipment;
+use App\Models\ShippingCenter;
 use App\Notifications\Push\SellerOrderNotifier;
 use App\Services\DailyDealQuota;
+use App\Shipping\ShippingDebt;
+use App\Shipping\ShippingQuote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public const SHIPPING_FEE = 15000;
-
     public function show(Request $request)
     {
         $items = $request->user()->cartItems()->with('product.activeDailyDeal', 'product.vendor', 'variant')->get();
@@ -38,8 +40,13 @@ class CheckoutController extends Controller
         $user = $request->user();
         app(CouponIssuer::class)->syncFor($user);
 
+        // أجرة الشحن لكل طريقة تسليم (طرد لكل متجر). الكوبون يُقيَّم على أجرة التوصيل للبيت
+        $quoter = app(ShippingQuote::class);
+        $quotes = ['home' => $quoter->quote($items, 'home'), 'center' => $quoter->quote($items, 'center')];
+        $homeFee = $quotes['home']['fee'];
+
         // السلة كما تراها خدمة الكوبونات: كل سطر فيه product و subtotal
-        $pick = app(CouponSelector::class)->best($user, $items->values(), self::SHIPPING_FEE);
+        $pick = app(CouponSelector::class)->best($user, $items->values(), $homeFee);
         $choice = $request->session()->get('checkout_coupon');
         $auto = $choice === null;
         $chosen = null;
@@ -57,11 +64,21 @@ class CheckoutController extends Controller
             $chosen = ['coupon' => $pick['chosen'], 'result' => $pick['result']];
         }
 
+        $shippingDiscount = $chosen['result']->shippingDiscount ?? 0;
+        $method = ShippingQuote::method(old('delivery_method'));
+
         return view('customer.checkout.show', [
             'items' => $items,
             'subtotal' => $subtotal,
-            'shippingFee' => self::SHIPPING_FEE - ($chosen['result']->shippingDiscount ?? 0),
-            'baseShippingFee' => self::SHIPPING_FEE,
+            'deliveryMethod' => $method,
+            'shippingByMethod' => array_map(fn ($q) => max(0, $q['fee'] - $shippingDiscount), $quotes),
+            'baseShippingByMethod' => array_map(fn ($q) => $q['fee'], $quotes),
+            'shippingFee' => max(0, $quotes[$method]['fee'] - $shippingDiscount),
+            'baseShippingFee' => $quotes[$method]['fee'],
+            'parcels' => $quotes['home']['parcels'],
+            'centers' => ShippingCenter::groupedForSelect(),
+            'shippingDebt' => (int) $user->shipping_debt,
+            'codBlocked' => ShippingDebt::codBlocked($user),
             'discount' => $chosen['result']->discount ?? 0,
             'chosenCoupon' => $chosen,
             'autoCoupon' => $auto && $chosen,
@@ -95,11 +112,21 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'shipping_name' => ['required', 'string', 'max:255'],
             'shipping_phone' => ['required', 'string', 'max:20'],
-            'shipping_address' => ['required', 'string', 'max:1000'],
+            'delivery_method' => ['nullable', 'in:'.implode(',', ShippingQuote::METHODS)],
+            'pickup_center_id' => ['nullable', 'required_if:delivery_method,center', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
+            'shipping_address' => ['nullable', 'required_unless:delivery_method,center', 'string', 'max:1000'],
             'payment_method' => ['required', 'in:cash_on_delivery,card,wallet'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
             'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
-        ]);
+        ], ['pickup_center_id.required_if' => __('اختر مركز الشحن الذي ستستلم منه الطلب.')]);
+
+        if ($validated['payment_method'] === 'cash_on_delivery' && ShippingDebt::codBlocked($request->user())) {
+            return back()->withInput()->withErrors(['payment_method' => ShippingDebt::codBlockedMessage($request->user())]);
+        }
+        $deliveryMethod = ShippingQuote::method($validated['delivery_method'] ?? null);
+        if ($deliveryMethod === 'center') {
+            $validated['shipping_address'] = ShippingCenter::findOrFail($validated['pickup_center_id'])->pickupAddress();
+        }
 
         $items = $request->user()->cartItems()->with(['product.activeDailyDeal', 'variant', 'storefrontVisit'])->get();
         if ($items->isEmpty()) {
@@ -114,7 +141,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($items, $validated, $request) {
+            $order = DB::transaction(function () use ($items, $validated, $request, $deliveryMethod) {
                 // نقفل سلة المشتري ونقرؤها من جديد قبل أي شيء: ضغطتان متزامنتان على «تأكيد الطلب»
                 // لا تُنشئان طلبين — الثانية تنتظر الأولى، ثم تجد بنود السلة قد حُذفت فتتوقف.
                 $lockedIds = $request->user()->cartItems()->lockForUpdate()->pluck('id');
@@ -164,14 +191,16 @@ class CheckoutController extends Controller
                 // كوبون المحفظة: يُقفل ويُعاد فحصه هنا على السلة الفعلية (الخادم هو المرجع)
                 $redeemer = app(CouponRedeemer::class);
                 $choice = $request->session()->get('checkout_coupon');
-                [$coupon, $couponResult, $dropped] = $redeemer->resolve($request->user(), $choice, $lines, self::SHIPPING_FEE);
+                $shippingCost = app(ShippingQuote::class)->quote($items, $deliveryMethod)['fee'];
+                [$coupon, $couponResult, $dropped] = $redeemer->resolve($request->user(), $choice, $lines, $shippingCost);
                 if ($dropped && is_int($choice)) {
                     // كوبون اختاره العميل ولم يعد صالحاً: لا ننفّذ الطلب بسعر لم يره
                     throw new \DomainException('coupon:'.$dropped);
                 }
                 $discount = $couponResult?->discount ?? 0;
-                $shippingFee = self::SHIPPING_FEE - ($couponResult?->shippingDiscount ?? 0);
+                $shippingFee = max(0, $shippingCost - ($couponResult?->shippingDiscount ?? 0));
                 $funder = $coupon?->campaign->funder;
+                $debt = app(ShippingDebt::class)->takeForNewOrder($request->user()); // أجرة طلب رفضه سابقاً
 
                 $order = Order::create([
                     'order_number' => Order::generateOrderNumber(),
@@ -180,11 +209,15 @@ class CheckoutController extends Controller
                     'status' => 'pending',
                     'subtotal' => $subtotal,
                     'shipping_fee' => $shippingFee,
+                    'shipping_cost' => $shippingCost,
+                    'shipping_debt_charged' => $debt,
                     'discount_amount' => $discount,
-                    'total' => $subtotal + $shippingFee - $discount,
+                    'total' => $subtotal + $shippingFee - $discount + $debt,
                     'shipping_name' => $validated['shipping_name'],
                     'shipping_phone' => $validated['shipping_phone'],
                     'shipping_address' => $validated['shipping_address'],
+                    'delivery_method' => $deliveryMethod,
+                    'pickup_center_id' => $deliveryMethod === 'center' ? $validated['pickup_center_id'] : null,
                 ]);
 
                 if ($coupon) {

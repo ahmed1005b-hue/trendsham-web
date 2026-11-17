@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\Seller\StoryController as SellerStoryController;
 use App\Http\Controllers\Api\Seller\SupportController;
 use App\Http\Controllers\Api\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\Api\SellerReviewController;
+use App\Http\Controllers\Api\ShippingCenterController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreFollowController;
@@ -96,6 +97,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/password/update-reset', [AuthController::class, 'reset'])->middleware('throttle:verify');
 
     Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/shipping-centers', [ShippingCenterController::class, 'index']);
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
     Route::get('/products', [ProductController::class, 'index']);

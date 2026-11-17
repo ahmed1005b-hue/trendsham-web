@@ -18,6 +18,8 @@ class SellerProfile extends Model
         'store_instagram',
         'business_hours',
         'shipping_policy',
+        'dropoff_center_id',
+        'courier_pickup',
         'return_policy',
         'commercial_register',
         'identity_type',
@@ -41,6 +43,7 @@ class SellerProfile extends Model
             'identity_document_submitted_at' => 'datetime',
             'identity_verified_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'courier_pickup' => 'boolean',
         ];
     }
 
@@ -71,7 +74,6 @@ class SellerProfile extends Model
         };
     }
 
-
     public function getEffectiveCommissionRateAttribute(): int
     {
         return $this->commission_rate ?? PlatformSetting::current()->commission_rate;
@@ -80,6 +82,12 @@ class SellerProfile extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** مركز الشحن الذي يسلّم فيه البائع طروده. */
+    public function dropoffCenter()
+    {
+        return $this->belongsTo(ShippingCenter::class, 'dropoff_center_id');
     }
 
     public function products()

@@ -9,6 +9,7 @@ use App\Loyalty\LoyaltyLedger;
 use App\Referrals\ReferralService;
 use App\Returns\Models\ReturnRequest;
 use App\Services\DailyDealQuota;
+use App\Shipping\ShippingDebt;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -31,6 +32,11 @@ class Order extends Model
         'shipping_name',
         'shipping_phone',
         'shipping_address',
+        'delivery_method',
+        'pickup_center_id',
+        'shipping_cost',
+        'shipping_debt_charged',
+        'refused_at',
     ];
 
     public const STATUS_LABELS = [
@@ -69,7 +75,12 @@ class Order extends Model
 
     protected function casts(): array
     {
-        return ['archived_at' => 'datetime'];
+        return ['archived_at' => 'datetime', 'refused_at' => 'datetime'];
+    }
+
+    public function pickupCenter()
+    {
+        return $this->belongsTo(ShippingCenter::class, 'pickup_center_id');
     }
 
     public function payments()
@@ -132,6 +143,7 @@ class Order extends Model
             $loyalty->restoreRedeemedForOrder($this);
             app(ReferralService::class)->reverseForCancelledOrder($this);
             app(GiftCardService::class)->refundForOrder($this); // رصيد الهدايا يعود لصاحبه
+            app(ShippingDebt::class)->restoreForCancelledOrder($this); // دين شحن سابق حُمّل على الطلب يعود على الزبون
         }
     }
 

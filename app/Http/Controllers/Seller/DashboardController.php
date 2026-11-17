@@ -14,6 +14,7 @@ use App\Services\StorefrontAttribution;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
@@ -248,6 +249,8 @@ class DashboardController extends Controller
             'business_hours_schedule.days.*.*.open' => ['required', 'date_format:H:i'],
             'business_hours_schedule.days.*.*.close' => ['required', 'date_format:H:i'],
             'shipping_policy' => ['nullable', 'string', 'max:4000'],
+            'dropoff_center_id' => ['sometimes', 'nullable', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
+            'courier_pickup' => ['sometimes', 'boolean'],
             'return_policy' => ['nullable', 'string', 'max:4000'],
             'commercial_register' => ['nullable', 'string', 'max:255'],
             'store_logo' => ImageUploadService::validationRules(false),

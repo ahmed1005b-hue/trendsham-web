@@ -56,8 +56,18 @@
             <div class="card">
                 <div class="card-body">
                     <h2 class="h6 mb-2">عنوان التوصيل</h2>
+                    <p class="mb-1">
+                        <span class="badge bg-light text-dark border"><i class="bi {{ $order->delivery_method === 'center' ? 'bi-shop' : 'bi-house-door' }}" aria-hidden="true"></i>
+                            {{ $order->delivery_method === 'center' ? __('استلام من مركز شحن') : __('توصيل للبيت') }}</span>
+                    </p>
                     <p class="mb-1">{{ $order->shipping_name }} — {{ $order->shipping_phone }}</p>
                     <p class="text-muted mb-0">{{ $order->shipping_address }}</p>
+                    @if ((int) $order->shipping_debt_charged > 0)
+                        <p class="small text-danger mt-2 mb-0">{{ __('يتضمن الإجمالي :fee أجرة شحن طلب رفضه الزبون سابقاً.', ['fee' => number_format($order->shipping_debt_charged / 100).' ل.س']) }}</p>
+                    @endif
+                    @if ($order->refused_at)
+                        <p class="small text-danger mt-2 mb-0"><i class="bi bi-x-octagon" aria-hidden="true"></i> {{ __('رفض الزبون الاستلام في :date.', ['date' => $order->refused_at->format('Y-m-d')]) }}</p>
+                    @endif
                 </div>
             </div>
         </div>
@@ -76,6 +86,13 @@
                         <button class="btn btn-primary">حفظ</button>
                     </form>
                     <p class="text-muted small mt-2 mb-0">تحديد "تم التسليم" يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.</p>
+                    @if ($order->status === 'shipped' && ! $order->refused_at)
+                        <form action="{{ route($employeeMode ? 'employee.orders.refused' : 'admin.orders.refused', $order) }}" method="POST" class="mt-3"
+                            data-confirm="{{ __('الزبون رفض استلام الطلب؟ سيُلغى الطلب وتعود الكميات، وتُسجَّل أجرة الشحن ديناً عليه ويُمنع من الدفع عند الاستلام شهراً.') }}">
+                            @csrf
+                            <button class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-x-octagon" aria-hidden="true"></i> {{ __('الزبون رفض الاستلام') }}</button>
+                        </form>
+                    @endif
                     @if ($employeeMode && ! $order->archived_at)
                         <form action="{{ route('employee.orders.archive', $order) }}" method="POST" class="mt-3" data-confirm="أرشفة الطلب مع الاحتفاظ بسجله؟">
                             @csrf
