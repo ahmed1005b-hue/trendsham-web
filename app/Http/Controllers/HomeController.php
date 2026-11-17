@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Showcase;
 use App\Models\Story;
 use App\Support\AppCache;
+use App\Support\RecentlyViewed;
 
 class HomeController extends Controller
 {
@@ -79,6 +80,8 @@ class HomeController extends Controller
 
         return view('home', $data + [
             'categories' => AppCache::navCategories(),
+            // خاص بكل زائر (من الكوكي)، فهو خارج الكاش
+            'recentProducts' => RecentlyViewed::products(RecentlyViewed::ids(request()), limit: 6),
         ]);
     }
 }

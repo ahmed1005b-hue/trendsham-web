@@ -2,6 +2,7 @@
 
 namespace App\Payments;
 
+use App\GiftCards\Models\GiftCard;
 use App\Models\CustomerCard;
 use App\Models\Order;
 use App\Models\Payment;
@@ -33,6 +34,27 @@ class BankGateway implements PaymentGateway
     public function initiate(Payment $payment, Order $order): InitResult
     {
         $res = $this->client()->post($this->path('checkout'), $this->payloadCheckout($payment, $order))->throw();
+
+        $url = $res->json($this->field('checkout_url'));
+        if (! $url) {
+            throw new \RuntimeException('البنك لم يُرجع رابط صفحة الدفع (راجع PAYMENT_GATEWAY_CHECKOUT_URL_FIELD).');
+        }
+
+        return new InitResult('redirect', $url, raw: (array) $res->json());
+    }
+
+    public function initiateGiftCard(GiftCard $card): InitResult
+    {
+        $res = $this->client()->post($this->path('checkout'), [
+            'merchant_id' => config('payment.bank.merchant_id'),
+            'reference' => $card->reference,
+            'amount' => $this->amountToBank($card->amount),
+            'currency' => config('payment.currency', 'SYP'),
+            'description' => 'بطاقة هدية TrendSham',
+            'customer_id' => (string) $card->purchaser_id,
+            'return_url' => route('gift-cards.return', $card->reference),
+            'notify_url' => route('payments.webhook', 'bank'),
+        ])->throw();
 
         $url = $res->json($this->field('checkout_url'));
         if (! $url) {

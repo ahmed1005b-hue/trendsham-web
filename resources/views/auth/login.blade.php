@@ -48,6 +48,8 @@
                 </button>
             </form>
 
+            @include('auth._social_buttons')
+
             <p class="text-center small mt-3 mb-0">
                 <a href="{{ route('password.request') }}" class="text-decoration-none">نسيت كلمة المرور؟</a>
             </p>

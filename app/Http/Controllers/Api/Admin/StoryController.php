@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class StoryController extends Controller
 {
-    public function __construct(private readonly ImageUploadService $imageUploadService)
-    {
-    }
+    public function __construct(private readonly ImageUploadService $imageUploadService) {}
 
     public function index()
     {
@@ -22,6 +20,7 @@ class StoryController extends Controller
                 'id' => $s->id,
                 'image' => asset('storage/'.$s->image),
                 'caption' => $s->caption,
+                'link_url' => $s->link_url,
                 'is_from_platform' => $s->isFromPlatform(),
                 'vendor_name' => $s->vendor?->store_name,
                 'amount_paid' => $s->amount_paid ? $s->amount_paid / 100 : null,
@@ -37,6 +36,7 @@ class StoryController extends Controller
         $validated = $request->validate([
             'image' => ImageUploadService::validationRules(),
             'caption' => ['nullable', 'string', 'max:150'],
+            'link_url' => Story::linkRules(),
             'duration_hours' => ['required', 'integer', 'min:1', 'max:168'],
         ], ImageUploadService::validationMessages());
 
@@ -50,6 +50,7 @@ class StoryController extends Controller
             'vendor_id' => null,
             'image' => $path,
             'caption' => $validated['caption'] ?? null,
+            'link_url' => $validated['link_url'] ?? null,
             'amount_paid' => null,
             'expires_at' => now()->addHours((int) $validated['duration_hours']),
         ]);

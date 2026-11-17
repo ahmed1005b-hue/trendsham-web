@@ -7,7 +7,9 @@ use App\Models\PlatformSetting;
 use App\Models\Story;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class StoryController extends Controller
 {
@@ -27,6 +29,7 @@ class StoryController extends Controller
                 'id' => $s->id,
                 'image' => asset('storage/'.$s->image),
                 'caption' => $s->caption,
+                'link_url' => $s->link_url,
                 'amount_paid' => $s->amount_paid ? $s->amount_paid / 100 : null,
                 'is_active' => $s->is_active,
                 'is_expired' => $s->isExpired(),
@@ -43,6 +46,7 @@ class StoryController extends Controller
         $validated = $request->validate([
             'image' => ImageUploadService::validationRules(),
             'caption' => ['nullable', 'string', 'max:150'],
+            'link_url' => Story::linkRules(),
         ], ImageUploadService::validationMessages());
 
         $fee = PlatformSetting::current()->story_fee;
@@ -61,17 +65,29 @@ class StoryController extends Controller
             return response()->json(['message' => 'الملف المرفوع ليس صورة صالحة، جرّب صورة أخرى.'], 422);
         }
 
-        $wallet->applyTransaction('debit', $fee, 'story_fee', [
-            'note' => 'رسم نشر ستوري',
-        ]);
+        // الفحص والخصم والنشر معاً تحت قفل المحفظة: نشران متزامنان لا يُنزلان الرصيد تحت الصفر
+        $story = DB::transaction(function () use ($wallet, $fee, $vendor, $path, $validated) {
+            if (! $wallet->debitIfAvailable($fee, 'story_fee', ['note' => 'رسم نشر ستوري'])) {
+                return null;
+            }
 
-        $story = Story::create([
-            'vendor_id' => $vendor->id,
-            'image' => $path,
-            'caption' => $validated['caption'] ?? null,
-            'amount_paid' => $fee,
-            'expires_at' => now()->addHours(24),
-        ]);
+            return Story::create([
+                'vendor_id' => $vendor->id,
+                'image' => $path,
+                'caption' => $validated['caption'] ?? null,
+                'link_url' => $validated['link_url'] ?? null,
+                'amount_paid' => $fee,
+                'expires_at' => now()->addHours(24),
+            ]);
+        });
+
+        if (! $story) {
+            Storage::disk('public')->delete($path);
+
+            return response()->json([
+                'message' => __('رصيد محفظتك غير كافٍ لنشر ستوري. الرسم الحالي: :fee ل.س.', ['fee' => number_format($fee / 100)]),
+            ], 422);
+        }
 
         return response()->json([
             'message' => 'تم نشر الستوري، رح تظهر بالصفحة الرئيسية لمدة 24 ساعة.',

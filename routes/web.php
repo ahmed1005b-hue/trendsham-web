@@ -25,10 +25,13 @@ use App\Http\Controllers\Admin\ShowcaseAdminController;
 use App\Http\Controllers\Admin\ShowcaseSlotAdminController;
 use App\Http\Controllers\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
+use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Auth\EmailAuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatAssistantController;
 use App\Http\Controllers\CouponCollectController;
@@ -40,9 +43,11 @@ use App\Http\Controllers\Customer\CouponWalletController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboard;
 use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\Customer\FollowedStoreController;
+use App\Http\Controllers\Customer\GiftCardController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
 use App\Http\Controllers\Customer\QuestionController as CustomerQuestionController;
+use App\Http\Controllers\Customer\ReferralController;
 use App\Http\Controllers\Customer\ReturnController as CustomerReturnController;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\SellerApplicationController;
@@ -69,13 +74,20 @@ use App\Http\Controllers\Seller\ShowcaseController as SellerShowcaseController;
 use App\Http\Controllers\Seller\StoryController as SellerStoryController;
 use App\Http\Controllers\Seller\SupportController;
 use App\Http\Controllers\Seller\WalletController as SellerWalletController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StoreFollowController;
 use App\Http\Controllers\VerifyController;
+use App\Support\RecentlyViewed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // الصفحة الرئيسية
 Route::get('/', [HomeController::class, 'index'])->name('home');
+// لمحركات البحث
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+// رابط «دعوة صديق» العام
+Route::get('/invite/{code}', [ReferralController::class, 'invite'])->middleware('throttle:30,1')->name('referrals.invite');
 
 Route::post('/preferences/language', function (Request $request) {
     $validated = $request->validate(['locale' => ['required', 'in:ar,en,tr']]);
@@ -104,6 +116,11 @@ Route::get('/help', [PageController::class, 'helpCenter'])->name('pages.help');
 
 // صفحات عامة للمنتجات والأقسام
 Route::get('/product/{product}', [ProductController::class, 'show'])->name('products.show');
+Route::post('/recently-viewed/clear', function () {
+    RecentlyViewed::forget();
+
+    return back();
+})->name('recently-viewed.clear');
 
 // المساعد الذكي من الموقع: نفس الكنترولر، لكن بجلسة الموقع ليتعرّف على العميل المسجّل
 Route::get('/assistant/chat', [ChatAssistantController::class, 'show'])->middleware('throttle:60,1')->name('assistant.chat.show');
@@ -127,6 +144,14 @@ Route::get('/category/{category}', [CategoryController::class, 'show'])->name('c
 
 // تسجيل الدخول (موحّد: بريد إلكتروني أو هاتف + كلمة سر)
 Route::get('/login', fn () => view('auth.login'))->name('login');
+Route::middleware('guest')->group(function () {
+    Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->name('two-factor.verify')->middleware('throttle:verify');
+});
+Route::middleware(['guest', 'throttle:login'])->whereIn('provider', ['google', 'facebook'])->group(function () {
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+});
 Route::post('/login', [EmailAuthController::class, 'login'])->name('login.email')->middleware('throttle:login');
 Route::post('/logout', [EmailAuthController::class, 'logout'])->middleware('auth')->name('logout');
 
@@ -187,7 +212,11 @@ Route::middleware(['auth', 'role:seller', 'seller.store'])->prefix('seller')->na
 });
 
 // لوحة المدير
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/security/two-factor', [AdminTwoFactorController::class, 'show'])->name('security.two-factor');
+    Route::post('/security/two-factor', [AdminTwoFactorController::class, 'confirm'])->name('security.two-factor.confirm')->middleware('throttle:verify');
+    Route::post('/security/two-factor/recovery-codes', [AdminTwoFactorController::class, 'regenerateRecoveryCodes'])->name('security.two-factor.recovery')->middleware('throttle:verify');
+
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
     Route::get('/analytics', [AdminDashboard::class, 'analytics'])->name('analytics');
     Route::get('/sellers/{sellerProfile}/identity-document', [AdminSellerController::class, 'identityDocument'])->name('sellers.identity-document');
@@ -237,6 +266,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // نقاط الولاء
     Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
+    Route::get('/gift-cards', [App\Http\Controllers\Admin\GiftCardController::class, 'index'])->name('gift-cards.index');
     Route::put('/loyalty/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings');
     Route::get('/loyalty/customers/{user}', [LoyaltyController::class, 'show'])->name('loyalty.show');
     Route::post('/loyalty/customers/{user}/adjust', [LoyaltyController::class, 'adjust'])->name('loyalty.adjust');
@@ -439,6 +469,13 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
     // نقاط الولاء
     Route::get('/points', [App\Http\Controllers\Customer\LoyaltyController::class, 'index'])->name('loyalty.index');
     Route::post('/points/convert', [App\Http\Controllers\Customer\LoyaltyController::class, 'convert'])->middleware('throttle:10,1')->name('loyalty.convert');
+    // دعوة صديق
+    Route::get('/invite', [ReferralController::class, 'index'])->name('referrals.index');
+    Route::post('/invite', [ReferralController::class, 'apply'])->middleware('throttle:10,1')->name('referrals.apply');
+    // بطاقات الهدايا
+    Route::get('/gift-cards', [GiftCardController::class, 'index'])->name('gift-cards.index');
+    Route::post('/gift-cards/purchase', [GiftCardController::class, 'purchase'])->middleware('throttle:10,1')->name('gift-cards.purchase');
+    Route::post('/gift-cards/redeem', [GiftCardController::class, 'redeem'])->middleware('throttle:10,1')->name('gift-cards.redeem');
 
     Route::get('/checkout/pay/{order}', [CustomerPaymentController::class, 'show'])->name('checkout.pay');
     Route::post('/checkout/pay/{order}', [CustomerPaymentController::class, 'process'])->name('checkout.pay.process');
@@ -467,6 +504,7 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
 });
 
 Route::get('payments/return/{reference}', [PaymentController::class, 'back'])->name('payments.return');
+Route::get('gift-cards/return/{reference}', [GiftCardController::class, 'back'])->name('gift-cards.return');
 
 // إيصال حوالة أرباح البائع (للمدير أو البائع صاحب الطلب)
 Route::get('withdrawals/{withdrawalRequest}/receipt', [AdminWithdrawalController::class, 'receipt'])
@@ -474,6 +512,6 @@ Route::get('withdrawals/{withdrawalRequest}/receipt', [AdminWithdrawalController
 
 // البنك التجريبي (يعمل فقط خارج production — راجع SandboxGateway::enabled)
 Route::middleware('auth')->prefix('sandbox-bank')->name('payments.sandbox.')->group(function () {
-    Route::get('/{kind}/{reference}', [SandboxBankController::class, 'show'])->name('show')->whereIn('kind', ['payment', 'card']);
-    Route::post('/{kind}/{reference}', [SandboxBankController::class, 'complete'])->name('complete')->whereIn('kind', ['payment', 'card']);
+    Route::get('/{kind}/{reference}', [SandboxBankController::class, 'show'])->name('show')->whereIn('kind', ['payment', 'card', 'gift']);
+    Route::post('/{kind}/{reference}', [SandboxBankController::class, 'complete'])->name('complete')->whereIn('kind', ['payment', 'card', 'gift']);
 });

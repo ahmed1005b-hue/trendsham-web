@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Coupons\CouponRedeemer;
 use App\Coupons\SellerShippingCharge;
+use App\GiftCards\GiftCardService;
 use App\Loyalty\LoyaltyLedger;
+use App\Referrals\ReferralService;
 use App\Returns\Models\ReturnRequest;
+use App\Services\DailyDealQuota;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -23,6 +26,7 @@ class Order extends Model
         'discount_amount',
         'points_redeemed',
         'points_discount',
+        'gift_balance_used',
         'total',
         'shipping_name',
         'shipping_phone',
@@ -109,6 +113,7 @@ class Order extends Model
         if ($this->status === 'delivered' && $previousStatus !== 'delivered') {
             $this->items->each->settleCommission();
             app(LoyaltyLedger::class)->earnForOrder($this);   // نقاط الولاء (مرة واحدة لكل طلب)
+            app(ReferralService::class)->rewardForDeliveredOrder($this); // مكافأة «دعوة صديق»
             app(SellerShippingCharge::class)->charge($this);  // شحن مجاني من كوبون البائع على البائع
         }
 
@@ -117,6 +122,7 @@ class Order extends Model
         if ($this->status === 'cancelled' && $previousStatus !== 'cancelled') {
             $this->items->each->reverseSettlement();
             $this->restockItems();
+            app(DailyDealQuota::class)->release($this); // تعود قطع «عرض اليوم» للعرض
             app(CouponRedeemer::class)->reverse($this); // الكوبون يعود لمحفظة العميل
             app(SellerShippingCharge::class)->refund($this);  // تعود أجرة الشحن للبائع إن خُصمت
 
@@ -124,6 +130,8 @@ class Order extends Model
             $loyalty = app(LoyaltyLedger::class);
             $loyalty->reverseEarnForOrder($this);
             $loyalty->restoreRedeemedForOrder($this);
+            app(ReferralService::class)->reverseForCancelledOrder($this);
+            app(GiftCardService::class)->refundForOrder($this); // رصيد الهدايا يعود لصاحبه
         }
     }
 

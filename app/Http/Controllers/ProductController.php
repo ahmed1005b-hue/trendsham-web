@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Coupons\StoreCoupons;
 use App\Models\Product;
 use App\Services\ProductRecommendationService;
+use App\Support\RecentlyViewed;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -19,10 +21,13 @@ class ProductController extends Controller
 
         $product->load(['images', 'vendor', 'category', 'reviews.user', 'questions.user', 'questions.answers.user', 'activeDailyDeal', 'variants' => fn ($q) => $q->where('is_active', true)]);
         $suggestions = $recommendations->forProduct($product);
+        if ($product->isLive()) {
+            RecentlyViewed::remember($request, $product->id);
+        }
 
         return view('products.show', [
             'product' => $product,
-            'storeCoupons' => app(\App\Coupons\StoreCoupons::class)->forProduct($product, $request->user()),
+            'storeCoupons' => app(StoreCoupons::class)->forProduct($product, $request->user()),
             ...$suggestions,
         ]);
     }

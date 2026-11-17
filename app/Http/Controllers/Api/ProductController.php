@@ -2,17 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Coupons\StoreCoupons;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ReviewResource;
+use App\Loyalty\LoyaltyCalculator;
 use App\Models\Product;
 use App\Services\ProductRecommendationService;
+use App\Support\RecentlyViewed;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        // «شاهدته مؤخراً» في التطبيق: ?ids=5,9,2 بنفس الترتيب ودون صفحات
+        if ($request->filled('ids')) {
+            return ProductResource::collection(
+                RecentlyViewed::products(RecentlyViewed::parseIds($request->get('ids'), 20), limit: 20)
+            );
+        }
+
         $products = Product::publiclyVisible()
             ->with(['primaryImage', 'images', 'category', 'activeDailyDeal'])
             ->withCount('reviews')
@@ -42,12 +52,12 @@ class ProductController extends Controller
         }
 
         // نقاط الولاء المتوقعة لشراء قطعة واحدة
-        $calc = app(\App\Loyalty\LoyaltyCalculator::class);
+        $calc = app(LoyaltyCalculator::class);
         $product->will_earn_points = $calc->settings()->enabled() ? $calc->pointsFor((int) $product->effective_price) : 0;
 
-        $product->store_coupons = app(\App\Coupons\StoreCoupons::class)
+        $product->store_coupons = app(StoreCoupons::class)
             ->forProduct($product, auth('sanctum')->user() ?? $request->user())
-            ->map(fn ($row) => \App\Coupons\StoreCoupons::toApi($row))->values()->all();
+            ->map(fn ($row) => StoreCoupons::toApi($row))->values()->all();
 
         return new ProductResource($product);
     }

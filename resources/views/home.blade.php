@@ -35,48 +35,7 @@
 {{-- 1) القصص --}}
 @if ($stories->isNotEmpty())
 <div class="container">
-    <div class="ts-stories" data-ts-fade>
-        @foreach ($stories as $story)
-            <button type="button" class="ts-story-item {{ $story->isFromPlatform() ? 'is-platform' : '' }}"
-                 data-bs-toggle="modal" data-bs-target="#story-modal"
-                 data-story-image="{{ asset('storage/'.$story->image) }}"
-                 data-story-caption="{{ $story->caption }}"
-                 data-story-vendor="{{ $story->isFromPlatform() ? 'تريندشام' : $story->vendor->store_name }}"
-                 data-story-platform="{{ $story->isFromPlatform() ? 'true' : 'false' }}"
-                 aria-label="{{ __('مشاهدة قصة :name', ['name' => $story->isFromPlatform() ? __('تريندشام') : $story->vendor->store_name]) }}"
-                 onclick="openStory({{ $loop->index }})">
-                <span class="ts-story-ring">
-                    <img src="{{ $story->image_thumb_url }}" alt="" loading="lazy">
-                </span>
-                <span class="ts-story-name" translate="no">{{ $story->isFromPlatform() ? 'تريندشام' : $story->vendor->store_name }}</span>
-            </button>
-        @endforeach
-    </div>
-</div>
-
-<div class="modal fade" id="story-modal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-        <div class="modal-content bg-dark border-0">
-            <div class="modal-body p-0 position-relative">
-                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" style="z-index:2;" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-                <div class="position-absolute top-0 start-0 end-0 d-flex gap-1 p-2" style="z-index:2;">
-                    @foreach ($stories as $story)
-                        <div class="flex-grow-1 overflow-hidden rounded" style="height:3px; background:rgba(255,255,255,.45);">
-                            <div class="story-progress h-100 bg-white" style="width:0;"></div>
-                        </div>
-                    @endforeach
-                </div>
-                <img id="story-modal-img" src="" alt="" class="w-100" style="max-height:85vh; object-fit:contain; border-radius: .5rem;">
-                <div class="position-absolute bottom-0 start-0 end-0 p-3 text-white" style="background: linear-gradient(transparent, rgba(0,0,0,.7));">
-                    <div class="d-flex align-items-center gap-1 mb-1">
-                        <strong id="story-modal-vendor" class="small"></strong>
-                        <i id="story-modal-badge" class="bi bi-patch-check-fill d-none" style="color: var(--ts-gold-light); font-size: .8rem;"></i>
-                    </div>
-                    <p id="story-modal-caption" class="small mb-0"></p>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('partials.stories', ['stories' => $stories])
 </div>
 @endif
 
@@ -328,6 +287,27 @@
     @endif
 </section>
 
+{{-- شاهدته مؤخراً (من جهاز الزائر) --}}
+@if ($recentProducts->isNotEmpty())
+<section id="recently-viewed" class="container ts-home-section">
+    <div class="ts-sh">
+        <div>
+            <p class="ts-sh__kicker">تابع من حيث توقفت</p>
+            <h2 class="ts-sh__title">شاهدته مؤخراً</h2>
+        </div>
+        <form method="POST" action="{{ route('recently-viewed.clear') }}">
+            @csrf
+            <button type="submit" class="ts-sh__more btn btn-link p-0">مسح السجل</button>
+        </form>
+    </div>
+    <div class="ts-grid ts-grid--dense">
+        @foreach ($recentProducts as $product)
+            @include('partials.product-card', ['product' => $product])
+        @endforeach
+    </div>
+</section>
+@endif
+
 {{-- 5) وصل حديثاً --}}
 @include('home.partials.showcase-placement', ['showcases' => $showcasesBySlot->get('home_mid', collect())])
 
@@ -381,15 +361,6 @@
     [data-ts-fade].fade-start.fade-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
 
     /* ===== القصص ===== */
-    .ts-stories { display: flex; gap: .85rem; overflow-x: auto; padding: 1rem 0 .25rem; scrollbar-width: none; }
-    .ts-stories::-webkit-scrollbar { display: none; }
-    .ts-story-item { flex: 0 0 auto; width: 74px; padding: 0; border: 0; background: transparent; color: var(--ts-ink); text-align: center; }
-    .ts-story-ring { display: block; width: 66px; height: 66px; margin: 0 auto; padding: 3px; border-radius: 50%; background: conic-gradient(from 210deg, var(--ts-emerald), var(--ts-gold), var(--ts-gold-light), var(--ts-emerald)); transition: transform .2s ease; }
-    .ts-story-item.is-platform .ts-story-ring { background: conic-gradient(from 210deg, var(--ts-gold), var(--ts-gold-light), var(--ts-gold)); }
-    .ts-story-ring img { display: block; width: 100%; height: 100%; border: 2.5px solid var(--ts-surface); border-radius: 50%; object-fit: cover; background: var(--ts-surface-2); }
-    .ts-story-item:hover .ts-story-ring { transform: scale(1.05); }
-    .ts-story-name { display: block; margin-top: .3rem; overflow: hidden; font-size: .72rem; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-    .ts-story-item:focus-visible { outline: 2px solid var(--ts-emerald); outline-offset: 3px; border-radius: 8px; }
 
     /* ===== البانر والبلاطات الجانبية ===== */
     .ts-promo { display: grid; grid-template-columns: minmax(0, 2.55fr) minmax(0, 1fr); gap: 1rem; margin-top: 1.1rem; }
@@ -617,7 +588,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .ts-slide, .ts-promo-tile, .ts-story-ring { transition: none; }
+        .ts-slide, .ts-promo-tile { transition: none; }
         .ts-flash__bolt { animation: none; }
         .ts-rail__track { scroll-behavior: auto; }
         .ts-promo-tile:hover, .ts-slide__cta:hover { transform: none; }
@@ -627,47 +598,6 @@
 
 @push('scripts')
 <script>
-(() => {
-    const storyItems = Array.from(document.querySelectorAll('[data-story-image]'));
-    const modalElement = document.getElementById('story-modal');
-    if (!modalElement) return;
-    const progressBars = Array.from(modalElement.querySelectorAll('.story-progress'));
-    let currentStoryIndex = 0;
-    let storyTimer;
-
-    function showStory(index) {
-        const item = storyItems[index];
-        if (!item) {
-            bootstrap.Modal.getOrCreateInstance(modalElement).hide();
-            return;
-        }
-
-        currentStoryIndex = index;
-        document.getElementById('story-modal-img').src = item.dataset.storyImage;
-        document.getElementById('story-modal-caption').textContent = item.dataset.storyCaption || '';
-        document.getElementById('story-modal-vendor').textContent = item.dataset.storyVendor || '';
-        document.getElementById('story-modal-badge').classList.toggle('d-none', item.dataset.storyPlatform !== 'true');
-        progressBars.forEach((bar, barIndex) => {
-            bar.style.transition = 'none';
-            bar.style.width = barIndex < index ? '100%' : '0';
-        });
-
-        clearTimeout(storyTimer);
-        requestAnimationFrame(() => {
-            const progressBar = progressBars[index];
-            if (progressBar) {
-                progressBar.style.transition = 'width 10s linear';
-                progressBar.style.width = '100%';
-            }
-        });
-        storyTimer = setTimeout(() => showStory(index + 1), 10000);
-    }
-
-    window.openStory = (index) => showStory(index);
-    modalElement.addEventListener('hidden.bs.modal', () => clearTimeout(storyTimer));
-    modalElement.addEventListener('shown.bs.modal', () => showStory(currentStoryIndex));
-})();
-
 (() => {
     const countdownEl = document.getElementById('dealCountdown');
     if (!countdownEl) return;

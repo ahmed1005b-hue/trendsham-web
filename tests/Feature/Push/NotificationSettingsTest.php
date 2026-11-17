@@ -21,7 +21,7 @@ class NotificationSettingsTest extends TestCase
             ->assertJsonPath('always_on_note', 'إشعارات الأمان والمال المهمة تصلك دائماً.');
 
         $groups = collect($res->json('groups'))->keyBy('key');
-        $this->assertSame(['orders', 'messages', 'coupons_points', 'offers'], $groups->keys()->all());
+        $this->assertSame(['orders', 'messages', 'coupons_points', 'favorites', 'offers'], $groups->keys()->all());
         $this->assertTrue($groups['orders']['enabled']);
         $this->assertNull($groups['offers']['enabled']);
         $this->assertFalse($groups['orders']['locked']);

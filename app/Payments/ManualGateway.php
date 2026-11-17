@@ -2,6 +2,7 @@
 
 namespace App\Payments;
 
+use App\GiftCards\Models\GiftCard;
 use App\Models\CustomerCard;
 use App\Models\Order;
 use App\Models\Payment;
@@ -20,6 +21,11 @@ class ManualGateway implements PaymentGateway
     public function initiate(Payment $payment, Order $order): InitResult
     {
         return new InitResult('manual', null, 'الدفع الإلكتروني غير مفعّل حالياً. سيتم الدفع عند الاستلام، وسنؤكد طلبك قريباً.');
+    }
+
+    public function initiateGiftCard(GiftCard $card): InitResult
+    {
+        return new InitResult('failed', null, 'الدفع الإلكتروني غير مفعّل حالياً، لذا لا يمكن شراء بطاقات الهدايا الآن.');
     }
 
     public function verifyWebhook(Request $request): bool
@@ -47,7 +53,5 @@ class ManualGateway implements PaymentGateway
         return new InitResult('failed', null, 'الدفع بالبطاقة غير متاح حالياً.');
     }
 
-    public function deleteSavedCard(CustomerCard $card): void
-    {
-    }
+    public function deleteSavedCard(CustomerCard $card): void {}
 }

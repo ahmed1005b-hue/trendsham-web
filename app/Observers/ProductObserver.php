@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\AppNotification;
 use App\Models\Product;
+use App\Services\PriceDropNotifier;
 
 class ProductObserver
 {
@@ -16,6 +17,10 @@ class ProductObserver
     {
         if ($product->wasChanged(['status', 'admin_approved_at'])) {
             $this->notifyFollowers($product);
+        }
+
+        if ($product->wasChanged('price')) {
+            app(PriceDropNotifier::class)->handle($product, (int) $product->getOriginal('price'), (int) $product->price);
         }
     }
 

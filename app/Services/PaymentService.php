@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\GiftCards\GiftCardService;
+use App\GiftCards\Models\GiftCard;
 use App\Models\AppNotification;
 use App\Models\CustomerCard;
 use App\Models\Order;
@@ -25,9 +27,9 @@ class PaymentService
     public function gateway(?string $driver = null): PaymentGateway
     {
         return match ($driver ?? config('payment.driver')) {
-            'bank' => new BankGateway(),
-            'sandbox' => SandboxGateway::enabled() ? new SandboxGateway() : new ManualGateway(),
-            default => new ManualGateway(),
+            'bank' => new BankGateway,
+            'sandbox' => SandboxGateway::enabled() ? new SandboxGateway : new ManualGateway,
+            default => new ManualGateway,
         };
     }
 
@@ -92,7 +94,13 @@ class PaymentService
     /** يوزّع إشعار البنك حسب نوعه (دفع طلب أو حفظ بطاقة). */
     public function handle(WebhookEvent $e): void
     {
-        $e->kind === 'card' ? $this->applyCard($e) : $this->apply($e->reference, $e);
+        if ($e->kind === 'card') {
+            $this->applyCard($e);
+        } elseif (GiftCard::where('reference', $e->reference)->exists()) {
+            app(GiftCardService::class)->applyPayment($e);
+        } else {
+            $this->apply($e->reference, $e);
+        }
     }
 
     /**

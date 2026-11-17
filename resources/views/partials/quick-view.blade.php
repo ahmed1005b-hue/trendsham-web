@@ -61,7 +61,8 @@
         const hasDisc    = oldPrice && oldPrice > basePrice;
         const discPct    = deal ? deal.discount_percentage : product.discount_percentage;
         const inStock    = product.in_stock !== false && product.stock_quantity > 0;
-        const fmt = (minor) => number_format(Math.round(minor), 0, '.', ',')+' '+@json(__('ل.س'));
+        const fmt = (amount) => Math.round(Number(amount) || 0).toLocaleString('en-US')+' '+@json(__('ل.س'));
+        const hasVariants = (product.variants || []).length > 0;
 
         // الصور
         const images = (product.images || []).slice(0, 5);
@@ -142,6 +143,7 @@
                         <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle qv-qty-plus" ${!inStock?'disabled':''}>＋</button>
                     </div>
                 </div>
+                ${hasVariants ? `<a href="{{ route('products.show', '__SLUG__') }}" class="btn btn-buy w-100 mb-2"><i class="bi bi-palette"></i> ${@json(__('اختر اللون/المقاس'))}</a>` : `
                 <form action="{{ route('customer.cart.store') }}" method="POST" id="qvAddForm">
                     @csrf
                     <input type="hidden" name="product_id" value="${product.id}">
@@ -149,19 +151,21 @@
                     <button type="submit" class="btn btn-buy w-100 mb-2" ${!inStock?'disabled':''}>
                         <i class="bi bi-bag-plus"></i> ${inStock ? @json(__('أضف إلى السلة')) : @json(__('نفد'))}
                     </button>
-                </form>
+                </form>`}
                 <a href="{{ route('products.show', '__SLUG__') }}" class="btn btn-outline-secondary w-100">{{ __('عرض التفاصيل الكاملة') }}</a>
             </div>
-        `.replace('__SLUG__', product.slug);
+        `.replaceAll('__SLUG__', encodeURIComponent(product.slug));
 
         // الكمية
-        const minus = document.querySelector('.qv-qty-minus');
-        const plus  = document.querySelector('.qv-qty-plus');
+        const minus = qvContent.querySelector('.qv-qty-minus');
+        const plus  = qvContent.querySelector('.qv-qty-plus');
         const qtyIn = document.getElementById('qvQty');
         const qtyH  = document.getElementById('qvQtyInput');
         let qty = 1;
-        minus.onclick = ()=>{ if(qty>1){qty--; qtyIn.value=qty; qtyH.value=qty;} };
-        plus.onclick  = ()=>{ if(qty<product.stock_quantity){qty++; qtyIn.value=qty; qtyH.value=qty;} };
+        if (minus && plus && qtyH) {
+            minus.onclick = ()=>{ if(qty>1){qty--; qtyIn.value=qty; qtyH.value=qty;} };
+            plus.onclick  = ()=>{ if(qty<product.stock_quantity){qty++; qtyIn.value=qty; qtyH.value=qty;} };
+        }
     }
 
     function escapeHtml(t){ return String(t||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
@@ -180,10 +184,10 @@
         modal.show();
 
         try {
-            const res = await fetch(`/api/products/${id}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+            const res = await fetch(@json(url('api/v1/products')) + '/' + encodeURIComponent(id), { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
             if (!res.ok) throw new Error(@json(__('فشل التحميل')));
-            const data = await res.json();
-            render(data);
+            const json = await res.json();
+            render(json.data || json);
         } catch (err){
             qvContent.innerHTML = `<div class="text-center py-5 text-danger"><p class="small">{{ __('تعذّر تحميل المنتج. حاول مجدداً.') }}</p></div>`;
         }
@@ -203,6 +207,6 @@
     .qv-color{width:26px;height:26px;border-radius:50%;border:1px solid #ddd;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center;}
     .qv-color::after{content:'';display:block;width:10px;height:10px;border-radius:50%;background:#fff;opacity:0;transition:opacity .12s;}
     .qv-color:active::after{opacity:1;}
-    .rounded-circle{border-radius:50% !important;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;}
+    #tsQuickViewModal .rounded-circle{border-radius:50% !important;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;}
 </style>
 @endpush

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Loyalty\Models\LoyaltyAccount;
 use App\Support\Phone;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -74,6 +75,8 @@ class User extends Authenticatable implements HasLocalePreference
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -87,7 +90,16 @@ class User extends Authenticatable implements HasLocalePreference
             'offers_prompted_at' => 'datetime',
             'deactivated_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /** فعّل التحقق بخطوتين وأكّده برمز صحيح. */
+    public function hasTwoFactor(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && filled($this->two_factor_secret);
     }
 
     /**
@@ -98,6 +110,11 @@ class User extends Authenticatable implements HasLocalePreference
         $full = trim("{$this->first_name} {$this->last_name}");
 
         return $full !== '' ? $full : $this->phone;
+    }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 
     public function sellerProfile()
@@ -114,7 +131,7 @@ class User extends Authenticatable implements HasLocalePreference
     /** رصيد نقاط الولاء (قد لا يوجد قبل أول حركة) */
     public function loyaltyAccount()
     {
-        return $this->hasOne(\App\Loyalty\Models\LoyaltyAccount::class);
+        return $this->hasOne(LoyaltyAccount::class);
     }
 
     /** عناوين الشحن المحفوظة (حتى 3) — انظر UserAddressService. */

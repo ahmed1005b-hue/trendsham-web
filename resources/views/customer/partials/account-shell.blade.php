@@ -31,6 +31,8 @@
                 <a class="ts-account-link {{ request()->routeIs('customer.coupons.*') ? 'active' : '' }}" href="{{ route('customer.coupons.index') }}"><i class="bi bi-ticket-perforated"></i> كوبوناتي</a>
                 <a class="ts-account-link {{ request()->routeIs('customer.loyalty.*') ? 'active' : '' }}" href="{{ route('customer.loyalty.index') }}"><i class="bi bi-gem"></i> نقاطي
                     <span class="badge rounded-pill ms-auto" style="background:#C9962C">{{ number_format((int) \App\Loyalty\Models\LoyaltyAccount::where('user_id', auth()->id())->value('balance')) }}</span></a>
+                <a class="ts-account-link {{ request()->routeIs('customer.referrals.*') ? 'active' : '' }}" href="{{ route('customer.referrals.index') }}"><i class="bi bi-gift"></i> دعوة صديق</a>
+                <a class="ts-account-link {{ request()->routeIs('customer.gift-cards.*') ? 'active' : '' }}" href="{{ route('customer.gift-cards.index') }}"><i class="bi bi-credit-card-2-front"></i> بطاقات الهدايا</a>
             @endif
             @if (auth()->user()?->role !== 'admin')
                 @if ($sp?->status === 'approved')

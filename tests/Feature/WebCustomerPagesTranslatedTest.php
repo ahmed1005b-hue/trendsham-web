@@ -88,6 +88,8 @@ class WebCustomerPagesTranslatedTest extends TestCase
             'followed stores' => route('customer.followed-stores.index'),
             'coupons' => route('customer.coupons.index'),
             'points' => route('customer.loyalty.index'),
+            'invite a friend' => route('customer.referrals.index'),
+            'gift cards' => route('customer.gift-cards.index'),
             'cards' => route('customer.cards.index'),
             'notifications' => route('notifications.index'),
             'conversations' => route('customer.conversations.index'),

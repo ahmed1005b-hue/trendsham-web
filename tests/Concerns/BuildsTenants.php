@@ -3,6 +3,7 @@
 namespace Tests\Concerns;
 
 use App\Coupons\Models\CouponCampaign;
+use App\GiftCards\Models\GiftCard;
 use App\Models\AppNotification;
 use App\Models\CartItem;
 use App\Models\Category;
@@ -174,10 +175,18 @@ trait BuildsTenants
             'vendor_id' => $store->id, 'amount' => 5000, 'status' => 'pending', 'note' => "Withdrawal $tag",
         ]);
 
+        // بطاقة هدية اشتراها الزبون (مدفوعة، لم تُستخدم)
+        $giftCard = GiftCard::create([
+            'purchaser_id' => $customer->id, 'amount' => 5000000, 'status' => GiftCard::ACTIVE,
+            'reference' => 'gift-'.$tag.'-'.Str::random(8), 'gateway' => 'sandbox',
+            'code' => 'TSGIFT'.strtoupper($tag).Str::upper(Str::random(6)), 'code_hash' => hash('sha256', Str::random(20)),
+            'paid_at' => now(), 'expires_at' => now()->addYear(),
+        ]);
+
         return compact(
             'customer', 'seller', 'store', 'product', 'image', 'cartItem', 'order', 'orderItem', 'address', 'card',
             'payment', 'notification', 'conversation', 'question', 'supportConversation', 'deal', 'story',
-            'paymentMethod', 'showcase', 'campaign', 'withdrawal', 'returnRequest',
+            'paymentMethod', 'showcase', 'campaign', 'withdrawal', 'returnRequest', 'giftCard',
         );
     }
 

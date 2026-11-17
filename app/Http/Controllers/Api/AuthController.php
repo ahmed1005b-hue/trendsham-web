@@ -4,11 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Mail\PasswordResetMail;
 use App\Models\Otp;
 use App\Models\SellerProfile;
 use App\Models\User;
+use App\Referrals\ReferralCode;
+use App\Referrals\ReferralException;
+use App\Referrals\ReferralService;
+use App\Services\AccountClosureService;
 use App\Services\Sms\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -39,6 +45,12 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             'store_name' => ['required_if:account_type,seller', 'nullable', 'string', 'max:255'],
+            // كود «دعوة صديق» (للعملاء فقط): يُفحص الآن ليُصحَّح قبل إرسال رمز التحقق
+            'referral_code' => ['nullable', 'string', 'max:20', function (string $attribute, mixed $value, \Closure $fail) {
+                if ($value !== null && ReferralCode::decode((string) $value) === null) {
+                    $fail(__('كود الدعوة غير صحيح.'));
+                }
+            }],
         ]);
 
         $key = 'api-register-otp:'.$validated['phone'];
@@ -127,6 +139,14 @@ class AuthController extends Controller
 
         cache()->forget('pending_registration:'.$validated['phone']);
 
+        if ($user->role === 'customer' && ! empty($pending['referral_code'])) {
+            try {
+                app(ReferralService::class)->apply($user, (string) $pending['referral_code']);
+            } catch (ReferralException) {
+                // كود لم يعد صالحاً لا يمنع إنشاء الحساب
+            }
+        }
+
         if ($user->role === 'employee') {
             return response()->json([
                 'pending_approval' => true,
@@ -178,8 +198,17 @@ class AuthController extends Controller
 
         RateLimiter::clear($key);
 
+        // التحقق بخطوتين: لا رمز دخول قبل رمز تطبيق المصادقة
+        if ($user->hasTwoFactor()) {
+            return response()->json([
+                'two_factor_required' => true,
+                'challenge' => TwoFactorController::challengeFor($user),
+                'message' => __('أدخل الرمز من تطبيق المصادقة.'),
+            ]);
+        }
+
         // يعيد تفعيل الحساب الموقوف ويلغي طلب الحذف المعلّق
-        $notice = app(\App\Services\AccountClosureService::class)->onLogin($user);
+        $notice = app(AccountClosureService::class)->onLogin($user);
 
         $token = $user->createToken('mobile-app')->plainTextToken;
 
@@ -244,7 +273,7 @@ class AuthController extends Controller
                     $otp = Otp::generateFor($user->phone);
                     try {
                         $this->sms->send($user->phone, "رمز إعادة تعيين كلمة المرور في تريندشام: {$otp->code}");
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                     }
                 }
 
@@ -259,12 +288,12 @@ class AuthController extends Controller
 
                 try {
                     if ($user->email) {
-                        Mail::to($user)->locale(app()->getLocale())->send(new \App\Mail\PasswordResetMail(
+                        Mail::to($user)->locale(app()->getLocale())->send(new PasswordResetMail(
                             $user,
                             route('password.reset', ['token' => $token, 'email' => $user->email])
                         ));
                     }
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                 }
 
                 // لا نُرجع الـ token في الرد أبداً: يصل فقط عبر البريد/الـ SMS،
@@ -321,8 +350,9 @@ class AuthController extends Controller
                 return response()->json(['message' => 'رابط إعادة التعيين غير صحيح أو منتهي الصلاحية.'], 422);
             }
             // Carbon 3: diffInMinutes يُرجع قيمة سالبة للماضي، فكان الشرط القديم لا يتحقق أبداً
-            if (\Illuminate\Support\Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
+            if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
                 DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
                 return response()->json(['message' => 'انتهت صلاحية الرابط، اطلب رابطاً جديداً.'], 422);
             }
             DB::table('password_reset_tokens')->where('email', $user->email)->delete();
@@ -335,7 +365,15 @@ class AuthController extends Controller
 
         try {
             $user->tokens()->delete();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
+        }
+
+        // من فعّل التحقق بخطوتين يدخل بنفسه بعد التغيير (كلمة السر + الرمز)، لا رمز دخول هنا
+        if ($user->hasTwoFactor()) {
+            return response()->json([
+                'message' => 'تم تغيير كلمة المرور بنجاح. سجّل دخولك الآن.',
+                'login_required' => true,
+            ]);
         }
 
         $newToken = $user->createToken('mobile-app')->plainTextToken;

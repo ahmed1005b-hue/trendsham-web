@@ -7,6 +7,7 @@ use App\Coupons\CouponRedeemer;
 use App\Coupons\CouponSelector;
 use App\Coupons\GiftLine;
 use App\Coupons\Models\CustomerCoupon;
+use App\GiftCards\GiftCardService;
 use App\Http\Controllers\Controller;
 use App\Loyalty\LoyaltyCheckout;
 use App\Loyalty\LoyaltyException;
@@ -18,6 +19,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Shipment;
 use App\Notifications\Push\SellerOrderNotifier;
+use App\Services\DailyDealQuota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -66,6 +68,7 @@ class CheckoutController extends Controller
             'couponOptions' => $pick['options'],
             'couponNotice' => $couponNotice ?? null,
             'loyalty' => app(LoyaltyCheckout::class)->summary($user, $subtotal, $chosen['result']->discount ?? 0),
+            'giftBalance' => app(GiftCardService::class)->balance($user->id),
         ]);
     }
 
@@ -95,6 +98,7 @@ class CheckoutController extends Controller
             'shipping_address' => ['required', 'string', 'max:1000'],
             'payment_method' => ['required', 'in:cash_on_delivery,card,wallet'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
+            'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
         ]);
 
         $items = $request->user()->cartItems()->with(['product.activeDailyDeal', 'variant', 'storefrontVisit'])->get();
@@ -132,6 +136,9 @@ class CheckoutController extends Controller
                             ?? throw new \DomainException('stock_conflict'));
                     }
                 }
+
+                // كمية «عرض اليوم» تُحجز تحت القفل: لا تُباع أكثر من الكمية المحددة
+                $dealClaims = app(DailyDealQuota::class)->claim($items);
 
                 $products = $products->keyBy('id');
                 $lines = $items->map(function ($item) use ($products) {
@@ -187,6 +194,15 @@ class CheckoutController extends Controller
                 // نقاط الولاء بعد الكوبون (المنصة تتحمّل خصمها؛ لا تُوزَّع على البنود ولا تمس أرباح البائع)
                 app(LoyaltyCheckout::class)->apply($request->user(), $order, $validated['use_points'] ?? null);
 
+                // رصيد بطاقات الهدايا يغطي ما تبقّى (مع الشحن). طلب مغطّى بالكامل يُعدّ مدفوعاً
+                if ($request->boolean('use_gift_balance')) {
+                    app(GiftCardService::class)->spendForOrder($request->user(), $order);
+                }
+                $fullyPaid = (int) $order->total === 0;
+                if ($fullyPaid) {
+                    $order->update(['payment_status' => 'paid']);
+                }
+
                 foreach ($lines as $key => $line) {
                     $lineDiscount = $couponResult?->lineDiscounts[$key] ?? 0;
                     $product = $line->product;
@@ -195,6 +211,7 @@ class CheckoutController extends Controller
                         'order_id' => $order->id,
                         'product_id' => $product->id,
                         'variant_id' => $line->variant?->id,
+                        'daily_deal_id' => $dealClaims[$item->id] ?? null,
                         'vendor_id' => $product->vendor_id,
                         'storefront_visit_id' => $item->storefront_visit_id
                             && $item->storefrontVisit?->seller_profile_id === $product->vendor_id
@@ -223,7 +240,7 @@ class CheckoutController extends Controller
                 Payment::create([
                     'order_id' => $order->id,
                     'method' => $validated['payment_method'],
-                    'status' => 'pending',
+                    'status' => $fullyPaid ? 'paid' : 'pending',
                     'amount' => $order->total,
                 ]);
 
@@ -255,6 +272,9 @@ class CheckoutController extends Controller
             if ($e->getMessage() === 'stock_conflict') {
                 return back()->with('error', 'الكمية المتوفرة من أحد المنتجات لم تعد كافية، رجاءً حدّث السلة.');
             }
+            if ($e->getMessage() === DailyDealQuota::SOLD_OUT) {
+                return back()->with('error', __('نفدت كمية «عرض اليوم» لأحد المنتجات. احذفه من السلة وأضفه من جديد بسعره الحالي.'));
+            }
             if (str_starts_with($e->getMessage(), 'coupon:')) {
                 $request->session()->forget('checkout_coupon');
 
@@ -263,7 +283,7 @@ class CheckoutController extends Controller
             throw $e;
         }
 
-        return $validated['payment_method'] === 'card'
+        return $validated['payment_method'] === 'card' && (int) $order->total > 0
             ? redirect()->route('customer.checkout.pay', $order)
             : redirect()->route('customer.orders.show', $order)->with('success', 'تم إنشاء طلبك بنجاح.');
     }

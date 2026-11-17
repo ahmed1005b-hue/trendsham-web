@@ -57,6 +57,7 @@
                 ['route' => 'admin.accounting.dashboard', 'icon' => 'bi-journal-text', 'label' => __('المحاسبة')],
                 ['route' => 'admin.withdrawals.index', 'icon' => 'bi-wallet2', 'label' => __('طلبات السحب'), 'badge' => $pendingWithdrawalsCount ?? 0, 'badge_class' => 'bg-warning text-dark'],
                 ['route' => 'admin.loyalty.index', 'icon' => 'bi-gem', 'label' => __('نقاط الولاء')],
+                ['route' => 'admin.gift-cards.index', 'icon' => 'bi-credit-card-2-front', 'label' => __('بطاقات الهدايا')],
             ]],
             ['title' => __('التسويق'), 'icon' => 'bi-megaphone', 'items' => [
                 ['route' => 'admin.coupon-campaigns.index', 'icon' => 'bi-ticket-perforated', 'label' => __('الكوبونات')],
@@ -72,6 +73,7 @@
             ]],
             ['title' => __('النظام'), 'icon' => 'bi-gear', 'items' => [
                 ['route' => 'admin.settings.edit', 'icon' => 'bi-sliders', 'label' => __('الإعدادات')],
+                ['route' => 'admin.security.two-factor', 'icon' => 'bi-shield-lock', 'label' => __('أمان الحساب')],
             ]],
         ];
     @endphp

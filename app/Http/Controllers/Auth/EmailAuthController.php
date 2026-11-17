@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Otp;
 use App\Models\SellerProfile;
 use App\Models\User;
+use App\Services\AccountClosureService;
 use App\Services\Sms\SmsService;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +21,7 @@ class EmailAuthController extends Controller
 {
     private const SESSION_KEY = 'pending_registration';
 
-    public function __construct(private readonly SmsService $sms)
-    {
-    }
+    public function __construct(private readonly SmsService $sms) {}
 
     public function showRegister()
     {
@@ -207,7 +207,7 @@ class EmailAuthController extends Controller
         }
 
         // الأرقام محفوظة بصيغة موحّدة (963..)، فنوحّد ما كتبه المستخدم (09..) قبل المطابقة
-        $loginValue = $field === 'phone' ? (\App\Support\Phone::normalize($identifier) ?? $identifier) : $identifier;
+        $loginValue = $field === 'phone' ? (Phone::normalize($identifier) ?? $identifier) : $identifier;
         $credentials = [$field => $loginValue, 'password' => $validated['password']];
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -229,10 +229,25 @@ class EmailAuthController extends Controller
         }
 
         RateLimiter::clear($key);
+
+        // التحقق بخطوتين: لا جلسة قبل الرمز. نخرجه ونحفظ «من ينتظر» لخمس دقائق.
+        if (auth()->user()->hasTwoFactor()) {
+            $pendingId = auth()->id();
+            Auth::logout();
+            $request->session()->regenerate();
+            $request->session()->put(TwoFactorChallengeController::SESSION_KEY, [
+                'id' => $pendingId,
+                'remember' => $request->boolean('remember'),
+                'expires' => now()->addMinutes(5)->timestamp,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
         // يعيد تفعيل الحساب الموقوف ويلغي طلب الحذف المعلّق
-        if ($notice = app(\App\Services\AccountClosureService::class)->onLogin(auth()->user())) {
+        if ($notice = app(AccountClosureService::class)->onLogin(auth()->user())) {
             $request->session()->flash('success', $notice);
         }
 

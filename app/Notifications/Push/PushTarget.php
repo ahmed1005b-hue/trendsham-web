@@ -10,7 +10,7 @@ final class PushTarget
 {
     public const SCREENS = [
         'order', 'seller_order', 'conversation', 'support', 'product', 'store', 'coupons', 'points',
-        'seller_wallet', 'seller_coupon', 'seller_products', 'return', 'seller_return', 'notifications',
+        'seller_wallet', 'seller_coupon', 'seller_products', 'return', 'seller_return', 'cart', 'referrals', 'gift_cards', 'notifications',
     ];
 
     /** نمط المسار ← [الشاشة، هل المعرّف رقمي]. الترتيب مهم. */
@@ -25,6 +25,9 @@ final class PushTarget
         '#^store/(\d+)$#' => ['store', true],
         '#^customer/coupons$#' => ['coupons', null],
         '#^customer/points$#' => ['points', null],
+        '#^customer/cart$#' => ['cart', null],
+        '#^customer/invite$#' => ['referrals', null],
+        '#^customer/gift-cards$#' => ['gift_cards', null],
         '#^seller/wallet$#' => ['seller_wallet', null],
         '#^seller/coupons/(\d+)$#' => ['seller_coupon', true],
         '#^seller/products(?:/.*)?$#' => ['seller_products', null],

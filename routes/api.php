@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\CouponWalletController;
 use App\Http\Controllers\Api\DailyDealController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HomeShowcaseController;
 use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\NotificationController;
@@ -40,10 +41,12 @@ use App\Http\Controllers\Api\ProductQuestionController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicStoreController;
 use App\Http\Controllers\Api\PushDeviceController;
+use App\Http\Controllers\Api\ReferralController;
 use App\Http\Controllers\Api\ReturnController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\Seller\ApplicationController as SellerApplicationController;
+use App\Http\Controllers\Api\Seller\CouponController as SellerCouponApiController;
 use App\Http\Controllers\Api\Seller\DailyDealController as SellerDailyDealController;
 use App\Http\Controllers\Api\Seller\DashboardController as SellerDashboardController;
 use App\Http\Controllers\Api\Seller\IdentityDocumentController;
@@ -59,9 +62,11 @@ use App\Http\Controllers\Api\Seller\StoryController as SellerStoryController;
 use App\Http\Controllers\Api\Seller\SupportController;
 use App\Http\Controllers\Api\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\Api\SellerReviewController;
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreFollowController;
 use App\Http\Controllers\Api\StoriesController;
+use App\Http\Controllers\Api\TwoFactorController as ApiTwoFactorController;
 use App\Http\Controllers\ChatAssistantController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReverseGeocodeController;
@@ -73,6 +78,10 @@ Route::prefix('v1')->group(function () {
     // ===== عامة - بدون تسجيل دخول =====
     Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:otp');
     Route::post('/auth/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:verify');
+    Route::get('/auth/social/providers', [SocialAuthController::class, 'providers']);
+    Route::post('/auth/social/{provider}', [SocialAuthController::class, 'login'])
+        ->whereIn('provider', ['google', 'facebook'])->middleware('throttle:login');
+    Route::post('/auth/two-factor', [ApiTwoFactorController::class, 'store'])->middleware('throttle:verify');
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     Route::post('/auth/forgot-password', [AuthController::class, 'requestReset'])->middleware('throttle:otp');
@@ -168,6 +177,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/loyalty', [LoyaltyController::class, 'show']);
             Route::get('/loyalty/transactions', [LoyaltyController::class, 'transactions']);
             Route::post('/loyalty/convert', [LoyaltyController::class, 'convert'])->middleware('throttle:10,1');
+            // دعوة صديق
+            Route::get('/referrals', [ReferralController::class, 'show']);
+            Route::post('/referrals', [ReferralController::class, 'apply'])->middleware('throttle:10,1');
+            // بطاقات الهدايا
+            Route::get('/gift-cards', [GiftCardController::class, 'index']);
+            Route::get('/gift-cards/{giftCard}', [GiftCardController::class, 'show'])->whereNumber('giftCard');
+            Route::post('/gift-cards/purchase', [GiftCardController::class, 'purchase'])->middleware('throttle:10,1');
+            Route::post('/gift-cards/redeem', [GiftCardController::class, 'redeem'])->middleware('throttle:10,1');
         });
 
         // إرجاع المنتجات (للزبائن فقط)
@@ -256,6 +273,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/stories', [SellerStoryController::class, 'index']);
         Route::post('/stories', [SellerStoryController::class, 'store']);
         Route::delete('/stories/{story}', [SellerStoryController::class, 'destroy']);
+        Route::get('/coupons', [SellerCouponApiController::class, 'index']);
+        Route::post('/coupons', [SellerCouponApiController::class, 'store']);
+        Route::get('/coupons/{campaign}', [SellerCouponApiController::class, 'show'])->whereNumber('campaign');
+        Route::put('/coupons/{campaign}', [SellerCouponApiController::class, 'update'])->whereNumber('campaign');
+        Route::post('/coupons/{campaign}/toggle', [SellerCouponApiController::class, 'toggle'])->whereNumber('campaign');
+        Route::delete('/coupons/{campaign}', [SellerCouponApiController::class, 'destroy'])->whereNumber('campaign');
         Route::get('/daily-deals', [SellerDailyDealController::class, 'index']);
         Route::post('/daily-deals', [SellerDailyDealController::class, 'store']);
         Route::put('/daily-deals/{deal}', [SellerDailyDealController::class, 'update']);
@@ -302,7 +325,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // ===== المدير - تحتاج توكن + دور admin =====
-    Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin', 'admin.2fa'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'show']);
         Route::get('/analytics', [AdminDashboardController::class, 'analytics']);
 
@@ -398,7 +421,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/accounting/statements/{statement}/download', [AdminStatementController::class, 'download']);
     });
 
-    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin', 'admin.2fa'])->group(function () {
         Route::put('/admin/orders/{order}', [AdminOrderController::class, 'updateStatus']);
     });
 });

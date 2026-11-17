@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Coupons\StoreCoupons;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\SellerProfile;
-use App\Services\StorefrontAttribution;
 use App\Services\BusinessHoursStatus;
-use App\Http\Resources\ProductResource;
+use App\Services\StorefrontAttribution;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PublicStoreController extends Controller
 {
-    public function __construct(private readonly StorefrontAttribution $attribution)
-    {
-    }
+    public function __construct(private readonly StorefrontAttribution $attribution) {}
 
     public function show(Request $request, SellerProfile $sellerProfile, BusinessHoursStatus $hoursStatus)
     {
@@ -35,8 +34,8 @@ class PublicStoreController extends Controller
                 ? $sellerProfile->followers()->where('user_id', $request->user()->id)->exists()
                 : false,
             'similarProducts' => $this->similarProducts($sellerProfile, $products->getCollection()->first()),
-            'stories' => $sellerProfile->stories()->visible()->latest()->limit(8)->get(),
-            'storeCoupons' => app(\App\Coupons\StoreCoupons::class)->forStore($sellerProfile, $request->user()),
+            'stories' => $sellerProfile->stories()->with('vendor')->visible()->latest()->limit(8)->get(),
+            'storeCoupons' => app(StoreCoupons::class)->forStore($sellerProfile, $request->user()),
         ])->cookie(
             'trendsham_store_visitor',
             $token,
@@ -93,17 +92,28 @@ class PublicStoreController extends Controller
         if ($request->user()) {
             $query->withExists(['favorites as is_favorited' => fn ($favorites) => $favorites->where('user_id', $request->user()->id)]);
         }
-        if (isset($filters['price_min'])) $query->where('price', '>=', (int) round($filters['price_min'] * 100));
-        if (isset($filters['price_max'])) $query->where('price', '<=', (int) round($filters['price_max'] * 100));
-        if (isset($filters['rating_min']) && $filters['rating_min'] > 0) $query->having('reviews_avg_rating', '>=', $filters['rating_min']);
-        if (! empty($filters['in_stock'])) $query->where('stock_quantity', '>', 0);
+        if (isset($filters['price_min'])) {
+            $query->where('price', '>=', (int) round($filters['price_min'] * 100));
+        }
+        if (isset($filters['price_max'])) {
+            $query->where('price', '<=', (int) round($filters['price_max'] * 100));
+        }
+        if (isset($filters['rating_min']) && $filters['rating_min'] > 0) {
+            $query->having('reviews_avg_rating', '>=', $filters['rating_min']);
+        }
+        if (! empty($filters['in_stock'])) {
+            $query->where('stock_quantity', '>', 0);
+        }
 
         return $query->latest();
     }
 
     private function similarProducts(SellerProfile $store, ?Product $anchor)
     {
-        if (! $anchor || ! $anchor->category_id) return collect();
+        if (! $anchor || ! $anchor->category_id) {
+            return collect();
+        }
+
         return Product::publiclyVisible()
             ->where('vendor_id', $store->id)
             ->where('category_id', $anchor->category_id)

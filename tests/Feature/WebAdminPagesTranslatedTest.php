@@ -45,7 +45,7 @@ class WebAdminPagesTranslatedTest extends TestCase
             'accounting.dashboard', 'accounting.sellers', 'assistant-chats.index', 'assistant-faqs.index',
             'assistant-faqs.create', 'categories.index', 'coupon-campaigns.index', 'coupon-campaigns.create',
             'daily-deals.index', 'daily-deals.create', 'dashboard', 'employees.index',
-            'loyalty.index', 'orders.index', 'products.index', 'push-broadcasts.index', 'reports.index',
+            'loyalty.index', 'gift-cards.index', 'orders.index', 'products.index', 'push-broadcasts.index', 'reports.index',
             'seller-coupons.index', 'sellers.index', 'settings.edit', 'shippingCompanies.index',
             'showcase-slots.index', 'showcase-slots.create', 'showcases.index', 'stories.index',
             'support.index', 'withdrawals.index',

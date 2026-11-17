@@ -164,16 +164,7 @@
     @if ($stories->isNotEmpty())
         <section id="stories" class="mb-4">
             <h2 class="h4 mb-3">العروض والقصص الحديثة</h2>
-            <div class="row g-3">
-                @foreach ($stories as $story)
-                    <div class="col-6 col-md-3" id="offer-{{ $story->id }}">
-                        <article class="card h-100 overflow-hidden">
-                            <img src="{{ $story->image_thumb_url }}" alt="{{ $story->caption ?: 'عرض من '.$store->store_name }}" class="w-100" style="aspect-ratio:1;object-fit:cover;">
-                            @if ($story->caption)<div class="card-body small">{{ $story->caption }}</div>@endif
-                        </article>
-                    </div>
-                @endforeach
-            </div>
+            @include('partials.stories', ['stories' => $stories])
         </section>
     @endif
 

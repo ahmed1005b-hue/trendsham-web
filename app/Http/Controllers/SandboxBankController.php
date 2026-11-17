@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\GiftCards\GiftCardService;
+use App\GiftCards\Models\GiftCard;
 use App\Models\CustomerCard;
 use App\Models\Payment;
 use App\Payments\Contracts\WebhookEvent;
@@ -64,6 +66,15 @@ class SandboxBankController extends Controller
                 cardExpYear: (int) now()->addYears(3)->format('Y'),
                 cardHolder: $data['holder_name'] ?: $request->user()->name,
             ));
+        } elseif ($kind === 'gift') {
+            $gift = GiftCard::where('reference', $reference)->where('gateway', 'sandbox')->firstOrFail();
+            $this->payments->handle(new WebhookEvent(
+                reference: $reference,
+                status: $status,
+                txnId: $status === 'paid' ? 'SBX-'.strtoupper(substr(md5($reference), 0, 10)) : null,
+                amount: (float) $gift->amount,
+                raw: ['sandbox' => true, 'card' => $card['last4']],
+            ));
         } else {
             $payment = Payment::where('reference', $reference)->where('gateway', 'sandbox')->firstOrFail();
             $this->payments->handle(new WebhookEvent(
@@ -89,6 +100,14 @@ class SandboxBankController extends Controller
             abort_if($card->status !== 'pending', 410, 'انتهت هذه العملية.');
 
             return [null, route('customer.cards.return', $reference)];
+        }
+
+        if ($kind === 'gift') {
+            $gift = GiftCard::where('reference', $reference)->where('gateway', 'sandbox')->firstOrFail();
+            abort_unless($gift->purchaser_id === $request->user()->id, 403);
+            abort_if($gift->status !== GiftCard::PENDING, 410, 'انتهت هذه العملية.');
+
+            return [GiftCardService::money($gift->amount), route('gift-cards.return', $reference)];
         }
 
         $payment = Payment::where('reference', $reference)->where('gateway', 'sandbox')->with('order')->firstOrFail();

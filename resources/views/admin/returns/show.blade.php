@@ -84,9 +84,13 @@
                     <label class="form-label small mb-1">{{ __('طريقة الاسترداد') }}</label>
                     <select name="method" class="form-select mb-2" required>
                         @foreach (\App\Returns\Models\ReturnRefund::METHOD_LABELS as $method => $methodLabel)
-                            <option value="{{ $method }}" @selected(old('method') === $method)>{{ __($methodLabel) }}</option>
+                            @continue($method === 'gift_balance' && (int) $returnRequest->order->gift_balance_used <= 0)
+                            <option value="{{ $method }}" @selected(old('method', (int) $returnRequest->order->gift_balance_used > 0 ? 'gift_balance' : null) === $method)>{{ __($methodLabel) }}</option>
                         @endforeach
                     </select>
+                    @if ((int) $returnRequest->order->gift_balance_used > 0)
+                        <p class="small text-muted mb-2"><i class="bi bi-gift" aria-hidden="true"></i> {{ __('دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).', ['amount' => number_format($returnRequest->order->gift_balance_used / 100).' ل.س', 'left' => number_format(app(\App\GiftCards\GiftCardService::class)->refundableForOrder($returnRequest->order) / 100).' ل.س']) }}</p>
+                    @endif
                     <label class="form-label small mb-1">{{ __('المرجع') }}</label>
                     <input type="text" name="reference" maxlength="255" class="form-control mb-2" value="{{ old('reference') }}">
                     <label class="form-label small mb-1">{{ __('شحن إضافي (ل.س) — اختياري، حتى :max', ['max' => number_format($returnRequest->order->shipping_fee / 100)]) }}</label>

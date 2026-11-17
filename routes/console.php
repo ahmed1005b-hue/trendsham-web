@@ -1,7 +1,10 @@
 <?php
 
+use App\Auth\TwoFactor\TwoFactorService;
 use App\Models\Showcase;
+use App\Models\User;
 use App\Services\ShowcaseService;
+use App\Services\TwilioWhatsAppService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -11,18 +14,20 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 Artisan::command('test:wa {phone}', function (string $phone) {
-    $ok = app(\App\Services\TwilioWhatsAppService::class)->sendOtp($phone, '123456');
+    $ok = app(TwilioWhatsAppService::class)->sendOtp($phone, '123456');
     $this->info($ok ? 'تم الإرسال' : 'فشل الإرسال، راجع storage/logs/laravel.log');
 })->purpose('اختبار إرسال واتساب');
-  
- Artisan::command('test:twilio', function () {
+
+Artisan::command('test:twilio', function () {
     $c = config('services.twilio');
-    $this->line('SID prefix: ' . substr($c['sid'] ?? '', 0, 2) . ' | length: ' . strlen($c['sid'] ?? ''));
-    $this->line('TOKEN length: ' . strlen($c['token'] ?? ''));
-    $this->line('FROM: ' . ($c['from'] ?? ''));
+    $this->line('SID prefix: '.substr($c['sid'] ?? '', 0, 2).' | length: '.strlen($c['sid'] ?? ''));
+    $this->line('TOKEN length: '.strlen($c['token'] ?? ''));
+    $this->line('FROM: '.($c['from'] ?? ''));
 });
+
+// أقفال المؤقّت (منع التداخل) في الملفات: يعمل المؤقّت حتى لو توقف Redis
+Schedule::useCache('file');
 
 // إنهاء العروض المنتهية تلقائياً
 Schedule::call(function () {
@@ -42,3 +47,23 @@ Schedule::command('loyalty:daily')->dailyAt('02:30');
 Schedule::command('notifications:send-broadcasts')->everyMinute()->withoutOverlapping();
 // المرتجعات: تصعيد الطلبات المتأخرة وإغلاق المنتهية مهلتها
 Schedule::command('returns:daily')->dailyAt('02:45');
+// تذكير السلة المتروكة: كل ساعة نهاراً فقط (لا إزعاج ليلاً)
+Schedule::command('cart:remind-abandoned')->hourly()->between('10:00', '21:00')->withoutOverlapping();
+
+// نسخة احتياطية يومية من قاعدة البيانات (تُحفظ 14 يوماً)
+Schedule::command('db:backup')->dailyAt('03:30')->withoutOverlapping();
+
+// طوارئ: المدير فقد هاتفه ورموز الاسترداد. يُشغَّل على الخادم فقط (يحتاج دخولاً إلى الجهاز نفسه).
+Artisan::command('two-factor:reset {email}', function (string $email) {
+    $user = User::where('email', $email)->first();
+    if (! $user) {
+        $this->error('لا يوجد مستخدم بهذا البريد.');
+
+        return 1;
+    }
+    app(TwoFactorService::class)->disable($user);
+    $user->tokens()->delete();
+    $this->info('أُلغي التحقق بخطوتين. سيُطلب منه إعداده من جديد عند الدخول.');
+
+    return 0;
+})->purpose('إلغاء التحقق بخطوتين لحساب فقد صاحبه هاتفه');

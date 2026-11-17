@@ -68,6 +68,15 @@
                                 @enderror
                             </div>
                         @endif
+                        @if ($giftBalance > 0)
+                            <div class="form-check border rounded p-2 ps-5 mb-3">
+                                <input class="form-check-input" type="checkbox" name="use_gift_balance" value="1" id="tsUseGift" @checked(old('use_gift_balance', true))>
+                                <label class="form-check-label" for="tsUseGift">
+                                    <i class="bi bi-gift" aria-hidden="true"></i> {{ __('ادفع من رصيد الهدايا (:amount)', ['amount' => number_format($giftBalance / 100).' ل.س']) }}
+                                    <span class="d-block small text-muted">يُخصم من الإجمالي عند تأكيد الطلب، والباقي بطريقة الدفع التي اخترتها.</span>
+                                </label>
+                            </div>
+                        @endif
                         <button type="submit" class="btn btn-primary w-100">تأكيد الطلب</button>
                     </form>
                 </div>

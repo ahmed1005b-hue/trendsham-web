@@ -20,9 +20,10 @@ final class NotificationGroups
     /** دور ← مجموعة ← أنواع. نوع ينتهي بـ * = بادئة. */
     public const MAP = [
         'customer' => [
-            'orders' => ['order_created', 'order_status_changed', 'order_cancelled', 'shipment_updated', 'payment_confirmed', 'payment'],
+            'orders' => ['order_created', 'order_status_changed', 'order_cancelled', 'shipment_updated', 'payment_confirmed', 'payment', 'cart_reminder'],
             'messages' => ['new_message', 'staff_message', 'product_question_answer'],
-            'coupons_points' => ['coupon_received', 'loyalty_expiring'],
+            'coupons_points' => ['coupon_received', 'loyalty_expiring', 'referral_*', 'gift_card_*'],
+            'favorites' => ['price_drop'],
             'offers' => ['store_new_offer', 'store_new_product', 'broadcast'],
         ],
         'seller' => [
@@ -35,9 +36,10 @@ final class NotificationGroups
     ];
 
     private const LABELS = [
-        'orders' => ['الطلبات والدفع والشحن', 'تأكيد الطلب، الشحن، التسليم، الدفع'],
+        'orders' => ['الطلبات والدفع والشحن', 'تأكيد الطلب، الشحن، التسليم، الدفع، وتذكير السلة'],
         'messages' => ['الرسائل والردود', 'رسائل المتاجر والدعم وأجوبة أسئلتك'],
         'coupons_points' => ['الكوبونات والنقاط', 'كوبون جديد في محفظتك وتنبيه انتهاء النقاط'],
+        'favorites' => ['المفضلة', 'انخفاض سعر منتج أضفته إلى مفضلتك'],
         'offers' => ['العروض والمنتجات الجديدة', 'من المتاجر التي تتابعها، حتى 3 يومياً ولا شيء ليلاً'],
         'seller_orders' => ['الطلبات الجديدة', 'طلب جديد على منتجات متجرك'],
         'seller_messages' => ['الرسائل والأسئلة', 'رسائل العملاء والدعم وأسئلة المنتجات'],

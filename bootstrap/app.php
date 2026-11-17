@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureSellerHasStore;
+use App\Http\Middleware\EnsureTwoFactorSetup;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ForceUtf8;
 use App\Http\Middleware\SetApiLocale;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'seller.store' => EnsureSellerHasStore::class,
+            'admin.2fa' => EnsureTwoFactorSetup::class,
         ]);
         $middleware->appendToGroup('web', [ForceUtf8::class, SetLocale::class, 'throttle:writes']);
         $middleware->appendToGroup('api', [ForceUtf8::class, SetApiLocale::class, 'throttle:api', 'throttle:writes']);

@@ -18,6 +18,7 @@ use App\Models\ProductQuestion;
 use App\Models\Showcase;
 use App\Models\StaffConversation;
 use App\Models\Story;
+use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\WithdrawalRequest;
 use App\Observers\ProductObserver;
@@ -39,6 +40,7 @@ use App\Policies\StaffConversationPolicy;
 use App\Policies\StoryPolicy;
 use App\Policies\UserAddressPolicy;
 use App\Policies\WithdrawalRequestPolicy;
+use App\Referrals\ReferralCookie;
 use App\Returns\Models\ReturnRequest;
 use App\Showcases\ShowcaseWallet;
 use App\Showcases\WalletBridge;
@@ -74,6 +76,8 @@ class AppServiceProvider extends ServiceProvider
 
         Product::observe(ProductObserver::class);
         Story::observe(StoryObserver::class);
+        // كود «دعوة صديق» المحفوظ من رابط الدعوة يُطبَّق عند إنشاء الحساب
+        User::created(fn (User $user) => ReferralCookie::applyTo($user));
 
         // سياسات الموارد المملوكة للزبون (تسجيل صريح)
         Gate::policy(Order::class, OrderPolicy::class);

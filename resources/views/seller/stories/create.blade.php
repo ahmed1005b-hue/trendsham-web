@@ -39,6 +39,12 @@
                     <label for="f-caption" class="form-label">نص مختصر (اختياري)</label>
                     <input id="f-caption" type="text" name="caption" class="form-control" maxlength="150" placeholder="مثلاً: عرض اليوم فقط!">
                 </div>
+                <div class="mb-3">
+                    <label for="f-link_url" class="form-label">{{ __('رابط الزر داخل الستوري (اختياري)') }}</label>
+                    <input id="f-link_url" type="url" name="link_url" value="{{ old('link_url') }}" class="form-control @error('link_url') is-invalid @enderror" maxlength="500" dir="ltr" placeholder="https://">
+                    <div class="form-text">{{ __('انسخ رابط المنتج أو المتجر أو أي صفحة، وسيظهر للعميل زر «اكتشف الآن» يفتحه.') }}</div>
+                    @error('link_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
                 <button type="submit" class="btn btn-primary w-100" {{ $wallet->balance < $fee ? 'disabled' : '' }}>
                     ادفع {{ number_format($fee / 100) }} ل.س وانشر
                 </button>

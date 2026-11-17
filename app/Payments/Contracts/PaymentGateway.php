@@ -2,6 +2,7 @@
 
 namespace App\Payments\Contracts;
 
+use App\GiftCards\Models\GiftCard;
 use App\Models\CustomerCard;
 use App\Models\Order;
 use App\Models\Payment;
@@ -13,6 +14,9 @@ interface PaymentGateway
 
     /** يبدأ دفع طلب: عادة يعيد رابط صفحة الدفع لدى البنك. */
     public function initiate(Payment $payment, Order $order): InitResult;
+
+    /** يبدأ دفع شراء بطاقة هدية (مرجعها card->reference، والنتيجة تصل كإشعار دفع عادي). */
+    public function initiateGiftCard(GiftCard $card): InitResult;
 
     public function verifyWebhook(Request $request): bool;
 

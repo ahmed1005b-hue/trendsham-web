@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class StoryController extends Controller
 {
-    public function __construct(private readonly ImageUploadService $imageUploadService)
-    {
-    }
+    public function __construct(private readonly ImageUploadService $imageUploadService) {}
 
     public function index()
     {
@@ -25,6 +23,7 @@ class StoryController extends Controller
         $validated = $request->validate([
             'image' => ImageUploadService::validationRules(),
             'caption' => ['nullable', 'string', 'max:150'],
+            'link_url' => Story::linkRules(),
             'duration_hours' => ['required', 'integer', 'min:1', 'max:168'],
         ], ImageUploadService::validationMessages());
 
@@ -38,6 +37,7 @@ class StoryController extends Controller
             'vendor_id' => null, // ستوري منصة - مجاني
             'image' => $path,
             'caption' => $validated['caption'] ?? null,
+            'link_url' => $validated['link_url'] ?? null,
             'amount_paid' => null,
             'expires_at' => now()->addHours((int) $validated['duration_hours']),
         ]);

@@ -17,20 +17,7 @@ class StoriesController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $stories->map(fn (Story $story) => [
-                'id' => $story->id,
-                'image' => asset('storage/'.$story->image),
-                'caption' => $story->caption,
-                'is_from_platform' => $story->isFromPlatform(),
-                'vendor' => $story->vendor ? [
-                    'id' => $story->vendor->id,
-                    'store_name' => $story->vendor->store_name,
-                    'store_logo' => $story->vendor->store_logo
-                        ? asset('storage/'.$story->vendor->store_logo)
-                        : null,
-                ] : null,
-                'expires_at' => $story->expires_at,
-            ]),
+            'data' => $stories->map(fn (Story $story) => $story->toViewerArray()),
         ]);
     }
 }

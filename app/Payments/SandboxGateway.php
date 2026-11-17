@@ -2,6 +2,7 @@
 
 namespace App\Payments;
 
+use App\GiftCards\Models\GiftCard;
 use App\Models\CustomerCard;
 use App\Models\Order;
 use App\Models\Payment;
@@ -40,6 +41,11 @@ class SandboxGateway implements PaymentGateway
         return new InitResult('redirect', route('payments.sandbox.show', ['payment', $payment->reference]));
     }
 
+    public function initiateGiftCard(GiftCard $card): InitResult
+    {
+        return new InitResult('redirect', route('payments.sandbox.show', ['gift', $card->reference]));
+    }
+
     public function verifyWebhook(Request $request): bool
     {
         return false; // النتيجة تُطبَّق مباشرة من صفحة البنك التجريبي، لا webhooks خارجية
@@ -69,7 +75,5 @@ class SandboxGateway implements PaymentGateway
         };
     }
 
-    public function deleteSavedCard(CustomerCard $card): void
-    {
-    }
+    public function deleteSavedCard(CustomerCard $card): void {}
 }

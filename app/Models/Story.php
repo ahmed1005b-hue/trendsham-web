@@ -12,6 +12,7 @@ class Story extends Model
         'vendor_id',
         'image',
         'caption',
+        'link_url',
         'amount_paid',
         'is_active',
         'expires_at',
@@ -45,6 +46,39 @@ class Story extends Model
     protected function imageThumbUrl(): Attribute
     {
         return Attribute::get(fn () => $this->image ? app(ProductThumbnailService::class)->url($this->image) : null);
+    }
+
+    /**
+     * قواعد التحقق لرابط الستوري: اختياري، وبروتوكول http/https فقط حتى لا يُحقن javascript:.
+     *
+     * @return array<int, string>
+     */
+    public static function linkRules(): array
+    {
+        return ['nullable', 'string', 'max:500', 'url:http,https'];
+    }
+
+    /**
+     * شكل الستوري الموحّد لعارض القصص في الموقع والتطبيق.
+     *
+     * @return array{id: int, image: string, thumb: ?string, caption: ?string, link_url: ?string, is_from_platform: bool, vendor: ?array{id: int, store_name: string, store_logo: ?string}, expires_at: mixed}
+     */
+    public function toViewerArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'image' => asset('storage/'.$this->image),
+            'thumb' => $this->image_thumb_url,
+            'caption' => $this->caption,
+            'link_url' => $this->link_url,
+            'is_from_platform' => $this->isFromPlatform(),
+            'vendor' => $this->vendor ? [
+                'id' => $this->vendor->id,
+                'store_name' => $this->vendor->store_name,
+                'store_logo' => $this->vendor->store_logo ? asset('storage/'.$this->vendor->store_logo) : null,
+            ] : null,
+            'expires_at' => $this->expires_at,
+        ];
     }
 
     public function vendor()

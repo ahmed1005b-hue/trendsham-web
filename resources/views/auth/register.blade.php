@@ -12,6 +12,9 @@
             </div>
 
             <div id="alert-box" class="alert d-none py-2 small" role="alert"></div>
+            @if (session('info'))
+                <div class="alert alert-success py-2 small" role="status"><i class="bi bi-gift" aria-hidden="true"></i> {{ session('info') }}</div>
+            @endif
 
             {{-- ============ الخطوة 1: بيانات الحساب ============ --}}
             <form id="details-form">
@@ -107,6 +110,8 @@
             </form>
 
             {{-- ============ الخطوة 2: تأكيد رقم الهاتف ============ --}}
+            <div id="social-register">@include('auth._social_buttons')</div>
+
             <form id="verify-form" class="d-none">
                 <p class="text-muted small text-center mb-3">
                     أرسلنا رمز تحقق مكوّن من 6 أرقام إلى <strong id="verify-phone-display"></strong>
@@ -221,6 +226,7 @@ document.getElementById('details-form').addEventListener('submit', async (e) => 
     document.getElementById('step-subtitle').textContent = @json(__('خطوة أخيرة - أكّد رقم هاتفك'));
     document.getElementById('details-form').classList.add('d-none');
     document.getElementById('verify-form').classList.remove('d-none');
+    document.getElementById('social-register')?.classList.add('d-none');
     document.getElementById('login-link-wrap').classList.add('d-none');
     document.getElementById('verify-code').focus();
     startResendCooldown();
@@ -300,6 +306,7 @@ document.getElementById('edit-details-btn').addEventListener('click', () => {
     hideAlert();
     document.getElementById('verify-form').classList.add('d-none');
     document.getElementById('details-form').classList.remove('d-none');
+    document.getElementById('social-register')?.classList.remove('d-none');
     document.getElementById('login-link-wrap').classList.remove('d-none');
     document.getElementById('step-subtitle').textContent = @json(__('أنشئ حسابك للبدء بالتسوّق أو البيع'));
     codeInput.value = '';

@@ -12,6 +12,7 @@ class ReturnRefund extends Model
     public const METHOD_LABELS = [
         'bank_transfer' => 'حوالة بنكية',
         'cash' => 'نقداً',
+        'gift_balance' => 'رصيد الهدايا', // يُضاف فوراً لرصيد الزبون، بحد ما دفعه به
         'other' => 'أخرى',
     ];
 

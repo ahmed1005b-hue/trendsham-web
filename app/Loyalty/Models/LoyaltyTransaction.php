@@ -15,17 +15,29 @@ class LoyaltyTransaction extends Model
     public const UPDATED_AT = null;
 
     public const EARN = 'earn';
+
     public const RESTORE = 'restore';
+
     public const ADMIN_ADD = 'admin_add';
+
     public const REDEEM_CHECKOUT = 'redeem_checkout';
+
     public const REDEEM_COUPON = 'redeem_coupon';
+
     public const REVERSE_EARN = 'reverse_earn';
+
     public const EXPIRE = 'expire';
+
     public const ADMIN_DEDUCT = 'admin_deduct';
+
     public const DEBT_SETTLE = 'debt_settle';
 
+    public const REFERRAL = 'referral';
+
+    public const REFERRAL_REVERSE = 'referral_reverse';
+
     /** الأنواع التي تنشئ دفعة قابلة للاستهلاك */
-    public const LOT_TYPES = [self::EARN, self::RESTORE, self::ADMIN_ADD];
+    public const LOT_TYPES = [self::EARN, self::RESTORE, self::ADMIN_ADD, self::REFERRAL];
 
     protected $fillable = [
         'user_id', 'type', 'points', 'remaining', 'expires_at', 'expiry_notified_at',
@@ -87,6 +99,8 @@ class LoyaltyTransaction extends Model
             self::EXPIRE => __('انتهاء صلاحية'),
             self::ADMIN_DEDUCT => __('خصم من الإدارة').($this->reason ? ': '.$this->reason : ''),
             self::DEBT_SETTLE => __('سداد نقاط مستحقة من طلب مرتجع'),
+            self::REFERRAL => __('مكافأة دعوة صديق'),
+            self::REFERRAL_REVERSE => __('سحب مكافأة دعوة بسبب إرجاع الطلب'),
             default => $this->type,
         };
     }

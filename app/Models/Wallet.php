@@ -28,6 +28,22 @@ class Wallet extends Model
      * إيداع أو سحب من المحفظة ضمن معاملة محمية بقفل صفوف، لتفادي تضارب
      * لو صارت عدة عمليات على نفس المحفظة بنفس اللحظة.
      */
+    /**
+     * خصم فقط إن كان الرصيد يكفي، والفحص والخصم تحت نفس القفل: طلبان متزامنان
+     * لا يمرّان معاً من فحص الرصيد ثم يُنزلانه تحت الصفر. يعيد null إن لم يكفِ.
+     */
+    public function debitIfAvailable(int $amount, string $reason, array $extra = []): ?WalletTransaction
+    {
+        return DB::transaction(function () use ($amount, $reason, $extra) {
+            $balance = static::whereKey($this->id)->lockForUpdate()->value('balance');
+            if ($balance === null || $balance < $amount) {
+                return null;
+            }
+
+            return $this->applyTransaction('debit', $amount, $reason, $extra);
+        });
+    }
+
     public function applyTransaction(string $type, int $amount, string $reason, array $extra = []): WalletTransaction
     {
         return DB::transaction(function () use ($type, $amount, $reason, $extra) {

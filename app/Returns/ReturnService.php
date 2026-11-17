@@ -2,6 +2,7 @@
 
 namespace App\Returns;
 
+use App\GiftCards\GiftCardService;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SellerProfile;
@@ -364,6 +365,9 @@ class ReturnService
                 'note' => $note,
                 'recorded_by' => $admin->id,
             ]);
+            if ($method === 'gift_balance') {
+                app(GiftCardService::class)->creditForReturn($order, $amount, $refund->id);
+            }
             $r->update(['status' => 'refunded']);
             $this->event($r, $admin->id, 'admin', 'refunded', $note);
         });

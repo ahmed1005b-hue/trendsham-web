@@ -79,6 +79,12 @@
                                 <span>- {{ number_format($order->points_discount / 100) }} ل.س</span>
                             </div>
                         @endif
+                        @if ($order->gift_balance_used > 0)
+                            <div class="d-flex justify-content-between small text-success mt-1">
+                                <span><i class="bi bi-gift" aria-hidden="true"></i> دُفع من رصيد الهدايا</span>
+                                <span>- {{ number_format($order->gift_balance_used / 100) }} ل.س</span>
+                            </div>
+                        @endif
                         @php $earnedPoints = (int) \App\Loyalty\Models\LoyaltyTransaction::where('order_id', $order->id)->where('type', 'earn')->value('points'); @endphp
                         @if ($earnedPoints > 0)
                             <div class="d-flex justify-content-between small mt-1" style="color:#9A7425">

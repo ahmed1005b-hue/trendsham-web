@@ -37,6 +37,7 @@ class CustomerApiAccessTest extends TestCase
         ['GET', 'api/v1/orders/{order}/returnable', 'order', []],
         ['POST', 'api/v1/orders/{order}/returns', 'order', ['lines' => [1 => 1], 'reason' => 'changed_mind']],
         ['GET', 'api/v1/returns/{returnRequest}', 'returnRequest', []],
+        ['GET', 'api/v1/gift-cards/{giftCard}', 'giftCard', []],
         ['POST', 'api/v1/returns/{returnRequest}/withdraw', 'returnRequest', []],
         ['POST', 'api/v1/returns/{returnRequest}/dispute', 'returnRequest', ['note' => 'x']],
         ['POST', 'api/v1/notifications/{notification}/read', 'notification', []],
@@ -74,6 +75,7 @@ class CustomerApiAccessTest extends TestCase
         $this->getJson('/api/v1/orders/'.$a['order']->getRouteKey().'/items')->assertOk();
         $this->getJson('/api/v1/orders/'.$a['order']->getRouteKey().'/returnable')->assertOk();
         $this->getJson('/api/v1/returns/'.$a['returnRequest']->getRouteKey())->assertOk();
+        $this->getJson('/api/v1/gift-cards/'.$a['giftCard']->getRouteKey())->assertOk();
         $this->getJson('/api/v1/returns')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/conversations/'.$a['conversation']->getRouteKey())->assertOk();
         $this->postJson('/api/v1/notifications/'.$a['notification']->getRouteKey().'/read')->assertSuccessful();

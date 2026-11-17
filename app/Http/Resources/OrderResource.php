@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Loyalty\Models\LoyaltyTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,9 +11,14 @@ class OrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         $payment = $this->whenLoaded('payment') ? $this->payment : $this->payment()->first();
-        $paymentStatus = $this->payment_status ?? ($payment?->status ? (in_array($payment->status, ['paid','failed','cancelled','refunded'], true) ? ($payment->status === 'paid' ? 'paid' : ($payment->status === 'refunded' ? 'paid' : $payment->status)) : 'pending') : 'unpaid');
-        if (($payment?->status ?? null) === 'paid') { $paymentStatus = 'paid'; }
-        if (($this->payment_status ?? null) === 'paid') { $paymentStatus = 'paid'; }
+        $paymentStatus = $this->payment_status ?? ($payment?->status ? (in_array($payment->status, ['paid', 'failed', 'cancelled', 'refunded'], true) ? ($payment->status === 'paid' ? 'paid' : ($payment->status === 'refunded' ? 'paid' : $payment->status)) : 'pending') : 'unpaid');
+        if (($payment?->status ?? null) === 'paid') {
+            $paymentStatus = 'paid';
+        }
+        if (($this->payment_status ?? null) === 'paid') {
+            $paymentStatus = 'paid';
+        }
+
         return [
             'id' => $this->id,
             'order_number' => $this->order_number,
@@ -25,7 +31,8 @@ class OrderResource extends JsonResource
             'discount_amount' => $this->discount_amount / 100,
             'points_redeemed' => (int) $this->points_redeemed,   // نقاط الولاء المستخدمة
             'points_discount' => $this->points_discount / 100,
-            'points_earned' => (int) \App\Loyalty\Models\LoyaltyTransaction::where('order_id', $this->id)->where('type', 'earn')->value('points'),
+            'gift_balance_used' => (int) $this->gift_balance_used / 100,
+            'points_earned' => (int) LoyaltyTransaction::where('order_id', $this->id)->where('type', 'earn')->value('points'),
             'total' => $this->total / 100,
             'currency' => 'SYP',
             'shipping_name' => $this->shipping_name,
