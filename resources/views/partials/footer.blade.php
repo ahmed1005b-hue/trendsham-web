@@ -5,11 +5,14 @@
             <div class="col-12 col-lg-4 ts-footer__brand-col">
                 <a href="{{ route('home') }}" class="ts-footer__brand" aria-label="تريندشام">تريند<span>شام</span></a>
                 <p class="small ts-footer__about mb-3">سوق إلكتروني يجمع بائعين من كل المحافظات في مكان واحد.</p>
-                <div class="ts-footer__social" aria-label="تابعنا">
-                    <a href="#" aria-label="إنستغرام"><i class="bi bi-instagram" aria-hidden="true"></i></a>
-                    <a href="#" aria-label="فيسبوك"><i class="bi bi-facebook" aria-hidden="true"></i></a>
-                    <a href="#" aria-label="واتساب"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
-                </div>
+                @php($socialLinks = \App\Models\PlatformSetting::current()->socialLinks())
+                @if ($socialLinks)
+                    <div class="ts-footer__social" aria-label="تابعنا">
+                        @foreach ($socialLinks as $link)
+                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"><i class="bi {{ $link['icon'] }}" aria-hidden="true"></i></a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
             <div class="col-6 col-md-4 col-lg-2">
                 <h6>خدمة العملاء</h6>

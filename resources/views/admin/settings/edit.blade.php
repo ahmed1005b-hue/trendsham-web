@@ -64,6 +64,24 @@
                     @error($field) <div class="text-danger small mb-3">{{ $message }}</div> @enderror
                 @endforeach
 
+                <hr class="my-4">
+
+                <h2 class="h5 mb-3" id="social">حسابات التواصل الاجتماعي</h2>
+                <p class="text-muted small mb-3">
+                    الصق رابط كل حساب كما يظهر في المتصفح. تظهر أيقونته أسفل الموقع فوراً، والخانة الفارغة لا تظهر أيقونتها.
+                </p>
+                @foreach (\App\Models\PlatformSetting::SOCIAL as $field => $meta)
+                    <label class="form-label small mb-1" for="{{ $field }}"><i class="bi {{ $meta['icon'] }}" aria-hidden="true"></i> {{ $meta['label'] }}</label>
+                    <input type="url" name="{{ $field }}" id="{{ $field }}" class="form-control mb-3" dir="ltr"
+                        value="{{ old($field, $setting->{$field}) }}" placeholder="https://www.{{ $meta['host'] }}/trendsham">
+                    @error($field) <div class="text-danger small mb-3">{{ $message }}</div> @enderror
+                @endforeach
+                <label class="form-label small mb-1" for="social_whatsapp"><i class="bi bi-whatsapp" aria-hidden="true"></i> رقم واتساب</label>
+                <input type="tel" name="social_whatsapp" id="social_whatsapp" class="form-control mb-1" dir="ltr"
+                    value="{{ old('social_whatsapp', $setting->social_whatsapp) }}" placeholder="963912345678">
+                <div class="form-text mb-3">مع رمز الدولة. يُفتح منه محادثة واتساب مباشرة.</div>
+                @error('social_whatsapp') <div class="text-danger small mb-3">{{ $message }}</div> @enderror
+
                 <button type="submit" class="btn btn-primary w-100">حفظ</button>
             </form>
         </div>

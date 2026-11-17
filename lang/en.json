@@ -3409,5 +3409,13 @@
     "المبلغ أكبر مما دُفع برصيد الهدايا في هذا الطلب (:amount). استرد الباقي بطريقة أخرى.": "The amount is more than what was paid with gift balance on this order (:amount). Refund the rest another way.",
     "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": ":amount of this order was paid with gift balance. Refunding to it adds to the customer's balance right away (remaining :left).",
     "إنقاص الكمية": "Decrease quantity",
-    "زيادة الكمية": "Increase quantity"
+    "زيادة الكمية": "Increase quantity",
+    "تيك توك": "TikTok",
+    "حسابات التواصل الاجتماعي": "Social media accounts",
+    "الصق رابط كل حساب كما يظهر في المتصفح. تظهر أيقونته أسفل الموقع فوراً، والخانة الفارغة لا تظهر أيقونتها.": "Paste each account link as it appears in the browser. Its icon shows at the bottom of the site right away; an empty field shows no icon.",
+    "رقم واتساب": "WhatsApp number",
+    "مع رمز الدولة. يُفتح منه محادثة واتساب مباشرة.": "With the country code. It opens a WhatsApp chat directly.",
+    "اكتب الرابط كاملاً ويبدأ بـ https://": "Enter the full link starting with https://",
+    "اكتب رقم واتساب مع رمز الدولة، مثل 963912345678.": "Enter the WhatsApp number with the country code, like 963912345678.",
+    "هذا ليس رابط :site.": "This is not a :site link."
 }

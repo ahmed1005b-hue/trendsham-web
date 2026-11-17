@@ -3410,5 +3410,13 @@
     "المبلغ أكبر مما دُفع برصيد الهدايا في هذا الطلب (:amount). استرد الباقي بطريقة أخرى.": "Tutar, bu siparişte hediye bakiyesiyle ödenenden (:amount) fazla. Kalanını başka bir yolla iade et.",
     "دُفع من هذا الطلب :amount برصيد الهدايا. الاسترداد إليه يُضاف فوراً لرصيد الزبون (المتبقي :left).": "Bu siparişin :amount kadarı hediye bakiyesiyle ödendi. Bakiyeye iade, müşterinin bakiyesine hemen eklenir (kalan :left).",
     "إنقاص الكمية": "Miktarı azalt",
-    "زيادة الكمية": "Miktarı artır"
+    "زيادة الكمية": "Miktarı artır",
+    "تيك توك": "TikTok",
+    "حسابات التواصل الاجتماعي": "Sosyal medya hesapları",
+    "الصق رابط كل حساب كما يظهر في المتصفح. تظهر أيقونته أسفل الموقع فوراً، والخانة الفارغة لا تظهر أيقونتها.": "Her hesabın bağlantısını tarayıcıda göründüğü gibi yapıştır. Simgesi sitenin altında hemen görünür; boş alanın simgesi görünmez.",
+    "رقم واتساب": "WhatsApp numarası",
+    "مع رمز الدولة. يُفتح منه محادثة واتساب مباشرة.": "Ülke koduyla. Doğrudan bir WhatsApp sohbeti açar.",
+    "اكتب الرابط كاملاً ويبدأ بـ https://": "Bağlantının tamamını https:// ile başlayarak yaz",
+    "اكتب رقم واتساب مع رمز الدولة، مثل 963912345678.": "WhatsApp numarasını ülke koduyla yaz, örneğin 963912345678.",
+    "هذا ليس رابط :site.": "Bu bir :site bağlantısı değil."
 }
