@@ -36,6 +36,9 @@ class ProductResource extends JsonResource
             'stock_quantity' => $this->stock_quantity,
             'weight_grams' => $this->weight_grams,
             'status' => $this->status,
+            // للبائع صاحب المنتج والمدير فقط: هل وافقت الإدارة، ولماذا رُفض
+            'admin_approved' => $this->when($this->visibleToOwner($request), fn () => $this->admin_approved_at !== null),
+            'rejection_note' => $this->when($this->visibleToOwner($request), fn () => $this->rejection_note),
             'in_stock' => $this->stock_quantity > 0,
             'average_rating' => $this->average_rating,
             'reviews_count' => $this->reviews_count,
@@ -59,5 +62,12 @@ class ProductResource extends JsonResource
         }
 
         return $data;
+    }
+
+    private function visibleToOwner(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user !== null && ($user->role === 'admin' || ($user->role === 'seller' && $user->sellerProfile?->id === $this->vendor_id));
     }
 }

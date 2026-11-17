@@ -232,6 +232,20 @@ class ShippingTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('payment_method');
     }
 
+    public function test_only_the_owner_sees_review_state_and_rejection_reason(): void
+    {
+        $a = $this->tenant('a');
+        $a['product']->update(['status' => 'draft', 'admin_approved_at' => null, 'rejection_note' => 'Blurry photos']);
+
+        $this->actingAs($a['seller'], 'sanctum')->getJson('/api/v1/seller/products')->assertOk()
+            ->assertJsonPath('data.0.rejection_note', 'Blurry photos')
+            ->assertJsonPath('data.0.admin_approved', false);
+        $a['product']->update(['status' => 'active', 'admin_approved_at' => now(), 'rejection_note' => null]);
+        $this->actingAs($this->tenant('b')['customer'], 'sanctum')->getJson('/api/v1/products/'.$a['product']->slug)->assertOk()
+            ->assertJsonMissingPath('data.rejection_note')
+            ->assertJsonMissingPath('data.admin_approved');
+    }
+
     public function test_refusal_only_for_shipped_orders(): void
     {
         $order = $this->tenant('a')['order'];
