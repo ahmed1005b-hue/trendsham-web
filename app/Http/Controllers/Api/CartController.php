@@ -36,7 +36,7 @@ class CartController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id' => ['required', 'exists:products,id,deleted_at,NULL'],
             'variant_id' => ['nullable', 'exists:product_variants,id'],
             'quantity' => ['nullable', 'integer', 'min:1'],
         ]);

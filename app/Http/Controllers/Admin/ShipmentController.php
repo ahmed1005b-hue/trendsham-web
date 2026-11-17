@@ -16,7 +16,7 @@ class ShipmentController extends Controller
         abort_unless($shipment->order_id === $order->id, 404);
 
         $validated = $request->validate([
-            'shipping_company_id' => ['nullable', 'exists:shipping_companies,id'],
+            'shipping_company_id' => ['nullable', 'exists:shipping_companies,id,deleted_at,NULL'],
             'tracking_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:pending,processing,shipped,in_transit,delivered,cancelled'],
         ]);

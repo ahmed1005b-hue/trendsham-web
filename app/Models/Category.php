@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FreesUniqueValuesWhenTrashed;
 use App\Support\AppCache;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
+    use FreesUniqueValuesWhenTrashed, SoftDeletes;
+
+    /** أعمدة فريدة تتحرر عند الحذف المؤقت */
+    public const UNIQUE_ON_TRASH = ['slug'];
+
     protected $fillable = [
         'parent_id',
         'name',

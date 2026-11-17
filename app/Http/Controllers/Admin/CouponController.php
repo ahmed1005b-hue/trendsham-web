@@ -29,7 +29,7 @@ class CouponController extends Controller
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'expires_at' => ['nullable', 'date'],
             'seller_profile_id' => ['nullable', 'integer', 'exists:seller_profiles,id'],
-            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'product_id' => ['nullable', 'integer', 'exists:products,id,deleted_at,NULL'],
         ]);
 
         $sellerId = $validated['seller_profile_id'] ?? null;
@@ -60,12 +60,14 @@ class CouponController extends Controller
     public function toggle(Coupon $coupon)
     {
         $coupon->update(['is_active' => ! $coupon->is_active]);
+
         return back()->with('success', 'تم تحديث حالة الكوبون.');
     }
 
     public function destroy(Coupon $coupon)
     {
         $coupon->delete();
+
         return back()->with('success', 'تم حذف الكوبون.');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductQuestion;
 use App\Models\SellerProfile;
@@ -24,7 +25,7 @@ class ProductQuestionApiTest extends TestCase
         ]);
         $product = Product::create([
             'vendor_id' => $profile->id,
-            'category_id' => \App\Models\Category::create(['name' => 'قسم', 'slug' => 'cat-test'])->id,
+            'category_id' => Category::create(['name' => 'قسم', 'slug' => 'cat-test'])->id,
             'name' => 'منتج اختبار',
             'slug' => 'test-product',
             'sku' => 'SKU-TEST-1',
@@ -150,6 +151,6 @@ class ProductQuestionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('deleted', true);
 
-        $this->assertDatabaseMissing('product_questions', ['id' => $question->id]);
+        $this->assertSoftDeleted('product_questions', ['id' => $question->id]);
     }
 }

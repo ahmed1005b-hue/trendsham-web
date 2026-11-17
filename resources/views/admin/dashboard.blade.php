@@ -73,6 +73,7 @@
             ]],
             ['title' => __('النظام'), 'icon' => 'bi-gear', 'items' => [
                 ['route' => 'admin.settings.edit', 'icon' => 'bi-sliders', 'label' => __('الإعدادات')],
+                ['route' => 'admin.trash.index', 'icon' => 'bi-trash3', 'label' => __('المحذوفات')],
                 ['route' => 'admin.security.two-factor', 'icon' => 'bi-shield-lock', 'label' => __('أمان الحساب')],
             ]],
         ];

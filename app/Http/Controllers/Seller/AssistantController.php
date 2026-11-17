@@ -15,7 +15,7 @@ class AssistantController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'category' => ['nullable', 'string', 'max:100'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id,deleted_at,NULL'],
             'colors' => ['nullable', 'array', 'max:20'],
             'colors.*' => ['nullable', 'string', 'max:40'],
             'sizes' => ['nullable', 'array', 'max:20'],

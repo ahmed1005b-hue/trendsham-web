@@ -19,7 +19,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'parent_id' => ['nullable', 'exists:categories,id'],
+            'parent_id' => ['nullable', 'exists:categories,id,deleted_at,NULL'],
         ]);
 
         $category = Category::create([
@@ -34,7 +34,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'parent_id' => ['nullable', 'exists:categories,id'],
+            'parent_id' => ['nullable', 'exists:categories,id,deleted_at,NULL'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 

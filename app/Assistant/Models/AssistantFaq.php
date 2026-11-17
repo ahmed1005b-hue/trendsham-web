@@ -3,9 +3,12 @@
 namespace App\Assistant\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssistantFaq extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['question', 'keywords', 'answer', 'is_active', 'sort_order'];
 
     protected $casts = ['is_active' => 'boolean', 'sort_order' => 'integer'];

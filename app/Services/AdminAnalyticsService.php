@@ -321,7 +321,7 @@ class AdminAnalyticsService
             'pending_review' => Product::pendingReview()->count(),
             'out_of_stock' => $active->clone()->where('stock_quantity', 0)->count(),
             'low_stock' => $active->clone()->where('stock_quantity', '>', 0)->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count(),
-            'categories' => (int) DB::table('categories')->where('is_active', true)->count(),
+            'categories' => (int) DB::table('categories')->whereNull('deleted_at')->where('is_active', true)->count(),
         ];
     }
 
@@ -381,7 +381,7 @@ class AdminAnalyticsService
         $points = DB::table('loyalty_transactions')->whereBetween('created_at', [$start, $end]);
 
         return [
-            'active_campaigns' => (int) DB::table('coupon_campaigns')->where('status', 'active')->count(),
+            'active_campaigns' => (int) DB::table('coupon_campaigns')->whereNull('deleted_at')->where('status', 'active')->count(),
             'coupon_redemptions' => (int) $redemptions->clone()->count(),
             'coupon_discount' => ((int) $redemptions->clone()->sum(DB::raw('discount_amount + shipping_discount'))) / 100,
             'platform_funded_discount' => ((int) $redemptions->clone()->where('funder', 'platform')->sum(DB::raw('discount_amount + shipping_discount'))) / 100,
@@ -398,7 +398,7 @@ class AdminAnalyticsService
         return [
             'open_seller_tickets' => (int) DB::table('staff_conversations')->where('status', 'open')->count(),
             'escalated_chats' => (int) DB::table('chat_conversations')->where('status', 'escalated')->count(),
-            'unanswered_questions' => (int) DB::table('product_questions')
+            'unanswered_questions' => (int) DB::table('product_questions')->whereNull('deleted_at')
                 ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('product_question_answers')->whereColumn('product_question_answers.product_question_id', 'product_questions.id'))
                 ->count(),
         ];

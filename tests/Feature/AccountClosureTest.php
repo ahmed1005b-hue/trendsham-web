@@ -146,7 +146,7 @@ class AccountClosureTest extends TestCase
         $this->assertNull($user->email);
         $this->assertNull($user->password);
         $this->assertNull($user->city);
-        $this->assertSame(0, $user->addresses()->count());
+        $this->assertSame(0, $user->addresses()->withTrashed()->count());
         $this->assertTrue(app(AccountClosureService::class)->isPurged($user));
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'user_id' => $user->id]); // السجل المحاسبي باقٍ
 

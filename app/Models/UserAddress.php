@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UserAddress extends Model
 {
+    use SoftDeletes;
+
     public const LABELS = ['home' => 'البيت', 'work' => 'العمل', 'other' => 'آخر'];
 
     public const MAX_PER_USER = 3;

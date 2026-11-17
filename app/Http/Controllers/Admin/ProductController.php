@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
+use App\Models\Category;
 use App\Models\Product;
+use App\Services\ProductVariantSync;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -34,7 +36,7 @@ class ProductController extends Controller
     {
         return view('employee.products.edit', [
             'product' => $product,
-            'categories' => \App\Models\Category::active()->orderBy('name')->get(),
+            'categories' => Category::active()->orderBy('name')->get(),
         ]);
     }
 
@@ -43,7 +45,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'category_id' => ['required', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id,deleted_at,NULL'],
             'price' => ['required', 'numeric', 'min:0.01'],
             'compare_at_price' => ['nullable', 'numeric', 'gt:price'],
             'stock_quantity' => ['required', 'integer', 'min:0'],
@@ -61,7 +63,7 @@ class ProductController extends Controller
         ]);
 
         // منتج له ألوان/مقاسات: مخزونه = مجموعها (الكمية تُعدَّل لكل لون/مقاس من البائع)
-        app(\App\Services\ProductVariantSync::class)->syncProductStock($product);
+        app(ProductVariantSync::class)->syncProductStock($product);
 
         return redirect()->route('employee.products.index')->with('success', 'تم تحديث المنتج.');
     }

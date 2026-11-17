@@ -50,7 +50,7 @@ class AssistantAdminTest extends TestCase
         $this->get(route('admin.assistant-faqs.index'))->assertOk()->assertSee('كم مدة التوصيل؟');
 
         $this->delete(route('admin.assistant-faqs.destroy', $faq))->assertRedirect();
-        $this->assertDatabaseCount('assistant_faqs', 0);
+        $this->assertSame(0, AssistantFaq::count());
     }
 
     public function test_faq_requires_question_keywords_and_answer(): void

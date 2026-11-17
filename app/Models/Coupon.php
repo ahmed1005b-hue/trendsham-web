@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FreesUniqueValuesWhenTrashed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
 class Coupon extends Model
 {
+    use FreesUniqueValuesWhenTrashed, SoftDeletes;
+
+    /** أعمدة فريدة تتحرر عند الحذف المؤقت */
+    public const UNIQUE_ON_TRASH = ['code'];
+
     protected $fillable = [
         'seller_profile_id',
         'product_id',
@@ -75,6 +82,7 @@ class Coupon extends Model
             if ($this->product_id !== null && (int) $productId !== (int) $this->product_id) {
                 return false;
             }
+
             return true;
         })->values();
     }
@@ -99,6 +107,7 @@ class Coupon extends Model
         if ($items && $this->eligibleItems($items)->isEmpty()) {
             return false;
         }
+
         return $eligibleSubtotal >= (int) $this->min_order_amount;
     }
 
@@ -111,6 +120,7 @@ class Coupon extends Model
         $discount = $this->type === 'percentage'
             ? (int) round($eligibleSubtotal * $this->value / 100)
             : (int) $this->value;
+
         return min(max($discount, 0), $eligibleSubtotal);
     }
 
@@ -122,6 +132,7 @@ class Coupon extends Model
         if ($this->product_id) {
             return __('كوبون على منتج محدد');
         }
+
         return __('كوبون خاص بمتجر البائع');
     }
 }

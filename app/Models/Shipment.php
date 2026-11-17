@@ -65,7 +65,7 @@ class Shipment extends Model
 
     public function shippingCompany()
     {
-        return $this->belongsTo(ShippingCompany::class);
+        return $this->belongsTo(ShippingCompany::class)->withTrashed();
     }
 
     /** بنود الطلب التي تخص متجر هذا الطرد. */

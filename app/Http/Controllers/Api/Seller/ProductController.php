@@ -208,7 +208,7 @@ class ProductController extends Controller
     private function validateProduct(Request $request, ?int $ignoreProductId = null): array
     {
         return $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id,deleted_at,NULL'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'sku' => ['required', 'string', 'max:100', 'unique:products,sku'.($ignoreProductId ? ",{$ignoreProductId}" : '')],

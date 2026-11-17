@@ -101,7 +101,7 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'category_id' => ['required', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id,deleted_at,NULL'],
             'price' => ['required', 'numeric', 'min:0.01'],
             'compare_at_price' => ['nullable', 'numeric', 'gt:price'],
             'stock_quantity' => ['required', 'integer', 'min:0'],

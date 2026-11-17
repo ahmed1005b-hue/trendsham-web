@@ -121,7 +121,7 @@ class CustomerWebAccessTest extends TestCase
         $this->assertSame('cancelled', $a['order']->fresh()->status);
 
         $this->delete('/customer/questions/'.$a['question']->getRouteKey())->assertRedirect();
-        $this->assertNull($a['question']->fresh());
+        $this->assertSoftDeleted($a['question']);
         $this->delete('/customer/cart/'.$a['cartItem']->getRouteKey())->assertRedirect();
         $this->assertNull($a['cartItem']->fresh());
         $this->delete('/customer/cards/'.$a['card']->getRouteKey())->assertRedirect();

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -105,7 +106,7 @@ class AccountClosureService
         return 'scheduled';
     }
 
-    public function purgeDate(User $user): ?\Illuminate\Support\Carbon
+    public function purgeDate(User $user): ?Carbon
     {
         return $user->deletion_requested_at?->copy()->addDays(self::GRACE_DAYS);
     }
@@ -169,7 +170,7 @@ class AccountClosureService
 
         DB::transaction(function () use ($user) {
             $id = $user->id;
-            $user->addresses()->delete();
+            $user->addresses()->forceDelete();
             $user->cartItems()->delete();
             $user->favorites()->delete();
             $user->followedStores()->detach();

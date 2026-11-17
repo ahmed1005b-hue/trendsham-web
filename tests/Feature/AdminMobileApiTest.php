@@ -88,7 +88,7 @@ class AdminMobileApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.is_active', false);
         $this->getJson('/api/v1/admin/shipping-companies')->assertOk()->assertJsonCount(1, 'data');
         $this->deleteJson("/api/v1/admin/shipping-companies/{$id}")->assertOk();
-        $this->assertDatabaseMissing('shipping_companies', ['id' => $id]);
+        $this->assertSoftDeleted('shipping_companies', ['id' => $id]);
     }
 
     public function test_admin_order_exposes_shipments_and_updates_shipping_and_payment(): void
@@ -145,7 +145,7 @@ class AdminMobileApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.discount_percentage', 30);
         $this->postJson("/api/v1/admin/daily-deals/{$id}/toggle")->assertOk()->assertJsonPath('data.is_active', false);
         $this->deleteJson("/api/v1/admin/daily-deals/{$id}")->assertOk();
-        $this->assertDatabaseMissing('daily_deals', ['id' => $id]);
+        $this->assertSoftDeleted('daily_deals', ['id' => $id]);
 
         // صفحة الويب: كان ربط {daily_deal} بـ $deal معطلاً فيتم التعديل على سجل فارغ
         $webDeal = DailyDeal::create($deal);

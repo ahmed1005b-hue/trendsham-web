@@ -7,6 +7,7 @@ use App\Coupons\Models\CouponCampaignTarget;
 use App\Models\Product;
 use App\Models\SellerProfile;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,7 @@ class SellerCampaignWriter
 
     public static function rules(SellerProfile $seller): array
     {
-        $own = fn () => Rule::exists('products', 'id')->where('vendor_id', $seller->id);
+        $own = fn () => Rule::exists('products', 'id')->where('vendor_id', $seller->id)->withoutTrashed();
 
         return [
             'title' => ['required', 'string', 'max:120'],
@@ -104,7 +105,7 @@ class SellerCampaignWriter
     {
         if ($campaign->isLocked()) {
             $errors = [];
-            $ends = isset($data['ends_at']) ? \Illuminate\Support\Carbon::parse($data['ends_at'])->endOfDay() : null;
+            $ends = isset($data['ends_at']) ? Carbon::parse($data['ends_at'])->endOfDay() : null;
             if ($ends && $campaign->ends_at && $ends->lt($campaign->ends_at)) {
                 $errors['ends_at'] = 'بعد أن جمعه العملاء يمكنك تمديد المدة فقط، لا تقصيرها.';
             }
@@ -161,7 +162,7 @@ class SellerCampaignWriter
             'audience' => $data['audience'],
             'auto_followers' => $data['audience'] === 'collectable' && ! empty($data['auto_followers']),
             'starts_at' => ! empty($data['starts_at']) ? $data['starts_at'] : now(),
-            'ends_at' => \Illuminate\Support\Carbon::parse($data['ends_at'])->endOfDay(),
+            'ends_at' => Carbon::parse($data['ends_at'])->endOfDay(),
             'valid_days' => $data['valid_days'] ?? null,
             'per_customer_limit' => (int) $data['per_customer_limit'],
             'total_limit' => (int) $data['total_limit'],
@@ -180,6 +181,7 @@ class SellerCampaignWriter
 
     /**
      * معاينة لطلب نموذجي: كم الخصم، كم يدفع العميل، كم يصل البائع بعد العمولة (على السعر بعد الخصم).
+     *
      * @return array{discount:int, customer_pays:int, seller_gets:int}
      */
     public static function previewAmounts(string $type, int $value, ?int $maxDiscount, int $sampleTotal, float $commissionRate): array

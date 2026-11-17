@@ -38,7 +38,7 @@ class SellerCouponApiTest extends TestCase
             ->assertCreated()->assertJsonPath('data.status', 'pending_review');
 
         $this->assertSame(2, CouponCampaign::ofSeller($seller->id)->count());
-        $this->assertSame(5_000_000, CouponCampaign::ofSeller($seller->id)->oldest("id")->first()->min_order_amount);
+        $this->assertSame(5_000_000, CouponCampaign::ofSeller($seller->id)->oldest('id')->first()->min_order_amount);
     }
 
     public function test_invalid_values_and_unverified_store_are_rejected(): void
@@ -69,7 +69,7 @@ class SellerCouponApiTest extends TestCase
         $api->deleteJson("/api/v1/seller/coupons/{$other->id}")->assertNotFound();
 
         $api->deleteJson("/api/v1/seller/coupons/{$c->id}")->assertOk();
-        $this->assertModelMissing($c);
+        $this->assertSoftDeleted($c);
         $this->assertModelExists($other);
     }
 

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DailyDeal extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'product_id',
         'discount_percentage',
@@ -37,6 +40,7 @@ class DailyDeal extends Model
     public function isActive(): bool
     {
         $now = Carbon::now();
+
         return $this->is_active &&
             $this->starts_at <= $now &&
             $this->ends_at >= $now &&
@@ -52,6 +56,7 @@ class DailyDeal extends Model
         if ($now > $this->ends_at) {
             return 0;
         }
+
         return $now->diffInSeconds($this->ends_at);
     }
 
@@ -70,6 +75,7 @@ class DailyDeal extends Model
         }
 
         $discount = max(0, min(100, (float) $this->discount_percentage));
+
         return max(0, (int) round($basePrice * (1 - $discount / 100)));
     }
 

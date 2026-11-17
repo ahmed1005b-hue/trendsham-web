@@ -2,10 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FreesUniqueValuesWhenTrashed;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
+    use FreesUniqueValuesWhenTrashed, SoftDeletes;
+
+    /** أعمدة فريدة تتحرر عند الحذف المؤقت */
+    public const UNIQUE_ON_TRASH = ['slug', 'sku'];
+
     protected $fillable = [
         'vendor_id',
         'category_id',
@@ -53,6 +60,25 @@ class Product extends Model
      * يدعم الربط بالـ id أو الـ slug معاً، لأن تطبيق الموبايل
      * يرسل أحياناً الـ id وأحياناً الـ slug حسب الشاشة.
      */
+    /**
+     * عند حذف المنتج: السلة والمفضلة تُمسحان كما كانتا، وعروض اليوم والأسئلة تُخفى معه.
+     * عند استرجاعه: تعود أسئلته وقسمه إن كان القسم محذوفاً.
+     */
+    protected static function booted(): void
+    {
+        static::softDeleted(function (self $product): void {
+            CartItem::where('product_id', $product->id)->delete();
+            Favorite::where('product_id', $product->id)->delete();
+            $product->dailyDeals()->delete();
+            $product->questions()->delete();
+        });
+
+        static::restoring(function (self $product): void {
+            $product->questions()->onlyTrashed()->where('deleted_at', '>=', $product->deleted_at)->restore();
+            Category::onlyTrashed()->whereKey($product->category_id)->first()?->restore();
+        });
+    }
+
     public function resolveRouteBinding($value, $field = null)
     {
         $field = $field ?? (is_numeric($value) && ! str_contains((string) $value, '-') ? 'id' : 'slug');
@@ -252,7 +278,8 @@ class Product extends Model
     public function adjustStock(int $change, string $reason, ?string $note = null): InventoryMovement
     {
         return \DB::transaction(function () use ($change, $reason, $note) {
-            $product = static::whereKey($this->id)->lockForUpdate()->first();
+            // يشمل المنتج المحذوف مؤقتاً: إرجاع طلب قديم يعيد مخزونه ليبقى صحيحاً عند استرجاعه
+            $product = static::withTrashed()->whereKey($this->id)->lockForUpdate()->first();
 
             $newQuantity = max(0, $product->stock_quantity + $change);
             $product->update(['stock_quantity' => $newQuantity]);

@@ -28,7 +28,7 @@ class CampaignWriter
             'min_order_amount' => ['nullable', 'numeric', 'min:0'],
             'scope' => ['required', Rule::in(['all', 'categories', 'stores'])],
             'category_ids' => ['required_if:scope,categories', 'array'],
-            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'category_ids.*' => ['integer', 'exists:categories,id,deleted_at,NULL'],
             'store_ids' => ['required_if:scope,stores', 'array'],
             'store_ids.*' => ['integer', 'exists:seller_profiles,id'],
             'audience' => ['required', Rule::in(['new_customers', 'all_customers', 'specific'])],

@@ -8,10 +8,13 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** تعريف الكوبون: نوعه وقيمته وشروطه ومن يموّله ومن يستهدف. */
 class CouponCampaign extends Model
 {
+    use SoftDeletes;
+
     public const TYPES = ['percentage' => 'نسبة مئوية', 'fixed' => 'مبلغ ثابت', 'free_shipping' => 'شحن مجاني', 'gift' => 'منتج هدية'];
 
     public const AUDIENCES = ['new_customers' => 'العملاء الجدد', 'all_customers' => 'كل العملاء', 'specific' => 'عميل معيّن',

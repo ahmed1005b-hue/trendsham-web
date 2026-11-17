@@ -3499,5 +3499,15 @@
     "إلغاء هذا الطرد": "Bu paketi iptal et",
     "أُلغي طرد هذا المتجر وأُرجعت منتجاته، وبقية الطلب مستمرة.": "Bu mağazanın paketi iptal edildi ve ürünleri geri alındı; siparişin geri kalanı devam ediyor.",
     "طرد :store: :status": ":store paketi: :status",
-    "طرد :store: :status - رقم التتبع: :tracking": ":store paketi: :status - takip numarası: :tracking"
+    "طرد :store: :status - رقم التتبع: :tracking": ":store paketi: :status - takip numarası: :tracking",
+    "المحذوفات": "Silinenler",
+    "المحذوفات - لوحة المدير": "Silinenler - Yönetici paneli",
+    "- المحذوفات": "- Silinenler",
+    "تم الاسترجاع.": "Geri yüklendi.",
+    "المنتج نفسه محذوف. استرجع المنتج أولاً.": "Ürünün kendisi silinmiş. Önce ürünü geri yükle.",
+    "كوبونات قديمة": "Eski kuponlar",
+    "أسئلة المنتجات": "Ürün soruları",
+    "لا يوجد شيء محذوف هنا.": "Burada silinen bir şey yok.",
+    "حُذف": "Silindi",
+    "ما يُحذف هنا يختفي من الموقع والتطبيق، لكنه يبقى محفوظاً مع تقييماته وطلباته. تستطيع إرجاعه بزر «استرجاع».": "Silinenler siteden ve uygulamadan kalkar, ancak yorumları ve siparişleriyle birlikte saklanır. «Geri yükle» ile geri getirebilirsin."
 }

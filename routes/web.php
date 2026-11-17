@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ShowcaseAdminController;
 use App\Http\Controllers\Admin\ShowcaseSlotAdminController;
 use App\Http\Controllers\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
+use App\Http\Controllers\Admin\TrashController as AdminTrashController;
 use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
 use App\Http\Controllers\Api\PaymentController;
@@ -292,6 +293,9 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::post('/shipping-companies', [AdminShippingCompanyController::class, 'store'])->name('shippingCompanies.store');
     Route::post('/shipping-companies/{shippingCompany}/toggle', [AdminShippingCompanyController::class, 'toggle'])->name('shippingCompanies.toggle');
     Route::delete('/shipping-companies/{shippingCompany}', [AdminShippingCompanyController::class, 'destroy'])->name('shippingCompanies.destroy');
+
+    Route::get('/trash', [AdminTrashController::class, 'index'])->name('trash.index');
+    Route::post('/trash/{type}/{id}/restore', [AdminTrashController::class, 'restore'])->whereNumber('id')->name('trash.restore');
 
     Route::put('/orders/{order}/shipments/{shipment}', [AdminShipmentController::class, 'update'])->name('shipments.update');
     Route::post('/orders/{order}/payment/mark-paid', [AdminPaymentController::class, 'markPaid'])->name('payments.markPaid');

@@ -3498,5 +3498,15 @@
     "إلغاء هذا الطرد": "Cancel this parcel",
     "أُلغي طرد هذا المتجر وأُرجعت منتجاته، وبقية الطلب مستمرة.": "This store's parcel was cancelled and its items returned; the rest of the order continues.",
     "طرد :store: :status": ":store parcel: :status",
-    "طرد :store: :status - رقم التتبع: :tracking": ":store parcel: :status - tracking number: :tracking"
+    "طرد :store: :status - رقم التتبع: :tracking": ":store parcel: :status - tracking number: :tracking",
+    "المحذوفات": "Deleted items",
+    "المحذوفات - لوحة المدير": "Deleted items - Admin panel",
+    "- المحذوفات": "- Deleted items",
+    "تم الاسترجاع.": "Restored.",
+    "المنتج نفسه محذوف. استرجع المنتج أولاً.": "The product itself is deleted. Restore the product first.",
+    "كوبونات قديمة": "Old coupons",
+    "أسئلة المنتجات": "Product questions",
+    "لا يوجد شيء محذوف هنا.": "Nothing deleted here.",
+    "حُذف": "Deleted",
+    "ما يُحذف هنا يختفي من الموقع والتطبيق، لكنه يبقى محفوظاً مع تقييماته وطلباته. تستطيع إرجاعه بزر «استرجاع».": "Deleted items disappear from the site and the app, but stay saved with their reviews and orders. You can bring them back with “Restore”."
 }

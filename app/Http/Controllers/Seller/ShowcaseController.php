@@ -71,7 +71,7 @@ class ShowcaseController extends Controller
     public function store(Request $r)
     {
         $data = $r->validate([
-            'slot_id' => 'required|integer|exists:showcase_slots,id',
+            'slot_id' => 'required|integer|exists:showcase_slots,id,deleted_at,NULL',
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date',
             'title' => 'required|string|max:60',

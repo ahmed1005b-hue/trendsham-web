@@ -47,7 +47,7 @@ class DailyDealController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id' => ['required', 'exists:products,id,deleted_at,NULL'],
             'discount_percentage' => ['required', 'numeric', 'min:1', 'max:90'],
             'special_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'starts_at' => ['required', 'date'],
@@ -92,7 +92,7 @@ class DailyDealController extends Controller
         Gate::authorize('manage', $deal);
 
         $validated = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id' => ['required', 'exists:products,id,deleted_at,NULL'],
             'discount_percentage' => ['required', 'numeric', 'min:1', 'max:90'],
             'special_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'starts_at' => ['required', 'date'],

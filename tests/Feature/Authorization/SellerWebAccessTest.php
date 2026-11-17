@@ -248,7 +248,7 @@ class SellerWebAccessTest extends TestCase
         $this->post('/seller/coupons/'.$a['campaign']->id.'/toggle')->assertRedirect();
         $this->assertSame('paused', $a['campaign']->fresh()->status);
         $this->delete('/seller/coupons/'.$a['campaign']->id)->assertRedirect(route('seller.coupons.index'));
-        $this->assertNull($a['campaign']->fresh());
+        $this->assertSoftDeleted($a['campaign']);
 
         $this->get('/seller/daily-deals/'.$a['deal']->id.'/edit')->assertOk();
         $this->put('/seller/daily-deals/'.$a['deal']->id, [
@@ -259,7 +259,7 @@ class SellerWebAccessTest extends TestCase
         $this->post('/seller/daily-deals/'.$a['deal']->id.'/toggle')->assertRedirect();
         $this->assertFalse((bool) $a['deal']->fresh()->is_active);
         $this->delete('/seller/daily-deals/'.$a['deal']->id)->assertRedirect();
-        $this->assertNull($a['deal']->fresh());
+        $this->assertSoftDeleted($a['deal']);
 
         $this->get('/seller/products/'.$a['product']->id.'/edit')->assertOk();
         $this->put('/seller/products/'.$a['product']->id, [
@@ -330,7 +330,7 @@ class SellerWebAccessTest extends TestCase
         $this->assertSame('Renamed', $a['address']->fresh()->city);
         $this->post('/profile/addresses/'.$a['address']->id.'/default')->assertRedirect()->assertSessionHas('success');
         $this->delete('/profile/addresses/'.$a['address']->id)->assertRedirect()->assertSessionHas('success');
-        $this->assertNull($a['address']->fresh());
+        $this->assertSoftDeleted($a['address']);
     }
 
     public function test_daily_deal_store_rejects_another_stores_product_id(): void

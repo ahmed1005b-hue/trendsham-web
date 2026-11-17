@@ -89,7 +89,7 @@ class StoreInsights
 
         $variants = ProductVariant::query()
             ->join('products', 'products.id', '=', 'product_variants.product_id')
-            ->where('products.vendor_id', $vendor->id)->where('products.status', 'active')
+            ->where('products.vendor_id', $vendor->id)->where('products.status', 'active')->whereNull('products.deleted_at')
             ->where('product_variants.is_active', true)
             ->whereColumn('product_variants.stock_quantity', '<=', 'products.low_stock_threshold')
             ->orderBy('product_variants.stock_quantity')->limit(10)
