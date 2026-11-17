@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\PlatformSetting;
+use App\Models\User;
 use App\Support\AppCache;
+use App\Support\RateLimits;
 use Illuminate\Cache\RateLimiting\Unlimited;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -60,6 +62,23 @@ class RateLimitAndCacheTest extends TestCase
         $limit = $writes(Request::create('/anything', 'POST'));
         $this->assertSame(60, $limit->maxAttempts);
         $this->assertInstanceOf(Unlimited::class, $writes(Request::create('/anything', 'GET')));
+    }
+
+    public function test_logged_in_app_users_on_public_pages_do_not_share_one_ip_counter(): void
+    {
+        $first = User::factory()->create(['role' => 'customer'])->createToken('app')->plainTextToken;
+        $second = User::factory()->create(['role' => 'customer'])->createToken('app')->plainTextToken;
+
+        $this->getJson('/api/v1/products', ['Authorization' => "Bearer $first"])->assertHeader('X-RateLimit-Remaining', 239);
+        $this->getJson('/api/v1/products', ['Authorization' => "Bearer $first"])->assertHeader('X-RateLimit-Remaining', 238);
+        $this->app['auth']->forgetGuards();
+        $this->getJson('/api/v1/products', ['Authorization' => "Bearer $second"])->assertHeader('X-RateLimit-Remaining', 239);
+    }
+
+    public function test_guests_share_a_wider_per_ip_limit(): void
+    {
+        $this->getJson('/api/v1/products')
+            ->assertHeader('X-RateLimit-Limit', RateLimits::GUEST_API_PER_MINUTE);
     }
 
     public function test_platform_settings_are_read_from_cache_and_refreshed_after_an_update(): void

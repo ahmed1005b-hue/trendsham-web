@@ -44,7 +44,7 @@ class RateLimits
                 return Limit::none();
             }
 
-            return Limit::perMinute(60)->by('writes:'.($request->user()?->id ?? $request->ip()));
+            return Limit::perMinute(60)->by('writes:'.(self::userId($request) ?? $request->ip()));
         });
 
         RateLimiter::for('api', function (Request $request) {
@@ -52,8 +52,25 @@ class RateLimits
                 return Limit::none(); // إشعارات البنك لها حدّها الخاص على مسارها
             }
 
-            return Limit::perMinute(240)->by('api:'.($request->user()?->id ?? $request->ip()));
+            // العميل المسجّل له عدّاده الخاص حتى في الصفحات العامة (منتجات، أقسام):
+            // شبكات الجوال تجمع آلاف العملاء خلف عنوان IP واحد.
+            if ($userId = self::userId($request)) {
+                return Limit::perMinute(240)->by('api:'.$userId);
+            }
+
+            return Limit::perMinute(self::GUEST_API_PER_MINUTE)->by('api-ip:'.$request->ip());
         });
+    }
+
+    /** الزوار بلا حساب يتشاركون عنوان IP غالباً، فحدّهم أوسع من حد المستخدم الواحد. */
+    public const GUEST_API_PER_MINUTE = 600;
+
+    /** المستخدم من الجلسة أو من رمز التطبيق، حتى قبل أن يمرّ الطلب على auth:sanctum. */
+    private static function userId(Request $request): ?int
+    {
+        $user = $request->user() ?? ($request->bearerToken() ? $request->user('sanctum') : null);
+
+        return $user?->getAuthIdentifier();
     }
 
     /** البريد أو الهاتف المُدخل (بأحرف صغيرة)، أو المستخدم المسجّل، أو IP. */
