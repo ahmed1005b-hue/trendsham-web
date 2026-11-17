@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\Order;
+use App\Models\Shipment;
+use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use Illuminate\Http\Request;
 
@@ -23,7 +25,8 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order)
     {
-        $order->load('items.vendor', 'payment', 'shipment', 'user');
+        app(ParcelService::class)->ensureFor($order);
+        $order->load('items.vendor', 'payment', 'shipments.seller', 'user');
 
         return view('admin.orders.show', [
             'order' => $order,
@@ -56,18 +59,20 @@ class OrderController extends Controller
         return back()->with('success', 'تم تحديث حالة الطلب.');
     }
 
-    /** الزبون رفض استلام الطلب: يُلغى، والمنصة تدفع الشحن وتسجّله ديناً عليه. */
-    public function markRefused(Order $order)
+    /** الزبون رفض استلام طرد: يُلغى الطرد، والمنصة تدفع شحنه وتسجّله ديناً عليه. */
+    public function markRefused(Order $order, Shipment $shipment)
     {
+        abort_unless($shipment->order_id === $order->id, 404);
+
         try {
-            $debt = app(ShippingDebt::class)->recordRefusal($order);
+            $debt = app(ShippingDebt::class)->recordRefusal($shipment);
         } catch (\DomainException $e) {
             return back()->with('error', __($e->getMessage()));
         }
 
         return back()->with('success', $debt > 0
             ? __('سُجّل رفض الاستلام وأُلغي الطلب. أُضيف :fee ديناً على الزبون ومُنع من الدفع عند الاستلام شهراً.', ['fee' => number_format($debt / 100).' ل.س'])
-            : __('سُجّل رفض الاستلام وأُلغي الطلب. الطلب كان مدفوعاً: اخصم أجرة الشحن (:fee) مما تعيده للزبون.', ['fee' => number_format($order->shipping_cost / 100).' ل.س']));
+            : __('سُجّل رفض الاستلام وأُلغي الطلب. الطلب كان مدفوعاً: اخصم أجرة الشحن (:fee) مما تعيده للزبون.', ['fee' => number_format(max($shipment->shipping_cost, $shipment->shipping_fee) / 100).' ل.س']));
     }
 
     public function archive(Order $order)

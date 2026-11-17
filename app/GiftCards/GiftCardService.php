@@ -231,6 +231,18 @@ class GiftCardService
         $this->move($order->user_id, Tx::REFUND, $amount, orderId: $order->id, onceKey: 'return_refund:'.$refundId);
     }
 
+    /**
+     * إلغاء طرد متجر من طلب مدفوع (أو مغطّى برصيد الهدايا): ما دُفع عنه يعود للرصيد. مرة واحدة لكل طرد.
+     * يُستدعى داخل معاملة إلغاء الطرد.
+     */
+    public function creditForCancelledParcel(Order $order, int $amount, int $parcelId): void
+    {
+        if ($amount <= 0 || Tx::where('once_key', 'parcel_refund:'.$parcelId)->exists()) {
+            return;
+        }
+        $this->move($order->user_id, Tx::REFUND, $amount, orderId: $order->id, onceKey: 'parcel_refund:'.$parcelId);
+    }
+
     // ───────────────────────── أدوات ─────────────────────────
 
     public static function normalize(string $code): string

@@ -52,7 +52,13 @@ class DailyDealQuota
     /** أول إلغاء للطلب: تعود قطع العرض المحجوزة إلى كميته (يُستدعى داخل معاملة تغيير الحالة). */
     public function release(Order $order): void
     {
-        $order->items()->whereNotNull('daily_deal_id')->get(['daily_deal_id', 'quantity'])
+        $this->releaseItems($order->items()->whereNotNull('daily_deal_id')->get(['daily_deal_id', 'quantity']));
+    }
+
+    /** تعود قطع «عرض اليوم» لبنود ملغاة (طرد واحد أو الطلب كله). */
+    public function releaseItems(Collection $items): void
+    {
+        $items->whereNotNull('daily_deal_id')
             ->groupBy('daily_deal_id')
             ->each(function ($lines, $dealId) {
                 $deal = DailyDeal::whereKey($dealId)->lockForUpdate()->first();

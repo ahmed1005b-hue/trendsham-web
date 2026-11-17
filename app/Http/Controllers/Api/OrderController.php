@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderItemResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Services\CustomerOrderCanceller;
+use App\Shipping\ParcelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,7 +25,8 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
 
-        $order->load('items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipment.shippingCompany');
+        app(ParcelService::class)->ensureFor($order);
+        $order->load('items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipments.seller', 'shipments.shippingCompany');
 
         return new OrderResource($order);
     }
@@ -43,6 +46,16 @@ class OrderController extends Controller
         abort_unless($order->status === 'pending', 409, $canceller::NOT_CANCELLABLE);
         abort_unless($canceller->cancel($order), 409, $canceller::NOT_CANCELLABLE);
 
-        return new OrderResource($order->fresh(['items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipment.shippingCompany']));
+        return new OrderResource($order->fresh(['items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipments.seller', 'shipments.shippingCompany']));
+    }
+
+    /** إلغاء طرد متجر واحد من الطلب ما دام «قيد المراجعة». */
+    public function cancelParcel(Request $request, Order $order, Shipment $shipment, CustomerOrderCanceller $canceller)
+    {
+        Gate::authorize('cancel', $order);
+        abort_unless($shipment->order_id === $order->id, 404);
+        abort_unless($canceller->cancelParcel($order, $shipment), 409, $canceller::NOT_CANCELLABLE);
+
+        return new OrderResource($order->fresh(['items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipments.seller', 'shipments.shippingCompany']));
     }
 }

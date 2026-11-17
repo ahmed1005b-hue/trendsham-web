@@ -238,7 +238,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
-    Route::post('/orders/{order}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
+    Route::post('/orders/{order}/parcels/{shipment}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
 
     Route::get('/withdrawals', [AdminWithdrawalController::class, 'index'])->name('withdrawals.index');
     Route::post('/withdrawals/{withdrawalRequest}/approve', [AdminWithdrawalController::class, 'approve'])->name('withdrawals.approve');
@@ -350,7 +350,7 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
-    Route::post('/orders/{order}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
+    Route::post('/orders/{order}/parcels/{shipment}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
     Route::post('/orders/{order}/archive', [AdminOrderController::class, 'archive'])->name('orders.archive');
 
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
@@ -492,6 +492,7 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/parcels/{shipment}/cancel', [CustomerOrderController::class, 'cancelParcel'])->name('orders.parcels.cancel');
 
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
     Route::get('/followed-stores', [FollowedStoreController::class, 'index'])->name('followed-stores.index');

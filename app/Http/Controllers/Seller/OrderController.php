@@ -51,11 +51,13 @@ class OrderController extends Controller
         Gate::authorize('viewAsSeller', $order);
 
         $order->load('items.product.primaryImage', 'user');
+        $service = app(SellerOrderService::class);
 
         return view('seller.orders.show', [
             'order' => $order,
             'vendor' => $vendor,
-            'nextStatuses' => app(SellerOrderService::class)->nextStatuses($order),
+            'parcel' => $service->parcelFor($vendor, $order),
+            'nextStatuses' => $service->nextStatuses($order, $vendor),
             'isShared' => ! $order->isSingleVendor(),
         ]);
     }
@@ -64,10 +66,11 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', 'string'],
+            'tracking_number' => ['nullable', 'string', 'max:255'],
         ]);
 
         try {
-            app(SellerOrderService::class)->updateStatus($request->user()->sellerProfile, $order, $validated['status']);
+            app(SellerOrderService::class)->updateStatus($request->user()->sellerProfile, $order, $validated['status'], $validated['tracking_number'] ?? null);
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
         }

@@ -4,13 +4,14 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\MissingValue;
 
 class OrderItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         $productRelation = $this->whenLoaded('product');
-        $product = ($productRelation && ! ($productRelation instanceof \Illuminate\Http\Resources\MissingValue)) ? $productRelation : null;
+        $product = ($productRelation && ! ($productRelation instanceof MissingValue)) ? $productRelation : null;
         $originalUnitPrice = $product ? (int) $product->price : null;
         $unitPrice = (int) $this->unit_price;
         $hasDeal = $originalUnitPrice !== null && $unitPrice < $originalUnitPrice;
@@ -23,6 +24,7 @@ class OrderItemResource extends JsonResource
             'product_id' => $this->product_id,
             'product_name' => $this->product_name,
             'is_gift' => (bool) $this->is_gift,
+            'vendor_id' => $this->vendor_id, // لربط البند بطرد متجره في الطلب
             'vendor_name' => $this->whenLoaded('vendor', fn () => $this->vendor->store_name),
             'order_number' => $this->whenLoaded('order', fn () => $this->order->order_number),
             'order_status' => $this->whenLoaded('order', fn () => $this->order->status),

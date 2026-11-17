@@ -8,7 +8,7 @@ use App\GiftCards\GiftCardService;
 use App\Loyalty\LoyaltyLedger;
 use App\Referrals\ReferralService;
 use App\Returns\Models\ReturnRequest;
-use App\Services\DailyDealQuota;
+use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use Illuminate\Database\Eloquent\Model;
 
@@ -121,8 +121,8 @@ class Order extends Model
      */
     public function settleForStatusChange(string $previousStatus): void
     {
+        // أرباح البائعين وإرجاع الكميات تخص كل طرد وحده (ParcelService)؛ هنا آثار الطلب كاملاً
         if ($this->status === 'delivered' && $previousStatus !== 'delivered') {
-            $this->items->each->settleCommission();
             app(LoyaltyLedger::class)->earnForOrder($this);   // نقاط الولاء (مرة واحدة لكل طلب)
             app(ReferralService::class)->rewardForDeliveredOrder($this); // مكافأة «دعوة صديق»
             app(SellerShippingCharge::class)->charge($this);  // شحن مجاني من كوبون البائع على البائع
@@ -131,9 +131,6 @@ class Order extends Model
         // أول إلغاء من أي حالة: نعكس أرباحاً سُوّيت سابقاً (حتى لو أُرجع الطلب للخلف قبل الإلغاء)
         // ونرجع الكميات للمخزون. reverseSettlement لا يفعل شيئاً لبند لم يُسوَّ.
         if ($this->status === 'cancelled' && $previousStatus !== 'cancelled') {
-            $this->items->each->reverseSettlement();
-            $this->restockItems();
-            app(DailyDealQuota::class)->release($this); // تعود قطع «عرض اليوم» للعرض
             app(CouponRedeemer::class)->reverse($this); // الكوبون يعود لمحفظة العميل
             app(SellerShippingCharge::class)->refund($this);  // تعود أجرة الشحن للبائع إن خُصمت
 
@@ -178,6 +175,8 @@ class Order extends Model
             }
 
             if ($from !== $to) {
+                // كل طرود الطلب المفتوحة تنتقل معه (أرباح كل بائع، إرجاع الكميات)
+                app(ParcelService::class)->cascade($locked, $to);
                 $locked->update(['status' => $to]);
                 $locked->settleForStatusChange($from);
             }
@@ -189,11 +188,12 @@ class Order extends Model
         });
     }
 
-    private function restockItems(): void
+    /** يعيد كميات بنود (طرد ملغى) للمخزون. */
+    public function restock(iterable $items): void
     {
         // نفس ترتيب القفل في الدفع (المنتج ثم اللون/المقاس) حتى لا يتعطل إلغاء ودفع متزامنان.
         // الوحدات التي أعادتها المرتجعات المستلمة رجعت للمخزون سابقاً فلا تُعاد مرتين.
-        foreach ($this->items as $item) {
+        foreach ($items as $item) {
             $quantity = (int) $item->quantity - $item->reversedQuantity();
             if ($quantity <= 0) {
                 continue;

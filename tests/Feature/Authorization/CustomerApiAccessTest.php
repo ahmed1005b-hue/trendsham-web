@@ -34,6 +34,7 @@ class CustomerApiAccessTest extends TestCase
         ['GET', 'api/v1/orders/{order}/items', 'order', []],
         ['GET', 'api/v1/orders/{order}/payment-status', 'order', []],
         ['POST', 'api/v1/orders/{order}/cancel', 'order', []],
+        ['POST', 'api/v1/orders/{order}/parcels/{shipment}/cancel', 'shipment', []],
         ['GET', 'api/v1/orders/{order}/returnable', 'order', []],
         ['POST', 'api/v1/orders/{order}/returns', 'order', ['lines' => [1 => 1], 'reason' => 'changed_mind']],
         ['GET', 'api/v1/returns/{returnRequest}', 'returnRequest', []],

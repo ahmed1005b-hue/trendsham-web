@@ -86,13 +86,14 @@
                         <button class="btn btn-primary">حفظ</button>
                     </form>
                     <p class="text-muted small mt-2 mb-0">تحديد "تم التسليم" يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.</p>
-                    @if ($order->status === 'shipped' && ! $order->refused_at)
-                        <form action="{{ route($employeeMode ? 'employee.orders.refused' : 'admin.orders.refused', $order) }}" method="POST" class="mt-3"
-                            data-confirm="{{ __('الزبون رفض استلام الطلب؟ سيُلغى الطلب وتعود الكميات، وتُسجَّل أجرة الشحن ديناً عليه ويُمنع من الدفع عند الاستلام شهراً.') }}">
+                    @foreach ($order->shipments->filter(fn ($p) => in_array($p->status, ['shipped', 'in_transit'], true) && ! $p->refused_at) as $parcel)
+                        <form action="{{ route($employeeMode ? 'employee.orders.refused' : 'admin.orders.refused', [$order, $parcel]) }}" method="POST" class="mt-3"
+                            data-confirm="{{ __('الزبون رفض استلام الطرد؟ يُلغى الطرد وتعود كمياته، وتُسجَّل أجرة شحنه ديناً عليه ويُمنع من الدفع عند الاستلام شهراً.') }}">
                             @csrf
-                            <button class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-x-octagon" aria-hidden="true"></i> {{ __('الزبون رفض الاستلام') }}</button>
+                            <button class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-x-octagon" aria-hidden="true"></i>
+                                {{ __('الزبون رفض الاستلام') }}@if ($order->shipments->count() > 1) — <span translate="no">{{ $parcel->seller?->store_name }}</span>@endif</button>
                         </form>
-                    @endif
+                    @endforeach
                     @if ($employeeMode && ! $order->archived_at)
                         <form action="{{ route('employee.orders.archive', $order) }}" method="POST" class="mt-3" data-confirm="أرشفة الطلب مع الاحتفاظ بسجله؟">
                             @csrf
@@ -141,10 +142,17 @@
                 @foreach ($order->shipments as $shipment)
                     <div class="card mb-3">
                         <div class="card-body">
-                            <h2 class="h6 mb-3">الشحن</h2>
-                            @if ($shipment->seller)
-                                <p class="small mb-2 text-muted">البائع: {{ $shipment->seller->name }}</p>
-                            @endif
+                            <h2 class="h6 mb-1">{{ __('طرد متجر') }} <span translate="no">{{ $shipment->seller?->store_name }}</span></h2>
+                            <p class="small text-muted mb-3">
+                                <span class="ts-status-label ts-status-{{ $shipment->status }}">{{ __($shipment->statusLabel()) }}</span>
+                                · {{ __('أجرة الشحن') }} {{ number_format($shipment->shipping_fee / 100) }} ل.س
+                                @if ($shipment->refund_amount > 0)
+                                    · {{ __('أُعيد للزبون :amount', ['amount' => number_format($shipment->refund_amount / 100).' ل.س']) }}
+                                @endif
+                                @if ($shipment->refused_at)
+                                    · <span class="text-danger">{{ __('رفض الزبون الاستلام') }}</span>
+                                @endif
+                            </p>
                             <form action="{{ route('admin.shipments.update', [$order, $shipment]) }}" method="POST">
                                 @csrf @method('PUT')
                                 <div class="mb-2">
@@ -161,14 +169,17 @@
                                     <input type="text" name="tracking_number" class="form-control form-control-sm" value="{{ $shipment->tracking_number }}">
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">حالة الشحنة</label>
-                                    <select name="status" class="form-select form-select-sm">
-                                        @foreach (['pending' => 'بانتظار الشحن', 'shipped' => 'تم الشحن', 'in_transit' => 'في الطريق', 'delivered' => 'تم التسليم', 'returned' => 'مرتجع'] as $value => $label)
-                                            <option value="{{ $value }}" @selected($shipment->status === $value)>{{ $label }}</option>
+                                    <label class="form-label small">{{ __('حالة الطرد') }}</label>
+                                    <select name="status" class="form-select form-select-sm" @disabled(! $shipment->isOpen())>
+                                        @foreach (\Illuminate\Support\Arr::except(\App\Models\Shipment::STATUS_LABELS, $shipment->status === 'returned' ? [] : ['returned']) as $value => $label)
+                                            <option value="{{ $value }}" @selected($shipment->status === $value)>{{ __($label) }}</option>
                                         @endforeach
                                     </select>
+                                    @unless ($shipment->isOpen())
+                                        <input type="hidden" name="status" value="{{ $shipment->status }}">
+                                    @endunless
                                 </div>
-                                <button class="btn btn-sm btn-primary w-100">حفظ بيانات الشحن</button>
+                                <button class="btn btn-sm btn-primary w-100">{{ __('حفظ بيانات الطرد') }}</button>
                             </form>
                         </div>
                     </div>

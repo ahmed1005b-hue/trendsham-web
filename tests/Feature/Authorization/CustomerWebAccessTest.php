@@ -35,6 +35,7 @@ class CustomerWebAccessTest extends TestCase
         ['POST', 'customer/conversations/{conversation}/messages', 'conversation', ['body' => 'x']],
         ['GET', 'customer/orders/{order}', 'order', []],
         ['POST', 'customer/orders/{order}/cancel', 'order', []],
+        ['POST', 'customer/orders/{order}/parcels/{shipment}/cancel', 'shipment', []],
         ['POST', 'customer/order-items/{orderItem}/review', 'orderItem', ['rating' => 5]],
         ['GET', 'customer/returns/{returnRequest}', 'returnRequest', []],
         ['POST', 'customer/returns/{returnRequest}/withdraw', 'returnRequest', []],

@@ -81,7 +81,10 @@
             <div class="ts-order-header-card">
                 <h6 class="text-muted small mb-2">رقم الطلب</h6>
                 <h3 class="mb-2 fw-bold">{{ $order->order_number }}</h3>
-                <p class="mb-2"><span class="ts-status-label ts-status-{{ $order->status }}">{{ $order->statusLabel() }}</span></p>
+                <p class="mb-2"><span class="ts-status-label ts-status-{{ $parcel->status }}">{{ __($parcel->statusLabel()) }}</span></p>
+                @if ($isShared)
+                    <p class="small text-muted mb-2">{{ __('في الطلب منتجات من متاجر أخرى؛ أنت تدير طردك فقط.') }}</p>
+                @endif
                 <p class="mb-0 small text-muted">
                     <i class="bi bi-calendar me-1"></i>
                     {{ $order->created_at->format('d M Y, h:i A') }}
@@ -99,22 +102,27 @@
         </div>
         <div class="col-lg-4">
             <div class="ts-order-header-card">
-                <h6 class="text-muted small mb-2">حالة الطلب</h6>
+                <h6 class="text-muted small mb-2">{{ __('حالة طردك') }}</h6>
                 @if ($nextStatuses)
-                    <form action="{{ route('seller.orders.updateStatus', $order) }}" method="POST" class="d-flex gap-2"
-                          data-confirm-when="status=cancelled" data-confirm="إلغاء الطلب نهائي ولا يمكن التراجع عنه، وسيُبلَّغ العميل. متأكد؟">
+                    <form action="{{ route('seller.orders.updateStatus', $order) }}" method="POST"
+                          data-confirm-when="status=cancelled" data-confirm="{{ __('إلغاء طردك نهائي ولا يمكن التراجع عنه، وسيُبلَّغ العميل. متأكد؟') }}">
                         @csrf
-                        <select name="status" class="ts-status-select">
-                            @foreach ($nextStatuses as $key)
-                                <option value="{{ $key }}">{{ App\Models\Order::STATUS_LABELS[$key] }}</option>
-                            @endforeach
-                        </select>
-                        <button class="btn btn-primary btn-sm px-3">تحديث</button>
+                        <div class="d-flex gap-2 mb-2">
+                            <select name="status" class="ts-status-select">
+                                @foreach ($nextStatuses as $key)
+                                    <option value="{{ $key }}">{{ __(App\Models\Shipment::STATUS_LABELS[$key]) }}</option>
+                                @endforeach
+                            </select>
+                            <button class="btn btn-primary btn-sm px-3">تحديث</button>
+                        </div>
+                        <input type="text" name="tracking_number" class="form-control form-control-sm" maxlength="255" dir="ltr"
+                               value="{{ old('tracking_number', $parcel->tracking_number) }}" placeholder="{{ __('رقم التتبع من شركة الشحن (عند الشحن)') }}">
                     </form>
-                @elseif ($isShared)
-                    <p class="small text-muted mb-0">هذا الطلب مشترك مع متاجر أخرى، وتدير الإدارة حالته.</p>
                 @else
-                    <p class="small text-muted mb-0">لا توجد خطوة تالية لهذا الطلب.</p>
+                    <p class="small text-muted mb-0">{{ __('لا توجد خطوة تالية لطردك.') }}</p>
+                @endif
+                @if ($parcel->tracking_number)
+                    <p class="small mt-2 mb-0">{{ __('رقم التتبع:') }} <span dir="ltr">{{ $parcel->tracking_number }}</span></p>
                 @endif
             </div>
         </div>

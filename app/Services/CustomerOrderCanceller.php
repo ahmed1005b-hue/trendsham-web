@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\AppNotification;
 use App\Models\Order;
+use App\Models\Shipment;
+use App\Shipping\ParcelService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,5 +45,30 @@ class CustomerOrderCanceller
         }
 
         return $done;
+    }
+
+    /**
+     * إلغاء طرد متجر واحد ما دام «قيد المراجعة»؛ بقية الطرود تكمل.
+     * إن كان آخر طرد مفتوح فهو إلغاء للطلب كله.
+     *
+     * @return bool false إذا لم يعد الطرد قابلاً للإلغاء
+     */
+    public function cancelParcel(Order $order, Shipment $parcel): bool
+    {
+        if ($order->shipments()->open()->whereKeyNot($parcel->id)->doesntExist()) {
+            return $this->cancel($order);
+        }
+
+        try {
+            app(ParcelService::class)->change($parcel, 'cancelled', function (Shipment $locked) {
+                if ($locked->status !== 'pending') {
+                    throw new \DomainException(self::NOT_CANCELLABLE);
+                }
+            });
+        } catch (\DomainException) {
+            return false;
+        }
+
+        return true;
     }
 }

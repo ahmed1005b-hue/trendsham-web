@@ -216,6 +216,7 @@ Route::prefix('v1')->group(function () {
         // ===== تقييم البائع (نجوم للمتجر وليس للمنتج فقط) =====
         Route::post('/order-items/{orderItem}/seller-review', [SellerReviewController::class, 'store']);
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+        Route::post('/orders/{order}/parcels/{shipment}/cancel', [OrderController::class, 'cancelParcel']);
 
         Route::post('/order-items/{orderItem}/review', [ReviewController::class, 'store']);
         Route::post('/products/{product}/reviews', [ReviewController::class, 'storeForProduct']);

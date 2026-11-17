@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Shipping\ParcelService;
 use Illuminate\Http\Request;
 
+/** المدير يعدّل طرد متجر داخل الطلب: شركة الشحن ورقم التتبع والحالة (الحالة عبر ParcelService). */
 class ShipmentController extends Controller
 {
     public function update(Request $request, Order $order, Shipment $shipment)
@@ -17,28 +18,20 @@ class ShipmentController extends Controller
         $validated = $request->validate([
             'shipping_company_id' => ['nullable', 'exists:shipping_companies,id'],
             'tracking_number' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:pending,shipped,in_transit,delivered,returned'],
+            'status' => ['required', 'in:pending,processing,shipped,in_transit,delivered,cancelled'],
         ]);
-
-        $wasShipped = $shipment->status !== 'pending';
 
         $shipment->update([
-            ...$validated,
-            'shipped_at' => $validated['status'] !== 'pending' && ! $wasShipped ? now() : $shipment->shipped_at,
-            'delivered_at' => $validated['status'] === 'delivered' ? now() : $shipment->delivered_at,
+            'shipping_company_id' => $validated['shipping_company_id'] ?? null,
+            'tracking_number' => $validated['tracking_number'] ?? null,
         ]);
 
-        $statusLabels = ['pending' => 'بانتظار الشحن', 'shipped' => 'تم الشحن', 'in_transit' => 'في الطريق', 'delivered' => 'تم التسليم', 'returned' => 'مرتجع'];
+        try {
+            app(ParcelService::class)->change($shipment, $validated['status']);
+        } catch (\DomainException $e) {
+            return back()->with('error', __($e->getMessage()));
+        }
 
-        AppNotification::send(
-            $order->user_id,
-            'shipment_updated',
-            "تحديث شحن طلبك #{$order->order_number}",
-            'الحالة الجديدة: '.($statusLabels[$validated['status']] ?? $validated['status']).
-                (($validated['tracking_number'] ?? null) ? ' - رقم التتبع: '.$validated['tracking_number'] : ''),
-            route('customer.orders.show', $order)
-        );
-
-        return back()->with('success', 'تم تحديث بيانات الشحن.');
+        return back()->with('success', 'تم تحديث بيانات الطرد.');
     }
 }

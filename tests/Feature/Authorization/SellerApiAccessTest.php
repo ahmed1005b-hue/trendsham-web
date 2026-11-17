@@ -221,11 +221,12 @@ class SellerApiAccessTest extends TestCase
             $this->assertStringNotContainsString($needle, $raw, "response leaks $needle");
         }
 
-        // الطلب المشترك تديره الإدارة: لا يغيّر البائع حالته ولا يُكشف بند B في الرد
+        // الطلب المشترك: البائع يغيّر طرده فقط، ولا يُكشف بند المتجر الآخر في الرد
         $r = $this->putJson('/api/v1/seller/orders/'.$order->id.'/status', ['status' => 'shipped']);
-        $this->assertSame(422, $r->getStatusCode());
-        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertSame(200, $r->getStatusCode());
+        $this->assertSame('processing', $order->shipments()->where('seller_profile_id', $b['store']->id)->value('status'));
         $this->assertStringNotContainsString('BBB-OTHER-STORE-ITEM', $r->getContent());
+        $this->assertStringNotContainsString('73379', $r->getContent());
     }
 
     public function test_positive_controls_owner_can_use_own_resources(): void

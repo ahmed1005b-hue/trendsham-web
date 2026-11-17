@@ -34,13 +34,23 @@ class OrderController extends Controller
             ->paginate(20);
 
         $next = $items->getCollection()->pluck('order')->unique('id')
-            ->mapWithKeys(fn (Order $o) => [$o->id => $this->orders->nextStatuses($o)]);
+            ->mapWithKeys(fn (Order $o) => [$o->id => $this->orders->nextStatuses($o, $vendor)]);
+        // nextStatuses ينشئ طرود الطلبات القديمة إن نقصت: نعيد تحميلها
+        $items->getCollection()->pluck('order')->unique('id')->each->load('shipments');
 
         return response()->json([
-            'data' => $items->getCollection()->map(fn (OrderItem $i) => (new OrderItemResource($i))->resolve($request) + [
-                'order_id' => $i->order_id,
-                'next_statuses' => $next[$i->order_id] ?? [],
-            ])->values(),
+            'data' => $items->getCollection()->map(function (OrderItem $i) use ($request, $next, $vendor) {
+                // البائع يرى حالة طرده هو (جزء الطلب الخاص بمتجره)
+                $parcel = $i->order->shipments->firstWhere('seller_profile_id', $vendor->id);
+
+                return (new OrderItemResource($i))->resolve($request) + [
+                    'order_id' => $i->order_id,
+                    'next_statuses' => $next[$i->order_id] ?? [],
+                    'parcel_status' => $parcel?->status,
+                    'parcel_status_label' => $parcel?->statusLabel(),
+                    'tracking_number' => $parcel?->tracking_number,
+                ];
+            })->values(),
             'meta' => ['current_page' => $items->currentPage(), 'last_page' => $items->lastPage(), 'total' => $items->total()],
         ]);
     }
@@ -56,10 +66,13 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $vendor = $request->user()->sellerProfile;
-        $validated = $request->validate(['status' => ['required', 'string']]);
+        $validated = $request->validate([
+            'status' => ['required', 'string'],
+            'tracking_number' => ['nullable', 'string', 'max:255'],
+        ]);
 
         try {
-            $this->orders->updateStatus($vendor, $order, $validated['status']);
+            $this->orders->updateStatus($vendor, $order, $validated['status'], $validated['tracking_number'] ?? null);
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

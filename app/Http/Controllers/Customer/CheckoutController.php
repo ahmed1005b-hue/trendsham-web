@@ -17,10 +17,10 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Shipment;
 use App\Models\ShippingCenter;
 use App\Notifications\Push\SellerOrderNotifier;
 use App\Services\DailyDealQuota;
+use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use App\Shipping\ShippingQuote;
 use Illuminate\Http\Request;
@@ -191,7 +191,8 @@ class CheckoutController extends Controller
                 // كوبون المحفظة: يُقفل ويُعاد فحصه هنا على السلة الفعلية (الخادم هو المرجع)
                 $redeemer = app(CouponRedeemer::class);
                 $choice = $request->session()->get('checkout_coupon');
-                $shippingCost = app(ShippingQuote::class)->quote($items, $deliveryMethod)['fee'];
+                $shippingQuote = app(ShippingQuote::class)->quote($items, $deliveryMethod);
+                $shippingCost = $shippingQuote['fee'];
                 [$coupon, $couponResult, $dropped] = $redeemer->resolve($request->user(), $choice, $lines, $shippingCost);
                 if ($dropped && is_int($choice)) {
                     // كوبون اختاره العميل ولم يعد صالحاً: لا ننفّذ الطلب بسعر لم يره
@@ -277,7 +278,8 @@ class CheckoutController extends Controller
                     'amount' => $order->total,
                 ]);
 
-                Shipment::create(['order_id' => $order->id, 'status' => 'pending']);
+                // طرد لكل متجر بأجرته (خصم الشحن من الكوبون يُوزَّع على الطرود)
+                app(ParcelService::class)->createForCheckout($order, $shippingQuote['parcels'], $shippingCost - $shippingFee);
                 $request->user()->cartItems()->delete();
                 $request->session()->forget('checkout_coupon');
 

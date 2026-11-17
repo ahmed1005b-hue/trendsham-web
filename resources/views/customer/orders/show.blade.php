@@ -123,7 +123,10 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <h2 class="h6 mb-2">حالة الطلب</h2>
-                        <span class="badge bg-secondary">{{ $statusLabels[$order->status] ?? $order->status }}</span>
+                        <span class="badge bg-secondary">{{ \App\Shipping\ParcelService::isPartiallyShipped($order) ? __('شُحن جزئياً') : ($statusLabels[$order->status] ?? $order->status) }}</span>
+                        @if ($order->shipments->count() > 1)
+                            <p class="small text-muted mt-2 mb-0">{{ __('طلبك من :n متاجر، وكل متجر يرسل طرده وحده. حالة كل طرد بالأسفل.', ['n' => $order->shipments->count()]) }}</p>
+                        @endif
                     </div>
                 </div>
 
@@ -140,17 +143,33 @@
                     </div>
                 @endif
 
-                @php $shipments = $order->shipments()->exists() ? $order->shipments()->with('shippingCompany', 'seller')->get() : ($order->shipment ? collect([$order->shipment->loadMissing('shippingCompany', 'seller')]) : collect()); @endphp
+                @php $shipments = $order->shipments; @endphp
                 @if ($shipments->isNotEmpty())
                     @foreach ($shipments as $shipment)
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h2 class="h6 mb-2">الشحن @if($shipment->seller) - {{ $shipment->seller->store_name }} @endif</h2>
+                                <h2 class="h6 mb-2">{{ $shipments->count() > 1 ? __('طرد متجر') : 'الشحن' }} @if($shipment->seller) - <span translate="no">{{ $shipment->seller->store_name }}</span> @endif</h2>
                                 <p class="small mb-1">
                                     الحالة:
-                                    @php $shipLabels = ['pending' => 'بانتظار الشحن', 'shipped' => 'تم الشحن', 'in_transit' => 'في الطريق', 'delivered' => 'تم التسليم', 'returned' => 'مرتجع']; @endphp
-                                    {{ $shipLabels[$shipment->status] ?? $shipment->status }}
+                                    <span class="ts-status-label ts-status-{{ $shipment->status }}">{{ __($shipment->statusLabel()) }}</span>
                                 </p>
+                                @if ($shipments->count() > 1)
+                                    <ul class="small text-muted mb-1 ps-3">
+                                        @foreach ($order->items->where('vendor_id', $shipment->seller_profile_id) as $parcelItem)
+                                            <li translate="no">{{ $parcelItem->product_name }} × {{ $parcelItem->quantity }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if ($shipment->refund_amount > 0)
+                                    <p class="small text-success mb-1">{{ __('أُعيد لك :amount عن هذا الطرد.', ['amount' => number_format($shipment->refund_amount / 100).' ل.س']) }}</p>
+                                @endif
+                                @if ($shipment->status === 'pending' && $shipments->filter->isOpen()->count() > 1)
+                                    <form action="{{ route('customer.orders.parcels.cancel', [$order, $shipment]) }}" method="POST" class="mb-2"
+                                        data-confirm="{{ __('إلغاء طرد هذا المتجر فقط؟ بقية الطلب تستمر.') }}">
+                                        @csrf
+                                        <button class="btn btn-sm btn-outline-danger">{{ __('إلغاء هذا الطرد') }}</button>
+                                    </form>
+                                @endif
                                 @if ($shipment->shippingCompany)
                                     <p class="small mb-1">شركة الشحن: {{ $shipment->shippingCompany->name }}</p>
                                 @endif

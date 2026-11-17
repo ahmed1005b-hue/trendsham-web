@@ -4,6 +4,7 @@ namespace App\Shipping;
 
 use App\Models\AppNotification;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -16,28 +17,31 @@ class ShippingDebt
     public const COD_BLOCK_DAYS = 30;
 
     /**
-     * يسجّل الرفض مرة واحدة: يلغي الطلب (فتعود الكميات) ويضيف الدين على الزبون.
+     * يسجّل رفض طرد مرة واحدة: يُلغى الطرد (فتعود كمياته ولا يُحسب ثمنه على الزبون)
+     * وتُضاف أجرة شحنه ديناً على الزبون. إن كان الطرد الوحيد في الطلب أُلغي الطلب كله.
      *
      * @return int الدين المضاف (صفر لطلب كان مدفوعاً)
      *
      * @throws \DomainException
      */
-    public function recordRefusal(Order $order): int
+    public function recordRefusal(Shipment $parcel): int
     {
-        $added = DB::transaction(function () use ($order) {
-            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+        $added = DB::transaction(function () use ($parcel) {
+            $order = Order::whereKey($parcel->order_id)->lockForUpdate()->firstOrFail();
+            $locked = Shipment::whereKey($parcel->id)->lockForUpdate()->firstOrFail();
             if ($locked->refused_at) {
-                throw new \DomainException('سُجّل رفض هذا الطلب من قبل.');
+                throw new \DomainException('سُجّل رفض هذا الطرد من قبل.');
             }
-            if ($locked->status !== 'shipped') {
-                throw new \DomainException('يُسجَّل رفض الاستلام فقط لطلب حالته «تم الشحن».');
+            if (! in_array($locked->status, ['shipped', 'in_transit'], true)) {
+                throw new \DomainException('يُسجَّل رفض الاستلام فقط لطرد حالته «تم الشحن».');
             }
 
             $locked->update(['refused_at' => now()]);
-            $locked->changeStatus('cancelled');
+            $order->update(['refused_at' => $order->refused_at ?? now()]);
+            $debt = $order->payment_status === 'paid' ? 0 : (int) max($locked->shipping_cost, $locked->shipping_fee);
+            app(ParcelService::class)->change($locked, 'cancelled');
 
-            $user = User::whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
-            $debt = $locked->payment_status === 'paid' ? 0 : (int) $locked->shipping_cost;
+            $user = User::whereKey($order->user_id)->lockForUpdate()->firstOrFail();
             $until = now()->addDays(self::COD_BLOCK_DAYS);
             $user->forceFill([
                 'shipping_debt' => (int) $user->shipping_debt + $debt,
@@ -47,7 +51,7 @@ class ShippingDebt
             return $debt;
         });
 
-        $order->refresh();
+        $order = $parcel->order()->first();
         AppNotification::send($order->user_id, 'order_refused', 'سُجّل رفض استلام طلبك',
             $added > 0
                 ? 'رفضت استلام الطلب '.$order->order_number.'. أجرة الشحن ('.number_format($added / 100).' ل.س) ستُضاف إلى طلبك القادم، ولا يمكنك الدفع عند الاستلام لمدة شهر.'

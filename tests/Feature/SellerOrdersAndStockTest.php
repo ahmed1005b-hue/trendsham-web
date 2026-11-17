@@ -66,15 +66,19 @@ class SellerOrdersAndStockTest extends TestCase
 
     // ------------------------------------------------------------ حالة الطلب من البائع
 
-    public function test_seller_cannot_change_status_of_order_shared_with_another_seller(): void
+    public function test_seller_changes_only_his_parcel_in_an_order_shared_with_another_seller(): void
     {
         [$userA, $vendorA] = $this->seller();
         [, $vendorB] = $this->seller();
         $order = $this->order(User::factory()->create(), [[$this->product($vendorA), 1, null], [$this->product($vendorB), 1, null]]);
 
-        $this->actingAs($userA)->post(route('seller.orders.updateStatus', $order), ['status' => 'shipped']);
+        $this->actingAs($userA)->post(route('seller.orders.updateStatus', $order), ['status' => 'shipped', 'tracking_number' => 'KR-1']);
 
-        $this->assertSame('pending', $order->fresh()->status, 'بائع واحد لا يغيّر حالة طلب فيه منتجات بائعين آخرين');
+        $parcels = $order->shipments()->get()->keyBy('seller_profile_id');
+        $this->assertSame('shipped', $parcels[$vendorA->id]->status);
+        $this->assertSame('KR-1', $parcels[$vendorA->id]->tracking_number);
+        $this->assertSame('pending', $parcels[$vendorB->id]->status, 'طرد المتجر الآخر لا يتغيّر');
+        $this->assertSame('shipped', $order->fresh()->status, 'الطلب «شُحن جزئياً»');
     }
 
     public function test_seller_cannot_mark_order_as_paid(): void
@@ -137,7 +141,8 @@ class SellerOrdersAndStockTest extends TestCase
         $rows = collect($this->actingAs($user, 'sanctum')->getJson('/api/v1/seller/orders')->assertOk()->json('data'));
 
         $this->assertSame([$mine->id], $rows->pluck('product_id')->all());
-        $this->assertSame([], $rows->first()['next_statuses'], 'الطلب المشترك تديره الإدارة');
+        $this->assertSame(['processing', 'shipped', 'delivered', 'cancelled'], $rows->first()['next_statuses'], 'البائع يدير طرده في الطلب المشترك');
+        $this->assertSame('pending', $rows->first()['parcel_status']);
     }
 
     public function test_api_seller_can_update_status_of_his_order(): void
@@ -284,14 +289,16 @@ class SellerOrdersAndStockTest extends TestCase
         $this->assertSame(3, $variant->fresh()->stock_quantity);
     }
 
-    public function test_api_seller_gets_422_with_message_for_shared_order(): void
+    public function test_api_seller_updates_his_parcel_in_a_shared_order(): void
     {
         [$user, $vendor] = $this->seller();
         [, $other] = $this->seller();
         $order = $this->order(User::factory()->create(), [[$this->product($vendor), 1, null], [$this->product($other), 1, null]]);
 
-        $this->actingAs($user, 'sanctum')->putJson("/api/v1/seller/orders/{$order->id}/status", ['status' => 'shipped'])
-            ->assertStatus(422)->assertJsonPath('message', 'هذا الطلب مشترك مع متاجر أخرى، وتدير الإدارة حالته.');
+        $this->actingAs($user, 'sanctum')->putJson("/api/v1/seller/orders/{$order->id}/status", ['status' => 'shipped'])->assertOk();
+
+        $this->assertSame('shipped', $order->shipments()->where('seller_profile_id', $vendor->id)->value('status'));
+        $this->assertSame('pending', $order->shipments()->where('seller_profile_id', $other->id)->value('status'));
     }
 
     public function test_api_seller_without_store_gets_403_not_500(): void

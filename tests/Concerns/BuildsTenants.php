@@ -19,6 +19,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductQuestion;
 use App\Models\SellerProfile;
+use App\Models\Shipment;
 use App\Models\Showcase;
 use App\Models\ShowcaseSlot;
 use App\Models\StaffConversation;
@@ -90,6 +91,9 @@ trait BuildsTenants
             'order_id' => $order->id, 'product_id' => $product->id, 'vendor_id' => $store->id,
             'product_name' => $product->name, 'unit_price' => 10000, 'quantity' => 1, 'subtotal' => 10000,
         ]);
+
+        // طرد المتجر في الطلب (جزء الطلب الخاص بمتجره)
+        $shipment = Shipment::create(['order_id' => $order->id, 'seller_profile_id' => $store->id, 'status' => 'pending']);
 
         // البند مُسوّى ضمن مهلة الإرجاع ليكون قابلاً للإرجاع في مصفوفات الوصول.
         $orderItem->update(['commission_settled_at' => now()]);
@@ -186,7 +190,7 @@ trait BuildsTenants
         return compact(
             'customer', 'seller', 'store', 'product', 'image', 'cartItem', 'order', 'orderItem', 'address', 'card',
             'payment', 'notification', 'conversation', 'question', 'supportConversation', 'deal', 'story',
-            'paymentMethod', 'showcase', 'campaign', 'withdrawal', 'returnRequest', 'giftCard',
+            'paymentMethod', 'showcase', 'campaign', 'withdrawal', 'returnRequest', 'giftCard', 'shipment',
         );
     }
 

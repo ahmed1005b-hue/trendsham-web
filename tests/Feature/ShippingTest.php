@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Models\ShippingCenter;
 use App\Models\User;
+use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\BuildsTenants;
@@ -99,7 +100,7 @@ class ShippingTest extends TestCase
         $refused = $this->lastOrder($customer);
         $refused->changeStatus('shipped');
 
-        $added = app(ShippingDebt::class)->recordRefusal($refused);
+        $added = app(ShippingDebt::class)->recordRefusal($refused->shipments()->firstOrFail());
 
         $this->assertSame(1500000, $added);
         $this->assertSame('cancelled', $refused->fresh()->status);
@@ -130,7 +131,7 @@ class ShippingTest extends TestCase
     private function expectRefusalTwiceFails(Order $order): void
     {
         try {
-            app(ShippingDebt::class)->recordRefusal($order);
+            app(ShippingDebt::class)->recordRefusal($order->shipments()->firstOrFail());
             $this->fail('a refusal must be recorded once');
         } catch (\DomainException) {
             $this->assertSame(1500000, $order->user->fresh()->shipping_debt);
@@ -146,12 +147,12 @@ class ShippingTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($admin)->get(route('admin.orders.show', $order))->assertOk()->assertSee('الزبون رفض الاستلام');
-        $this->actingAs($admin)->post(route('admin.orders.refused', $order))->assertSessionHas('success');
+        $this->actingAs($admin)->post(route('admin.orders.refused', [$order, $order->shipments()->firstOrFail()]))->assertSessionHas('success');
 
         $this->assertSame('cancelled', $order->fresh()->status);
         $this->assertSame(1500000, $order->user->fresh()->shipping_debt);
-        $this->actingAs($admin)->post(route('admin.orders.refused', $order))->assertSessionHas('error');
-        $this->actingAs($this->tenant('b')['customer'])->post(route('admin.orders.refused', $order))->assertForbidden();
+        $this->actingAs($admin)->post(route('admin.orders.refused', [$order, $order->shipments()->firstOrFail()]))->assertSessionHas('error');
+        $this->actingAs($this->tenant('b')['customer'])->post(route('admin.orders.refused', [$order, $order->shipments()->firstOrFail()]))->assertForbidden();
     }
 
     public function test_admin_sets_shipping_fees_in_lira(): void
@@ -252,6 +253,6 @@ class ShippingTest extends TestCase
         $order->update(['status' => 'processing']);
 
         $this->expectException(\DomainException::class);
-        app(ShippingDebt::class)->recordRefusal($order);
+        app(ShippingDebt::class)->recordRefusal(app(ParcelService::class)->ensureFor($order)->first());
     }
 }

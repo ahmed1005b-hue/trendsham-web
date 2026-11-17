@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Returns\ReturnService;
 use App\Services\CustomerOrderCanceller;
+use App\Shipping\ParcelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,7 +24,8 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
 
-        $order->load('items.review', 'items.product', 'payment', 'shipment.shippingCompany');
+        app(ParcelService::class)->ensureFor($order);
+        $order->load('items.review', 'items.product', 'payment', 'shipments.seller', 'shipments.shippingCompany');
 
         $canRequestReturn = $order->items->contains(fn ($item) => $returns->returnableQuantity($item) > 0);
 
@@ -36,5 +39,15 @@ class OrderController extends Controller
         abort_unless($canceller->cancel($order), 409, $canceller::NOT_CANCELLABLE);
 
         return back()->with('success', 'تم إلغاء الطلب وإرجاع المنتجات للمخزون.');
+    }
+
+    /** إلغاء طرد متجر واحد من الطلب ما دام «قيد المراجعة». */
+    public function cancelParcel(Order $order, Shipment $shipment, CustomerOrderCanceller $canceller)
+    {
+        Gate::authorize('cancel', $order);
+        abort_unless($shipment->order_id === $order->id, 404);
+        abort_unless($canceller->cancelParcel($order, $shipment), 409, $canceller::NOT_CANCELLABLE);
+
+        return back()->with('success', __('أُلغي طرد هذا المتجر وأُرجعت منتجاته، وبقية الطلب مستمرة.'));
     }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\SellerProfile;
+use App\Models\Shipment;
+use App\Shipping\ParcelService;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -12,13 +13,13 @@ use Illuminate\Database\Eloquent\Builder;
  *  - يرى فقط الطلبات التي فيها منتجاته.
  *  - يغيّر الحالة للأمام فقط: قيد التجهيز ← تم الشحن ← تم التسليم.
  *  - يلغي فقط قبل الشحن. لا يضع "مدفوع" (يحدده الدفع/الإدارة).
- *  - الطلب المشترك مع متاجر أخرى تديره الإدارة.
+ *  - كل بائع يدير طرده فقط داخل الطلب المشترك مع متاجر أخرى.
  */
 class SellerOrderService
 {
     public const ALLOWED = ['processing', 'shipped', 'delivered', 'cancelled'];
 
-    private const RANK = ['pending' => 0, 'paid' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
+    private const RANK = ParcelService::RANK;
 
     public function query(SellerProfile $vendor): Builder
     {
@@ -30,14 +31,22 @@ class SellerOrderService
         return $order->items()->where('vendor_id', $vendor->id)->exists();
     }
 
-    /** الحالات التي يستطيع البائع نقل الطلب إليها الآن (لعرضها في القائمة). */
-    public function nextStatuses(Order $order): array
+    /** طرد البائع في هذا الطلب (جزء الطلب الخاص بمتجره). */
+    public function parcelFor(SellerProfile $vendor, Order $order): Shipment
     {
-        if (! $order->isSingleVendor()) {
+        return app(ParcelService::class)->ensureFor($order)->get($vendor->id)
+            ?? abort(403);
+    }
+
+    /** الحالات التي يستطيع البائع نقل طرده إليها الآن (لعرضها في القائمة). */
+    public function nextStatuses(Order $order, SellerProfile $vendor): array
+    {
+        $parcel = app(ParcelService::class)->ensureFor($order)->get($vendor->id);
+        if (! $parcel) {
             return [];
         }
 
-        return array_values(array_filter(self::ALLOWED, fn ($to) => $this->transitionAllowed($order->status, $to)));
+        return array_values(array_filter(self::ALLOWED, fn ($to) => $this->transitionAllowed($parcel->status, $to)));
     }
 
     private function transitionAllowed(string $from, string $to): bool
@@ -49,34 +58,32 @@ class SellerOrderService
         };
     }
 
-    /** @throws \DomainException برسالة عربية تُعرض للبائع */
-    public function updateStatus(SellerProfile $vendor, Order $order, string $to): Order
+    /**
+     * يغيّر البائع حالة طرده فقط؛ حالة الطلب الكاملة تُحسب من كل الطرود.
+     *
+     * @throws \DomainException برسالة عربية تُعرض للبائع
+     */
+    public function updateStatus(SellerProfile $vendor, Order $order, string $to, ?string $trackingNumber = null): Order
     {
         abort_unless($this->owns($vendor, $order), 403);
 
         if (! in_array($to, self::ALLOWED, true)) {
             throw new \DomainException('لا يمكن للبائع وضع هذه الحالة.');
         }
-        if (! $order->isSingleVendor()) {
-            throw new \DomainException('هذا الطلب مشترك مع متاجر أخرى، وتدير الإدارة حالته.');
+
+        $parcel = $this->parcelFor($vendor, $order);
+        if ($trackingNumber !== null && trim($trackingNumber) !== '') {
+            $parcel->update(['tracking_number' => trim($trackingNumber)]);
         }
 
-        // الانتقال يُفحص على الحالة المقفولة: إن غيّرتها الإدارة لحظتها (مثلاً شحنت الطلب) يُرفض إلغاء البائع
-        $order->changeStatus($to, function (Order $locked) use ($to) {
+        // الانتقال يُفحص على الحالة المقفولة: إن غيّرتها الإدارة لحظتها (مثلاً شحنت الطرد) يُرفض إلغاء البائع
+        app(ParcelService::class)->change($parcel, $to, function (Shipment $locked) use ($to) {
             $from = $locked->status;
             if (! $this->transitionAllowed($from, $to)) {
-                throw new \DomainException(__('لا يمكن نقل الطلب من ":from" إلى ":to".', ['from' => __(Order::STATUS_LABELS[$from] ?? $from), 'to' => __(Order::STATUS_LABELS[$to] ?? $to)]));
+                throw new \DomainException(__('لا يمكن نقل الطلب من ":from" إلى ":to".', ['from' => __(Shipment::STATUS_LABELS[$from] ?? $from), 'to' => __(Shipment::STATUS_LABELS[$to] ?? $to)]));
             }
         });
 
-        AppNotification::send(
-            $order->user_id,
-            'order_status_changed',
-            "تحديث حالة طلب رقم {$order->order_number}",
-            'حالة طلبك أصبحت: '.(Order::STATUS_LABELS[$to] ?? $to),
-            route('customer.orders.show', $order)
-        );
-
-        return $order;
+        return $order->refresh();
     }
 }
