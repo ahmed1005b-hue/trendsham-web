@@ -27,6 +27,7 @@ class ProductController extends Controller
 
         return view('products.show', [
             'product' => $product,
+            'vendorStories' => $product->vendor->stories()->with('vendor')->visible()->latest()->limit(8)->get(),
             'storeCoupons' => app(StoreCoupons::class)->forProduct($product, $request->user()),
             ...$suggestions,
         ]);

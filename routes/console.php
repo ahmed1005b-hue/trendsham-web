@@ -53,6 +53,9 @@ Schedule::command('cart:remind-abandoned')->hourly()->between('10:00', '21:00')-
 // نسخة احتياطية يومية من قاعدة البيانات (تُحفظ 14 يوماً)
 Schedule::command('db:backup')->dailyAt('03:30')->withoutOverlapping();
 
+// تذكير أسبوعي للمتاجر التي عليها دين للمنصة (عمولات طلبات حصّلت ثمنها بنفسها)
+Schedule::command('sellers:remind-debts')->weeklyOn(6, '11:00');
+
 // طوارئ: المدير فقد هاتفه ورموز الاسترداد. يُشغَّل على الخادم فقط (يحتاج دخولاً إلى الجهاز نفسه).
 Artisan::command('two-factor:reset {email}', function (string $email) {
     $user = User::where('email', $email)->first();

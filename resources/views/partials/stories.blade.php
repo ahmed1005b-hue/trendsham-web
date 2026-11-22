@@ -1,12 +1,15 @@
 {{--
     شريط القصص + عارض القصص الموحّد (الرئيسية وصفحة المتجر).
-    المتغيرات: $stories (Collection<Story> مع vendor محمّل)
+    المتغيرات: $stories (Collection<Story> مع vendor محمّل)، و$strip (افتراضياً true):
+    false = العارض فقط، ويُفتح من أي زر عليه data-ts-story (مثل شعار المتجر في صفحة المنتج).
 --}}
 @php
+    $strip = $strip ?? true;
     $tsStoryData = $stories->values()->map(fn ($story) => $story->toViewerArray());
     $tsStoryName = fn ($story) => $story->isFromPlatform() ? __('تريندشام') : $story->vendor?->store_name;
 @endphp
 
+@if ($strip)
 <div class="ts-stories" data-ts-fade>
     @foreach ($stories->values() as $story)
         <button type="button" class="ts-story-item {{ $story->isFromPlatform() ? 'is-platform' : '' }}"
@@ -19,6 +22,7 @@
         </button>
     @endforeach
 </div>
+@endif
 
 @once
 <div class="modal fade ts-story-modal" id="tsStoryModal" tabindex="-1" aria-label="{{ __('القصص') }}" aria-hidden="true">

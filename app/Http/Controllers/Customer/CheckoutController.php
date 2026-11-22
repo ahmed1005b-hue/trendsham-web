@@ -20,7 +20,9 @@ use App\Models\ProductVariant;
 use App\Models\ShippingCenter;
 use App\Notifications\Push\SellerOrderNotifier;
 use App\Services\DailyDealQuota;
+use App\Shipping\Governorates;
 use App\Shipping\ParcelService;
+use App\Shipping\ShippingChoice;
 use App\Shipping\ShippingDebt;
 use App\Shipping\ShippingQuote;
 use Illuminate\Http\Request;
@@ -40,9 +42,9 @@ class CheckoutController extends Controller
         $user = $request->user();
         app(CouponIssuer::class)->syncFor($user);
 
-        // أجرة الشحن لكل طريقة تسليم (طرد لكل متجر). الكوبون يُقيَّم على أجرة التوصيل للبيت
-        $quoter = app(ShippingQuote::class);
-        $quotes = ['home' => $quoter->quote($items, 'home'), 'center' => $quoter->quote($items, 'center')];
+        // اختيارات الشحن: من الرابط عند تغييرها، وإلا ما حُفظ في الجلسة، وإلا محافظة العنوان الافتراضي
+        $shipping = $this->shippingChoice($request);
+        $quotes = ['home' => $shipping->quote($items, 'home'), 'center' => $shipping->quote($items, 'center')];
         $homeFee = $quotes['home']['fee'];
 
         // السلة كما تراها خدمة الكوبونات: كل سطر فيه product و subtotal
@@ -65,7 +67,7 @@ class CheckoutController extends Controller
         }
 
         $shippingDiscount = $chosen['result']->shippingDiscount ?? 0;
-        $method = ShippingQuote::method(old('delivery_method'));
+        $method = $shipping->method;
 
         return view('customer.checkout.show', [
             'items' => $items,
@@ -75,7 +77,9 @@ class CheckoutController extends Controller
             'baseShippingByMethod' => array_map(fn ($q) => $q['fee'], $quotes),
             'shippingFee' => max(0, $quotes[$method]['fee'] - $shippingDiscount),
             'baseShippingFee' => $quotes[$method]['fee'],
-            'parcels' => $quotes['home']['parcels'],
+            'parcels' => $quotes[$method]['parcels'],
+            'shippingChoice' => $shipping,
+            'governorates' => Governorates::ALL,
             'centers' => ShippingCenter::groupedForSelect(),
             'shippingDebt' => (int) $user->shipping_debt,
             'codBlocked' => ShippingDebt::codBlocked($user),
@@ -87,6 +91,31 @@ class CheckoutController extends Controller
             'loyalty' => app(LoyaltyCheckout::class)->summary($user, $subtotal, $chosen['result']->discount ?? 0),
             'giftBalance' => app(GiftCardService::class)->balance($user->id),
         ]);
+    }
+
+    /**
+     * اختيارات الشحن في صفحة إتمام الطلب. تُغيَّر عبر رابط الصفحة (GET) وتُحفظ في الجلسة
+     * حتى تبقى بعد أخطاء التحقق. أول زيارة: المحافظة من العنوان الافتراضي إن أمكن.
+     */
+    private function shippingChoice(Request $request): ShippingChoice
+    {
+        $keys = ['delivery_method', 'shipping_governorate', 'pickup_stores'];
+        if ($request->hasAny($keys)) {
+            $input = $request->validate(['delivery_method' => ['nullable', 'string'], ...ShippingChoice::rules()]);
+            $request->session()->put('checkout_shipping', [
+                'delivery_method' => $input['delivery_method'] ?? 'home',
+                'shipping_governorate' => $input['shipping_governorate'] ?? null,
+                'pickup_stores' => $input['pickup_stores'] ?? [],
+            ]);
+        }
+        $saved = $request->session()->get('checkout_shipping');
+        if ($saved !== null) {
+            return ShippingChoice::fromInput($saved);
+        }
+        $user = $request->user();
+        $address = $user->addresses()->orderByDesc('is_default')->orderBy('id')->first();
+
+        return ShippingChoice::fromInput([], trim(($address?->city ?? '').' '.($user->city ?? '').' '.($user->address ?? '')));
     }
 
     /** اختيار كوبون من المحفظة للطلب الحالي (أو "بدون كوبون"). يُعاد التحقق عند تأكيد الطلب. */
@@ -118,6 +147,7 @@ class CheckoutController extends Controller
             'payment_method' => ['required', 'in:cash_on_delivery,card,wallet'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
             'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
+            ...ShippingChoice::rules(),
         ], ['pickup_center_id.required_if' => __('اختر مركز الشحن الذي ستستلم منه الطلب.')]);
 
         if ($validated['payment_method'] === 'cash_on_delivery' && ShippingDebt::codBlocked($request->user())) {
@@ -127,6 +157,7 @@ class CheckoutController extends Controller
         if ($deliveryMethod === 'center') {
             $validated['shipping_address'] = ShippingCenter::findOrFail($validated['pickup_center_id'])->pickupAddress();
         }
+        $shipping = ShippingChoice::fromInput($validated, $deliveryMethod === 'home' ? $validated['shipping_address'] : null);
 
         $items = $request->user()->cartItems()->with(['product.activeDailyDeal', 'variant', 'storefrontVisit'])->get();
         if ($items->isEmpty()) {
@@ -141,7 +172,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($items, $validated, $request, $deliveryMethod) {
+            $order = DB::transaction(function () use ($items, $validated, $request, $deliveryMethod, $shipping) {
                 // نقفل سلة المشتري ونقرؤها من جديد قبل أي شيء: ضغطتان متزامنتان على «تأكيد الطلب»
                 // لا تُنشئان طلبين — الثانية تنتظر الأولى، ثم تجد بنود السلة قد حُذفت فتتوقف.
                 $lockedIds = $request->user()->cartItems()->lockForUpdate()->pluck('id');
@@ -191,7 +222,7 @@ class CheckoutController extends Controller
                 // كوبون المحفظة: يُقفل ويُعاد فحصه هنا على السلة الفعلية (الخادم هو المرجع)
                 $redeemer = app(CouponRedeemer::class);
                 $choice = $request->session()->get('checkout_coupon');
-                $shippingQuote = app(ShippingQuote::class)->quote($items, $deliveryMethod);
+                $shippingQuote = $shipping->quote($items, $deliveryMethod);
                 $shippingCost = $shippingQuote['fee'];
                 [$coupon, $couponResult, $dropped] = $redeemer->resolve($request->user(), $choice, $lines, $shippingCost);
                 if ($dropped && is_int($choice)) {
@@ -217,6 +248,7 @@ class CheckoutController extends Controller
                     'shipping_name' => $validated['shipping_name'],
                     'shipping_phone' => $validated['shipping_phone'],
                     'shipping_address' => $validated['shipping_address'],
+                    'shipping_governorate' => $shipping->governorate,
                     'delivery_method' => $deliveryMethod,
                     'pickup_center_id' => $deliveryMethod === 'center' ? $validated['pickup_center_id'] : null,
                 ]);
@@ -280,8 +312,11 @@ class CheckoutController extends Controller
 
                 // طرد لكل متجر بأجرته (خصم الشحن من الكوبون يُوزَّع على الطرود)
                 app(ParcelService::class)->createForCheckout($order, $shippingQuote['parcels'], $shippingCost - $shippingFee);
+                if ($validated['payment_method'] === 'cash_on_delivery' && ! $fullyPaid) {
+                    app(ParcelService::class)->assignCashToCollect($order);
+                }
                 $request->user()->cartItems()->delete();
-                $request->session()->forget('checkout_coupon');
+                $request->session()->forget(['checkout_coupon', 'checkout_shipping']);
 
                 AppNotification::send(
                     $request->user()->id,

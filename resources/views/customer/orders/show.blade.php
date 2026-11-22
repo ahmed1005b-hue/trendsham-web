@@ -153,6 +153,16 @@
                                     الحالة:
                                     <span class="ts-status-label ts-status-{{ $shipment->status }}">{{ __($shipment->statusLabel()) }}</span>
                                 </p>
+                                @if ($shipment->isSellerDelivered())
+                                    <p class="small mb-1"><i class="bi {{ $shipment->delivery_mode === 'pickup' ? 'bi-shop' : 'bi-scooter' }}" aria-hidden="true"></i> {{ $shipment->deliveryModeLabel() }}
+                                        @if ($shipment->delivery_mode === 'pickup' && $shipment->seller?->shippingSetting?->pickup_address)
+                                            — {{ $shipment->seller->shippingSetting->pickup_address }}
+                                        @endif
+                                    </p>
+                                @endif
+                                @if ($shipment->cod_amount > 0 && $shipment->isOpen() && $shipment->status !== 'delivered' && $order->payment_status !== 'paid')
+                                    <p class="small mb-1">{{ __('تدفع عند استلام هذا الطرد: :amount', ['amount' => number_format($shipment->cod_amount / 100).' ل.س']) }}</p>
+                                @endif
                                 @if ($shipments->count() > 1)
                                     <ul class="small text-muted mb-1 ps-3">
                                         @foreach ($order->items->where('vendor_id', $shipment->seller_profile_id) as $parcelItem)

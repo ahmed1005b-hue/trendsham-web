@@ -44,7 +44,7 @@ class ProductController extends Controller
 
         abort_unless($product->isLive() || $canPreview, 404);
 
-        $product->load(['images', 'vendor', 'category', 'activeDailyDeal', 'variants' => fn ($q) => $q->where('is_active', true)]);
+        $product->load(['images', 'vendor.latestStory', 'category', 'activeDailyDeal', 'variants' => fn ($q) => $q->where('is_active', true)]);
         $product->loadCount('reviews')->loadAvg('reviews', 'rating');
 
         if ($request->user()) {

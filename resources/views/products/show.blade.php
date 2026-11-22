@@ -49,12 +49,10 @@
 
         <div class="col-md-6">
             <h1 class="h3 mb-2" translate="no">{{ $product->name }}</h1>
-            <p class="text-muted small mb-3">
-                يبيعه:
-                <a href="{{ route('stores.show', $product->vendor) }}" class="fw-bold text-decoration-none">
-                    <span translate="no">{{ $product->vendor->store_name }}</span>
-                </a>
-            </p>
+            @include('partials.seller-box', ['vendor' => $product->vendor, 'stories' => $vendorStories ?? collect()])
+            @if (($vendorStories ?? collect())->isNotEmpty())
+                @include('partials.stories', ['stories' => $vendorStories, 'strip' => false])
+            @endif
 
             @if ($product->reviews_count > 0)
                 <div class="mb-3">

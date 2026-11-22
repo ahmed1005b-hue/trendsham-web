@@ -9,7 +9,7 @@
                 @if ($socialLinks)
                     <div class="ts-footer__social" aria-label="تابعنا">
                         @foreach ($socialLinks as $link)
-                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"><i class="bi {{ $link['icon'] }}" aria-hidden="true"></i></a>
+                            <a href="{{ $link['url'] }}" class="ts-social ts-social--{{ \Illuminate\Support\Str::after($link['icon'], 'bi-') }}" target="_blank" rel="noopener" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"><i class="bi {{ $link['icon'] }}" aria-hidden="true"></i></a>
                         @endforeach
                     </div>
                 @endif

@@ -105,6 +105,24 @@ class SellerProfile extends Model
         return $this->hasMany(Story::class, 'vendor_id');
     }
 
+    /** إعدادات الشحن الخاصة بالمتجر (قد لا توجد: كل الطرود عبر شركة المنصة). */
+    public function shippingSetting()
+    {
+        return $this->hasOne(StoreShippingSetting::class);
+    }
+
+    /** المحافظات التي يوصل إليها المتجر بنفسه وأجرة كل منها. */
+    public function shippingRates()
+    {
+        return $this->hasMany(StoreShippingRate::class);
+    }
+
+    /** أحدث قصة ظاهرة الآن (لحلقة القصة حول شعار المتجر). */
+    public function latestStory()
+    {
+        return $this->hasOne(Story::class, 'vendor_id')->ofMany(['id' => 'max'], fn ($q) => $q->visible());
+    }
+
     public function withdrawalRequests()
     {
         return $this->hasMany(WithdrawalRequest::class, 'vendor_id');

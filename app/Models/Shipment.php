@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Shipping\ShippingQuote;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -38,6 +39,9 @@ class Shipment extends Model
         'delivered_at',
         'cancelled_at',
         'refused_at',
+        'delivery_mode',
+        'cod_amount',
+        'cash_settled_at',
     ];
 
     protected function casts(): array
@@ -47,6 +51,8 @@ class Shipment extends Model
             'delivered_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refused_at' => 'datetime',
+            'cash_settled_at' => 'datetime',
+            'cod_amount' => 'integer',
             'shipping_fee' => 'integer',
             'shipping_cost' => 'integer',
             'refund_amount' => 'integer',
@@ -88,5 +94,16 @@ class Shipment extends Model
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->status] ?? $this->status;
+    }
+
+    /** المتجر نفسه يسلّم هذا الطرد (توصيل خاص أو استلام من محله)، لا شركة الشحن. */
+    public function isSellerDelivered(): bool
+    {
+        return in_array($this->delivery_mode, ['self', 'pickup'], true);
+    }
+
+    public function deliveryModeLabel(): string
+    {
+        return ShippingQuote::modeLabel((string) $this->delivery_mode);
     }
 }

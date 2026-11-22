@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountClosureController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\Accounting\AccountingController;
+use App\Http\Controllers\Admin\Accounting\SellerDebtController;
 use App\Http\Controllers\Admin\Accounting\StatementController;
 use App\Http\Controllers\Admin\AssistantChatController;
 use App\Http\Controllers\Admin\AssistantFaqController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\Seller\QuestionController;
 use App\Http\Controllers\Seller\ReturnController as SellerReturnController;
+use App\Http\Controllers\Seller\ShippingSettingsController;
 use App\Http\Controllers\Seller\ShowcaseController as SellerShowcaseController;
 use App\Http\Controllers\Seller\StoryController as SellerStoryController;
 use App\Http\Controllers\Seller\SupportController;
@@ -316,6 +318,10 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
         Route::get('sellers/{seller}/export', [AccountingController::class, 'exportCsv'])->name('export');
         Route::post('sellers/{seller}/adjustments', [AccountingController::class, 'adjust'])->name('adjust');
 
+        // ديون البائعين (عمولات طلبات حصّلوا ثمنها بأنفسهم) وتسجيل تسديدها
+        Route::get('debts', [SellerDebtController::class, 'index'])->name('debts');
+        Route::post('debts/{sellerProfile}/pay', [SellerDebtController::class, 'pay'])->name('debts.pay');
+
         Route::post('sellers/{seller}/statements', [StatementController::class, 'store'])->name('statements.store');
         Route::get('statements/{statement}/download', [StatementController::class, 'download'])->name('statements.download');
     });
@@ -387,6 +393,10 @@ Route::middleware(['auth', 'role:seller', 'seller.store'])->prefix('seller')->na
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.updateStatus');
+
+    // إعدادات الشحن: شركة الشحن أو توصيل المتجر بنفسه بأسعاره لكل محافظة، والاستلام من المحل
+    Route::get('/shipping', [ShippingSettingsController::class, 'edit'])->name('shipping.edit');
+    Route::put('/shipping', [ShippingSettingsController::class, 'update'])->name('shipping.update');
 
     Route::get('/returns', [SellerReturnController::class, 'index'])->name('returns.index');
     Route::get('/returns/{returnRequest}', [SellerReturnController::class, 'show'])->name('returns.show')->whereNumber('returnRequest');

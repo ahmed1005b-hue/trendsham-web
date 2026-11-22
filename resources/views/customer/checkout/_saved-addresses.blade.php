@@ -5,7 +5,7 @@
         <div class="d-flex flex-wrap gap-2">
             @foreach ($addresses as $address)
                 <input type="radio" class="btn-check" name="saved_address" id="saved-address-{{ $address->id }}" autocomplete="off"
-                       value="{{ $address->id }}" data-ts-saved-address data-text="{{ $address->shippingText() }}" @checked($address->is_default)>
+                       value="{{ $address->id }}" data-ts-saved-address data-text="{{ $address->shippingText() }}" data-governorate="{{ \App\Shipping\Governorates::guess($address->city.' '.$address->details) }}" @checked($address->is_default)>
                 <label class="btn btn-outline-primary btn-sm text-start" for="saved-address-{{ $address->id }}">
                     <i class="bi {{ ['home' => 'bi-house', 'work' => 'bi-briefcase', 'other' => 'bi-geo-alt'][$address->label] ?? 'bi-geo-alt' }}" aria-hidden="true"></i>
                     {{ $address->labelText() }} — {{ $address->city }}

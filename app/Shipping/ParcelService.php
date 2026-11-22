@@ -27,6 +27,7 @@ class ParcelService
     public function __construct(
         private readonly GiftCardService $gifts,
         private readonly DailyDealQuota $deals,
+        private readonly SellerCashSettlement $cash,
     ) {}
 
     /**
@@ -60,7 +61,7 @@ class ParcelService
     /**
      * عند إنشاء الطلب: طرد لكل متجر بأجرته. خصم الشحن (كوبون شحن مجاني) يُطرح من الطرود بالترتيب.
      *
-     * @param  list<array{vendor_id: int, fee: int}>  $parcels  من ShippingQuote
+     * @param  list<array{vendor_id: int, fee: int, mode?: string}>  $parcels  من ShippingQuote
      */
     public function createForCheckout(Order $order, array $parcels, int $shippingDiscount): void
     {
@@ -74,8 +75,40 @@ class ParcelService
                 'status' => 'pending',
                 'shipping_fee' => (int) $parcel['fee'] - $off,
                 'shipping_cost' => (int) $parcel['fee'],
+                'delivery_mode' => $parcel['mode'] ?? 'platform',
             ]);
         }
+    }
+
+    /**
+     * الدفع عند الاستلام: كم يحصّل من الزبون من يسلّم كل طرد (المتجر نفسه أو شركة الشحن).
+     * حصة الطرد = بنوده بعد الخصم + أجرة شحنه. ما زاد أو نقص على مستوى الطلب كله
+     * (دين شحن سابق، نقاط، رصيد هدايا) يُحمَّل على أول طرد لشركة الشحن، وإلا على أول طرد.
+     */
+    public function assignCashToCollect(Order $order): void
+    {
+        $parcels = $order->shipments()->orderBy('id')->get();
+        if ($parcels->isEmpty()) {
+            return;
+        }
+        $items = $order->items()->get()->groupBy('vendor_id');
+        $shares = $parcels->mapWithKeys(fn (Shipment $p) => [$p->id => $this->shareOf($p, $items->get($p->seller_profile_id, collect()))]);
+
+        $extra = (int) $order->total - (int) $shares->sum();
+        $carrier = $parcels->firstWhere('delivery_mode', 'platform') ?? $parcels->first();
+        $ordered = $parcels->sortBy(fn (Shipment $p) => $p->id === $carrier->id ? 0 : 1)->values();
+
+        foreach ($ordered as $parcel) {
+            $amount = max(0, $shares[$parcel->id] + $extra);
+            $extra = min(0, $shares[$parcel->id] + $extra); // ما بقي من خصم لم يتسع له هذا الطرد
+            $parcel->update(['cod_amount' => $amount]);
+        }
+    }
+
+    /** حصة الطرد من الطلب = بنود متجره بعد الخصم + أجرة شحنه. */
+    private function shareOf(Shipment $parcel, Collection $items): int
+    {
+        return (int) $items->sum(fn ($i) => (int) $i->subtotal - (int) $i->discount_amount) + (int) $parcel->shipping_fee;
     }
 
     /**
@@ -158,10 +191,13 @@ class ParcelService
 
         if ($to === 'delivered' && $from !== 'delivered') {
             $items->each->settleCommission();
+            $this->cash->settle($order, $parcel);
         }
 
         if ($to === 'cancelled' && $from !== 'cancelled') {
             $items->each->reverseSettlement();
+            $this->cash->reverse($order, $parcel);
+            $this->moveExtraCash($order, $parcel, $items);
             $order->restock($items);
             $this->deals->releaseItems($items);
 
@@ -202,6 +238,17 @@ class ParcelService
             $this->gifts->creditForCancelledParcel($order, $credit, $parcel->id);
         }
         $parcel->update(['refund_amount' => $reduce + $credit]);
+    }
+
+    /** طرد أُلغي وكان يحمل مبلغاً زائداً من الطلب (مثل دين شحن سابق): يُنقل لطرد مفتوح لم يُسلَّم بعد. */
+    private function moveExtraCash(Order $order, Shipment $parcel, Collection $items): void
+    {
+        $excess = (int) $parcel->cod_amount - $this->shareOf($parcel, $items);
+        if ($excess <= 0) {
+            return;
+        }
+        $next = $order->shipments()->open()->whereKeyNot($parcel->id)->where('status', '!=', 'delivered')->orderBy('id')->first();
+        $next?->increment('cod_amount', $excess);
     }
 
     /** حالة الطلب من طروده، ثم آثار الطلب إن تغيّرت (تحت قفل الطلب). */

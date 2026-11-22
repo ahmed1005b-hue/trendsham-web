@@ -43,6 +43,17 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
+    @if ($wallet->balance < 0)
+        <div class="alert alert-warning d-flex gap-2 align-items-start">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <div>
+                <strong>{{ __('عليك :amount ل.س للمنصة.', ['amount' => number_format(-$wallet->balance / 100)]) }}</strong>
+                {{ __('هذه عمولات طلبات وصّلتها بنفسك وحصّلت ثمنها نقداً. تُخصم تلقائياً من مبيعاتك القادمة، أو سدّدها للإدارة.') }}
+                <a href="{{ route('seller.shipping.edit') }}">{{ __('إعدادات الشحن') }}</a>
+            </div>
+        </div>
+    @endif
+
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="ts-wallet-stat main">

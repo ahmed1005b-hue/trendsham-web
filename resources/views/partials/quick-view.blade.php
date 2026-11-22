@@ -122,9 +122,7 @@
             <div>
                 ${dealBadge}
                 <h2 class="h4 mb-1 fw-bold" translate="no">${escapeHtml(product.name)}</h2>
-                <p class="text-muted small mb-3">
-                    {{ __('يبيعه:') }} <strong>${escapeHtml(product.vendor?.store_name||@json(__('تريندشام')))}</strong>
-                </p>
+                ${sellerBox(product.vendor)}
                 <div class="mb-3">${priceHtml}</div>
                 <div class="mb-3">
                     <span class="${inStock?'text-success':'text-danger'} fw-bold small">
@@ -167,6 +165,32 @@
             plus.onclick  = ()=>{ if(qty<product.stock_quantity){qty++; qtyIn.value=qty; qtyH.value=qty;} };
         }
     }
+
+        // بطاقة البائع: الشعار بحلقة متحركة إن كانت له قصة الآن، والضغط يفتح القصة في صفحة المتجر
+        function sellerBox(v) {
+            if (!v || !v.store_name) return '';
+            const url = v.store_url || '#';
+            const name = escapeHtml(v.store_name);
+            const logo = v.store_logo
+                ? `<img src="${escapeHtml(v.store_logo)}" alt="" loading="lazy">`
+                : `<span class="ts-seller-box__initial" aria-hidden="true" translate="no">${escapeHtml(v.store_name.trim().charAt(0))}</span>`;
+            const story = v.story_id ? `${url}#offer-${encodeURIComponent(v.story_id)}` : null;
+            const avatarLabel = story
+                ? @json(__('مشاهدة قصة :name')).replace(':name', v.store_name)
+                : @json(__('زيارة متجر :store')).replace(':store', v.store_name);
+            return `<div class="ts-seller-box">
+                <a href="${escapeHtml(story || url)}" class="ts-seller-box__avatar ${story ? 'has-story' : ''}" aria-label="${escapeHtml(avatarLabel)}">
+                    <span class="ts-seller-box__ring">${logo}</span>
+                    ${story ? `<span class="ts-seller-box__live">${@json(__('قصة'))}</span>` : ''}
+                </a>
+                <div class="ts-seller-box__info">
+                    <span class="ts-seller-box__label">${@json(__('يبيعه'))}</span>
+                    <a href="${escapeHtml(url)}" class="ts-seller-box__name"><span translate="no">${name}</span>${v.is_verified ? `<i class="bi bi-patch-check-fill" title="${@json(__('متجر موثّق'))}" aria-label="${@json(__('متجر موثّق'))}"></i>` : ''}</a>
+                    ${story ? `<span class="ts-seller-box__hint">${@json(__('اضغط الشعار لمشاهدة قصته'))}</span>` : ''}
+                </div>
+                <a href="${escapeHtml(url)}" class="ts-seller-box__visit"><i class="bi bi-shop" aria-hidden="true"></i> ${@json(__('زيارة المتجر'))}</a>
+            </div>`;
+        }
 
     function escapeHtml(t){ return String(t||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
 

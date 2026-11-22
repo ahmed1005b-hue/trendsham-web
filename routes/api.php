@@ -64,6 +64,7 @@ use App\Http\Controllers\Api\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\Api\SellerReviewController;
 use App\Http\Controllers\Api\ShippingCenterController;
 use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreFollowController;
 use App\Http\Controllers\Api\StoriesController;
@@ -98,6 +99,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/shipping-centers', [ShippingCenterController::class, 'index']);
+    Route::get('/social-links', SocialLinkController::class);
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
     Route::get('/products', [ProductController::class, 'index']);

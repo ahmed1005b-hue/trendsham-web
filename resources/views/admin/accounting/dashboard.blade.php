@@ -90,6 +90,8 @@
         <div class="text-center mt-3">
             <a href="{{ route('admin.accounting.sellers') }}" class="btn btn-outline-success">ملفات البائعين <i
                     class="bi bi-arrow-left"></i></a>
+            <a href="{{ route('admin.accounting.debts') }}" class="btn btn-outline-danger">ديون البائعين <i
+                    class="bi bi-arrow-left"></i></a>
         </div>
     </div>
 @endsection

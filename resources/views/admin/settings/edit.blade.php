@@ -53,6 +53,7 @@
                     'shipping_parcel_fee' => ['أجرة الطرد (أقل من 10 كغ)', null],
                     'shipping_heavy_parcel_fee' => ['أجرة الطرد الثقيل (10 كغ أو أكثر)', null],
                     'shipping_home_extra' => ['مبلغ إضافي للتوصيل إلى البيت', 'لكل طرد. اكتب 0 إذا كان التوصيل للبيت بنفس سعر الاستلام من المركز.'],
+                    'seller_debt_limit' => ['الحد الأعلى لدين البائع', 'متاجر توصل بنفسها وتحصّل المال نقداً: تصبح عمولتها ديناً عليها. إذا بلغ الدين هذا الحد يتوقف توصيلها الخاص حتى تسدّد. اكتب 0 لإلغاء الحد.'],
                 ] as $field => [$label, $hint])
                     <label class="form-label small mb-1" for="{{ $field }}">{{ $label }}</label>
                     <div class="input-group {{ $hint ? 'mb-1' : 'mb-3' }}">
@@ -62,6 +63,12 @@
                     @if ($hint) <div class="form-text mb-3">{{ $hint }}</div> @endif
                     @error($field) <div class="text-danger small mb-3">{{ $message }}</div> @enderror
                 @endforeach
+
+                <label class="form-label small mb-1" for="self_delivery_min_orders">عدد الطلبات الناجحة قبل السماح للمتجر بالتوصيل بنفسه</label>
+                <input type="number" name="self_delivery_min_orders" id="self_delivery_min_orders" class="form-control mb-1" min="0" max="1000"
+                       value="{{ old('self_delivery_min_orders', $setting->self_delivery_min_orders) }}" required>
+                <div class="form-text mb-3">طرود سلّمها المتجر بنجاح عبر شركة الشحن، وللمتاجر الموثّقة فقط. اكتب 0 للسماح فوراً.</div>
+                @error('self_delivery_min_orders') <div class="text-danger small mb-3">{{ $message }}</div> @enderror
 
                 <hr class="my-4">
 

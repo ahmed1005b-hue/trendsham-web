@@ -32,6 +32,7 @@ class Order extends Model
         'shipping_name',
         'shipping_phone',
         'shipping_address',
+        'shipping_governorate',
         'delivery_method',
         'pickup_center_id',
         'shipping_cost',

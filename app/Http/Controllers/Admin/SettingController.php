@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
-    /** أجور الشحن مع كرم، تُكتب بالليرة وتُحفظ بالوحدة الصغرى. */
-    private const SHIPPING_FEES = ['shipping_parcel_fee', 'shipping_heavy_parcel_fee', 'shipping_home_extra'];
+    /** أجور الشحن مع كرم وحد دين البائع، تُكتب بالليرة وتُحفظ بالوحدة الصغرى. */
+    private const SHIPPING_FEES = ['shipping_parcel_fee', 'shipping_heavy_parcel_fee', 'shipping_home_extra', 'seller_debt_limit'];
 
     public function edit()
     {
@@ -42,6 +42,7 @@ class SettingController extends Controller
             ...array_fill_keys(array_keys(ReturnSettings::DEFAULTS), ['sometimes', 'required', 'integer', 'min:1', 'max:365']),
             ...$socialRules,
             'social_whatsapp' => ['sometimes', 'nullable', 'digits_between:8,15'],
+            'self_delivery_min_orders' => ['sometimes', 'required', 'integer', 'min:0', 'max:1000'],
         ], [
             'url' => 'اكتب الرابط كاملاً ويبدأ بـ https://',
             'social_whatsapp.digits_between' => 'اكتب رقم واتساب مع رمز الدولة، مثل 963912345678.',
@@ -52,7 +53,7 @@ class SettingController extends Controller
             'story_fee' => (int) round($validated['story_fee'] * 100),
             ...array_map(fn ($lira) => (int) round($lira * 100), array_intersect_key($validated, array_flip(self::SHIPPING_FEES))),
             ...array_intersect_key($validated, ReturnSettings::DEFAULTS),
-            ...array_intersect_key($validated, PlatformSetting::SOCIAL + ['social_whatsapp' => true]),
+            ...array_intersect_key($validated, PlatformSetting::SOCIAL + ['social_whatsapp' => true, 'self_delivery_min_orders' => true]),
         ]);
 
         return back()->with('success', 'تم تحديث الإعدادات.');

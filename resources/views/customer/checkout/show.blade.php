@@ -15,13 +15,21 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
+    {{-- اختيارات الشحن (الطريقة، المحافظة، الاستلام من محل المتجر) تُرسل بهذا النموذج فيُعاد حساب أجرة كل طرد --}}
+    <form id="tsShipChoice" method="GET" action="{{ route('customer.checkout.show') }}"></form>
+
     <div class="row g-4">
         <div class="col-md-7">
             <div class="card">
                 <div class="card-body">
                     <h2 class="h5 mb-3">بيانات الشحن والدفع</h2>
-                    <form action="{{ route('customer.checkout.store') }}" method="POST">
+                    <form action="{{ route('customer.checkout.store') }}" method="POST" id="tsCheckoutForm">
                         @csrf
+                        <input type="hidden" name="delivery_method" value="{{ $deliveryMethod }}">
+                        <input type="hidden" name="shipping_governorate" value="{{ $shippingChoice->governorate }}">
+                        @foreach ($shippingChoice->pickupVendorIds as $vendorId)
+                            <input type="hidden" name="pickup_stores[]" value="{{ $vendorId }}">
+                        @endforeach
                         <div class="mb-3">
                             <label for="f-shipping_name" class="form-label">الاسم الكامل للاستلام</label>
                             <input id="f-shipping_name" type="text" name="shipping_name" class="form-control" value="{{ old('shipping_name', auth()->user()->name) }}" required>
@@ -36,7 +44,7 @@
                                 @foreach (['home' => ['bi-house-door', __('توصيل للبيت'), __('يصلك المندوب إلى عنوانك')], 'center' => ['bi-shop', __('استلام من مركز شحن'), __('تستلمه من مركز كرم الأقرب لك')]] as $method => [$icon, $title, $hint])
                                     <label class="ts-delivery__opt">
                                         <input type="radio" name="delivery_method" value="{{ $method }}" class="ts-delivery__radio" @checked($deliveryMethod === $method)
-                                            data-fee="{{ $shippingByMethod[$method] }}" data-base-fee="{{ $baseShippingByMethod[$method] }}">
+                                            form="tsShipChoice" data-ts-ship-choice>
                                         <i class="bi {{ $icon }}" aria-hidden="true"></i>
                                         <span class="flex-grow-1"><strong class="d-block">{{ $title }}</strong><small class="text-muted">{{ $hint }}</small></span>
                                         <span class="small fw-bold text-nowrap">{{ $shippingByMethod[$method] === 0 ? __('مجاني') : number_format($shippingByMethod[$method] / 100).' ل.س' }}</span>
@@ -60,6 +68,14 @@
                             @error('pickup_center_id') <div class="text-danger small">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3" id="tsAddressBox" @if ($deliveryMethod === 'center') hidden @endif>
+                            <label for="f-shipping_governorate" class="form-label">{{ __('المحافظة') }}</label>
+                            <select id="f-shipping_governorate" name="shipping_governorate" class="form-select mb-1" form="tsShipChoice" data-ts-ship-choice>
+                                <option value="">{{ __('اختر محافظتك') }}</option>
+                                @foreach ($governorates as $governorate)
+                                    <option value="{{ $governorate }}" @selected($shippingChoice->governorate === $governorate)>{{ __($governorate) }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text mb-3">{{ __('بعض المتاجر توصل بنفسها بسعر خاص لكل محافظة.') }}</div>
                             <label for="f-shipping_address" class="form-label">عنوان التوصيل الكامل</label>
                             @php $tsAddresses = auth()->user()->addresses()->orderByDesc('is_default')->orderBy('id')->get(); @endphp
                             @include('customer.checkout._saved-addresses', ['addresses' => $tsAddresses])
@@ -196,6 +212,31 @@
                             </div>
                         </div>
                     @endforeach
+                    <div class="ts-parcels mb-3">
+                        <h3 class="h6 small fw-bold mb-2"><i class="bi bi-truck" aria-hidden="true"></i> {{ __('التوصيل من كل متجر') }}</h3>
+                        @foreach ($parcels as $parcel)
+                            <div class="ts-parcel ts-parcel--{{ $parcel['mode'] }}">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <strong class="d-block small" translate="no">{{ $parcel['store_name'] }}</strong>
+                                        <span class="ts-parcel__mode">{{ \App\Shipping\ShippingQuote::modeLabel($parcel['mode']) }}</span>
+                                        <span class="ts-parcel__eta">· {{ \App\Shipping\ShippingQuote::etaLabel($parcel) }}</span>
+                                    </div>
+                                    <span class="small fw-bold text-nowrap {{ $parcel['fee'] === 0 ? 'text-success' : '' }}">{{ $parcel['fee'] === 0 ? __('مجاني') : number_format($parcel['fee'] / 100).' ل.س' }}</span>
+                                </div>
+                                @if ($parcel['can_pickup'])
+                                    <div class="form-check small mt-1 mb-0">
+                                        <input class="form-check-input" type="checkbox" name="pickup_stores[]" value="{{ $parcel['vendor_id'] }}" id="tsPickup{{ $parcel['vendor_id'] }}"
+                                               form="tsShipChoice" data-ts-ship-choice @checked($parcel['mode'] === 'pickup')>
+                                        <label class="form-check-label" for="tsPickup{{ $parcel['vendor_id'] }}">{{ __('سأستلمه من محل المتجر (بدون أجرة شحن)') }}</label>
+                                    </div>
+                                    @if ($parcel['mode'] === 'pickup')
+                                        <p class="small text-muted mb-0"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $parcel['pickup_address'] }}</p>
+                                    @endif
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                     <div class="d-flex justify-content-between small mb-1">
                         <span>المجموع الفرعي</span>
                         <span>{{ number_format($subtotal / 100) }} ل.س</span>
@@ -256,32 +297,30 @@
 
 <script>
 (() => {
-    // طريقة الاستلام: تُظهر المركز أو العنوان وتحدّث أجرة الشحن والإجمالي
-    const radios = document.querySelectorAll('.ts-delivery__radio');
-    const centerBox = document.getElementById('tsCenterBox');
-    const addressBox = document.getElementById('tsAddressBox');
-    const address = document.getElementById('f-shipping_address');
-    const center = document.getElementById('f-pickup_center_id');
-    const line = document.getElementById('tsShippingLine');
-    const total = document.getElementById('tsGrandTotal');
-    const points = document.getElementById('tsUsePoints');
-    const T = {{ Js::from(['free' => __('مجاني'), 'cur' => 'ل.س']) }};
-    const fmt = (minor) => Math.round(minor / 100).toLocaleString('en-US');
-    const sync = () => {
-        const picked = [...radios].find(r => r.checked) || radios[0];
-        const isCenter = picked.value === 'center';
-        centerBox.hidden = !isCenter;
-        addressBox.hidden = isCenter;
-        address.required = !isCenter;
-        center.required = isCenter;
-        const fee = +picked.dataset.fee, base = +picked.dataset.baseFee;
-        line.innerHTML = fee < base
-            ? `<del class="text-muted">${fmt(base)}</del> <span class="text-success fw-bold">${fee === 0 ? T.free : fmt(fee) + ' ' + T.cur}</span>`
-            : `${fmt(fee)} ${T.cur}`;
-        total.dataset.base = +total.dataset.goods + fee;
-        if (points) { points.dispatchEvent(new Event('input')); } else { total.textContent = fmt(+total.dataset.base); }
-    };
-    radios.forEach(r => r.addEventListener('change', sync));
+    // تغيير طريقة الاستلام أو المحافظة أو الاستلام من المحل يعيد حساب أجرة كل طرد من الخادم.
+    // ما كتبه الزبون في النموذج يُحفظ مؤقتاً ويعود بعد إعادة التحميل.
+    const choice = document.getElementById('tsShipChoice');
+    const form = document.getElementById('tsCheckoutForm');
+    const KEY = 'tsCheckoutDraft';
+    const fields = ['shipping_name', 'shipping_phone', 'shipping_address', 'payment_method'];
+    try {
+        const draft = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+        sessionStorage.removeItem(KEY);
+        if (draft) fields.forEach(f => { if (draft[f] != null && form.elements[f]) form.elements[f].value = draft[f]; });
+    } catch (e) {}
+    document.querySelectorAll('[data-ts-ship-choice]').forEach(el => el.addEventListener('change', () => {
+        try { sessionStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map(f => [f, form.elements[f]?.value])))); } catch (e) {}
+        choice.requestSubmit ? choice.requestSubmit() : choice.submit();
+    }));
+    // اختيار عنوان محفوظ يختار محافظته أيضاً
+    document.addEventListener('change', (e) => {
+        if (!e.target.matches('[data-ts-saved-address]') || !e.target.dataset.governorate) return;
+        const select = document.getElementById('f-shipping_governorate');
+        if (select && select.value !== e.target.dataset.governorate) {
+            select.value = e.target.dataset.governorate;
+            select.dispatchEvent(new Event('change'));
+        }
+    });
 })();
 </script>
 

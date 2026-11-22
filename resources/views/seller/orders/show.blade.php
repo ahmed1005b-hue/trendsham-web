@@ -82,6 +82,17 @@
                 <h6 class="text-muted small mb-2">رقم الطلب</h6>
                 <h3 class="mb-2 fw-bold">{{ $order->order_number }}</h3>
                 <p class="mb-2"><span class="ts-status-label ts-status-{{ $parcel->status }}">{{ __($parcel->statusLabel()) }}</span></p>
+                <p class="small mb-2"><i class="bi {{ $parcel->delivery_mode === 'pickup' ? 'bi-shop' : ($parcel->delivery_mode === 'self' ? 'bi-scooter' : 'bi-truck') }}" aria-hidden="true"></i> {{ $parcel->deliveryModeLabel() }}</p>
+                @if ($parcel->isSellerDelivered())
+                    @if ($parcel->cod_amount > 0)
+                        <div class="ts-cod-box mb-2">
+                            {{ $parcel->delivery_mode === 'pickup' ? __('حصّل من الزبون عند استلامه من محلك:') : __('حصّل من الزبون عند التسليم:') }}
+                            <strong>{{ number_format($parcel->cod_amount / 100) }} ل.س</strong>
+                        </div>
+                    @elseif ($order->payment_status === 'paid')
+                        <p class="small text-success mb-2"><i class="bi bi-check2-circle" aria-hidden="true"></i> {{ __('الطلب مدفوع مسبقاً، لا تحصّل شيئاً من الزبون.') }}</p>
+                    @endif
+                @endif
                 @if ($isShared)
                     <p class="small text-muted mb-2">{{ __('في الطلب منتجات من متاجر أخرى؛ أنت تدير طردك فقط.') }}</p>
                 @endif

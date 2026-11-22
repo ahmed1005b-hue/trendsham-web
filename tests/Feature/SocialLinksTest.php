@@ -70,4 +70,18 @@ class SocialLinksTest extends TestCase
         $this->save(['social_x' => 'https://twitter.com/trendsham'])->assertSessionHasNoErrors();
         $this->assertSame('https://twitter.com/trendsham', PlatformSetting::current()->social_x);
     }
+
+    public function test_the_app_gets_the_same_links_as_the_footer(): void
+    {
+        $this->getJson('/api/v1/social-links')->assertOk()->assertExactJson(['data' => []]);
+
+        PlatformSetting::current()->update(['social_instagram' => 'https://instagram.com/trendsham', 'social_whatsapp' => '963912345678']);
+
+        $this->getJson('/api/v1/social-links')->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.key', 'instagram')
+            ->assertJsonPath('data.0.url', 'https://instagram.com/trendsham')
+            ->assertJsonPath('data.1.key', 'whatsapp')
+            ->assertJsonPath('data.1.url', 'https://wa.me/963912345678');
+    }
 }

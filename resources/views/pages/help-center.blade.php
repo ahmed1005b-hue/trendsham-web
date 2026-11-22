@@ -252,8 +252,8 @@
     <div class="p-4 p-md-5 rounded-4 text-center" style="background: #fff; border: 1px solid #ECE4D3;">
         <h2 class="h5 mb-2">لسا محتاج مساعدة؟</h2>
         <p class="text-muted mb-3">فريقنا جاهز يساعدك بأي استفسار ما لقيت جوابه فوق.</p>
-        <a href="mailto:support@trendsham.com" class="btn" style="background: var(--ts-emerald); color: #fff;">
-            <i class="bi bi-envelope"></i> راسلنا على support@trendsham.com
+        <a href="mailto:supporttrendsham@gmail.com" class="btn" style="background: var(--ts-emerald); color: #fff;">
+            <i class="bi bi-envelope"></i> راسلنا على supporttrendsham@gmail.com
         </a>
     </div>
 </div>

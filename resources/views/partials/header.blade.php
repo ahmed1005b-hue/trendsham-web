@@ -62,6 +62,7 @@
                             <div class="ts-hover-links">
                                 <a href="{{ route('seller.dashboard') }}">لوحة البائع</a>
                                 <a href="{{ route('seller.orders.index') }}">طلباتي</a>
+                                <a href="{{ route('seller.shipping.edit') }}">إعدادات الشحن</a>
                                 <a href="{{ route('seller.wallet.index') }}">محفظتي</a>
                                 <a href="{{ route('profile.edit') }}">إعدادات الحساب</a>
                             </div>

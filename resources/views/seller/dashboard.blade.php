@@ -366,6 +366,12 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg-2">
+            <a href="{{ route('seller.shipping.edit') }}" class="ts-action-btn">
+                <span class="ts-kpi-icon ts-tone ts-tone--emerald"><i class="bi bi-truck" aria-hidden="true"></i></span>
+                <span class="ts-action-label">إعدادات الشحن</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
             <a href="{{ route('seller.store.edit') }}" class="ts-action-btn">
                 <span class="ts-kpi-icon ts-tone ts-tone--emerald"><i class="bi bi-shop-window" aria-hidden="true"></i></span>
                 <span class="ts-action-label">إعدادات المتجر</span>

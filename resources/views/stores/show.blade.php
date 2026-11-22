@@ -116,10 +116,10 @@
                         <a class="btn btn-outline-success btn-sm" href="tel:{{ $phone }}"><i class="bi bi-telephone"></i> اتصال</a>
                     @endif
                     @if ($whatsappUrl)
-                        <a class="btn btn-outline-success btn-sm" href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> واتساب</a>
+                        <a class="btn btn-sm ts-social-btn ts-social--whatsapp" href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> واتساب</a>
                     @endif
                     @if ($instagramUrl)
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ $instagramUrl }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram"></i> إنستغرام</a>
+                        <a class="btn btn-sm ts-social-btn ts-social--instagram" href="{{ $instagramUrl }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram"></i> إنستغرام</a>
                     @endif
                 </div>
                 @if ($store->business_hours)
