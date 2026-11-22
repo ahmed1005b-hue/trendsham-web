@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Admin\StatementController as AdminStatementControll
 use App\Http\Controllers\Api\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Api\Admin\SupportController as ApiAdminSupportController;
 use App\Http\Controllers\Api\Admin\WithdrawalController as AdminWithdrawalController;
+use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BuyerSellerConversationController;
 use App\Http\Controllers\Api\CartController;
@@ -100,6 +101,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/shipping-centers', [ShippingCenterController::class, 'index']);
     Route::get('/social-links', SocialLinkController::class);
+    Route::get('/app-version', AppVersionController::class);
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
     Route::get('/products', [ProductController::class, 'index']);
