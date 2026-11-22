@@ -1,0 +1,89 @@
+/* الحركة في الموقع: شاشة البداية، ظهور البطاقات، ضغط الأزرار، وطيران المنتج للسلة.
+   كلها تُلغى عند من فعّل «تقليل الحركة» في جهازه. */
+
+/* ---------- 1. شاشة البداية (أول صفحة في الزيارة فقط) ---------- */
+.ts-splash { display: none; }
+html.ts-splash-on .ts-splash {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    background: var(--ts-emerald) var(--ts-lattice);
+    color: #fff;
+    /* أمان: تختفي وحدها حتى لو لم يعمل السكربت */
+    animation: ts-splash-out .45s ease 2.2s forwards;
+}
+html.ts-splash-on .ts-splash.is-leaving { animation: ts-splash-out .4s ease forwards; }
+html.ts-splash-on body { overflow: hidden; }
+html.ts-splash-on.ts-splash-done body { overflow: auto; }
+
+.ts-splash__mark { width: 88px; height: 88px; }
+.ts-splash__mark path {
+    fill: none; stroke-width: 3; stroke-linejoin: round;
+    stroke-dasharray: 140; stroke-dashoffset: 140;
+    animation: ts-draw .6s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+.ts-splash__mark .ts-splash__diamond { stroke: var(--ts-gold); }
+.ts-splash__mark .ts-splash__square { stroke: var(--ts-gold-light); animation-delay: .15s; }
+.ts-splash__word {
+    font-family: 'Reem Kufi', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: .02em;
+    opacity: 0; transform: translateY(10px);
+    animation: ts-rise .4s ease-out .35s forwards;
+}
+.ts-splash__word span { color: var(--ts-gold-light); }
+
+@keyframes ts-draw { to { stroke-dashoffset: 0; } }
+@keyframes ts-rise { to { opacity: 1; transform: none; } }
+@keyframes ts-splash-out { to { opacity: 0; visibility: hidden; } }
+
+/* ---------- 2. ظهور ناعم لبطاقات المنتجات ---------- */
+html.ts-motion .ts-market-card:not(.is-in) { opacity: 0; transform: translateY(16px); }
+/* أثناء الظهور فقط؛ بعده (is-settled) تعود حركة رفع البطاقة عند المرور كما كانت */
+html.ts-motion .ts-market-card.is-in:not(.is-settled) {
+    transition: opacity .45s ease, transform .45s cubic-bezier(.2, .7, .2, 1), box-shadow .2s ease, border-color .2s ease;
+    transition-delay: var(--ts-reveal-delay, 0ms), var(--ts-reveal-delay, 0ms), 0ms, 0ms;
+}
+
+/* ---------- 3. ضغط الأزرار ---------- */
+.btn, .ts-market-cart-btn, .ts-market-icon-btn, .ts-header-icon, .ts-qty__btn {
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+.btn:active:not(:disabled), .ts-market-cart-btn:active:not(:disabled),
+.ts-market-icon-btn:active, .ts-header-icon:active, .ts-qty__btn:active { transform: scale(.95); }
+
+/* زر الإضافة وهو ينتظر رد الخادم */
+.ts-adding { pointer-events: none; opacity: .75; }
+.ts-adding .bi { animation: ts-spin .8s linear infinite; display: inline-block; }
+@keyframes ts-spin { to { transform: rotate(360deg); } }
+
+/* ---------- 4. طيران المنتج للسلة ---------- */
+.ts-fly {
+    position: fixed; z-index: 2100; pointer-events: none;
+    border-radius: 12px; object-fit: cover;
+    box-shadow: 0 12px 30px -8px rgba(7, 61, 48, .45);
+}
+#cart-badge.ts-bump { animation: ts-bump .5s cubic-bezier(.3, 1.6, .5, 1); }
+#cart-icon.ts-bump-icon { animation: ts-wiggle .5s ease; }
+@keyframes ts-bump { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+@keyframes ts-wiggle { 0%, 100% { transform: none; } 30% { transform: rotate(-10deg) scale(1.08); } 60% { transform: rotate(8deg); } }
+
+/* رسالة صغيرة بعد الإضافة */
+.ts-toast {
+    position: fixed; z-index: 2100; inset-inline: 0; bottom: 1.25rem; margin-inline: auto;
+    width: max-content; max-width: calc(100% - 2rem);
+    display: flex; align-items: center; gap: .75rem;
+    padding: .7rem 1rem; border-radius: 12px;
+    background: var(--ts-emerald-dark); color: #fff; font-weight: 700;
+    box-shadow: 0 14px 30px -10px rgba(0, 0, 0, .45);
+    opacity: 0; transform: translateY(14px);
+    transition: opacity .25s ease, transform .25s ease;
+}
+.ts-toast.is-shown { opacity: 1; transform: none; }
+.ts-toast.is-error { background: #8E2A1E; }
+.ts-toast a { color: var(--ts-gold-light); font-weight: 800; white-space: nowrap; }
+
+/* ---------- من لا يريد الحركة ---------- */
+@media (prefers-reduced-motion: reduce) {
+    html.ts-splash-on .ts-splash { display: none; }
+    html.ts-motion .ts-market-card:not(.is-in) { opacity: 1; transform: none; }
+    .btn:active, .ts-market-cart-btn:active, .ts-market-icon-btn:active, .ts-header-icon:active, .ts-qty__btn:active { transform: none; }
+    .ts-toast { transition: none; }
+}

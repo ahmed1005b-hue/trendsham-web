@@ -3508,5 +3508,6 @@
     "أسئلة المنتجات": "Product questions",
     "لا يوجد شيء محذوف هنا.": "Nothing deleted here.",
     "حُذف": "Deleted",
-    "ما يُحذف هنا يختفي من الموقع والتطبيق، لكنه يبقى محفوظاً مع تقييماته وطلباته. تستطيع إرجاعه بزر «استرجاع».": "Deleted items disappear from the site and the app, but stay saved with their reviews and orders. You can bring them back with “Restore”."
+    "ما يُحذف هنا يختفي من الموقع والتطبيق، لكنه يبقى محفوظاً مع تقييماته وطلباته. تستطيع إرجاعه بزر «استرجاع».": "Deleted items disappear from the site and the app, but stay saved with their reviews and orders. You can bring them back with “Restore”.",
+    "تعذّرت الإضافة للسلة، حاول مجدداً.": "Couldn't add to the cart, please try again."
 }

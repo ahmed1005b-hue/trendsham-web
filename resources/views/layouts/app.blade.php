@@ -18,12 +18,37 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400..700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/ts-app.css') }}?v={{ @filemtime(public_path('css/ts-app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/ts-motion.css') }}?v={{ @filemtime(public_path('css/ts-motion.css')) }}">
+    {{-- الحركة: تُقرَّر قبل أول رسم حتى لا ترمش البطاقات؛ شاشة البداية مرة واحدة في الزيارة --}}
+    <script>
+    (function () {
+        var d = document.documentElement;
+        try {
+            if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            d.classList.add('ts-motion');
+            if (!sessionStorage.getItem('tsSplashSeen')) {
+                sessionStorage.setItem('tsSplashSeen', '1');
+                d.classList.add('ts-splash-on');
+                window.tsSplashAt = performance.now();
+            }
+        } catch (e) { return; }
+        // أمان: إن لم يعمل سكربت الحركة تظهر الصفحة كاملة كما هي
+        setTimeout(function () { if (!window.tsMotionReady) d.classList.remove('ts-motion', 'ts-splash-on'); }, 3000);
+    })();
+    </script>
     {{-- بعض الصفحات تستخدم @section('styles') وأخرى @push('styles') --}}
     @yield('styles')
     @stack('styles')
     @include('partials.theme-head')
 </head>
 <body>
+    <div id="ts-splash" class="ts-splash" aria-hidden="true">
+        <svg class="ts-splash__mark" viewBox="0 0 64 64" focusable="false">
+            <path class="ts-splash__diamond" d="M32 8 56 32 32 56 8 32Z"/>
+            <path class="ts-splash__square" d="M15 15h34v34H15z"/>
+        </svg>
+        <div class="ts-splash__word">تريند<span>شام</span></div>
+    </div>
     @include('partials.header')
 
 
@@ -99,6 +124,16 @@
         document.addEventListener('ts:themechange', syncBtn);
     })();
     </script>
+    <script>
+    window.tsMotion = {
+        cartStoreUrl: @json(route('customer.cart.store')),
+        cartUrl: @json(route('customer.cart.index')),
+        addedText: @json(__('تمت الإضافة للسلة.')),
+        viewCartText: @json(__('عرض السلة')),
+        failText: @json(__('تعذّرت الإضافة للسلة، حاول مجدداً.')),
+    };
+    </script>
+    <script src="{{ asset('js/ts-motion.js') }}?v={{ @filemtime(public_path('js/ts-motion.js')) }}" defer></script>
     @stack('scripts')
 </body>
 </html>

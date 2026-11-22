@@ -42,7 +42,7 @@ class CartController extends Controller
                 ->where('is_active', true)
                 ->firstOrFail();
         } elseif ($hasActiveVariants) {
-            return back()->with('error', 'يرجى اختيار اللون/المقاس قبل الإضافة إلى السلة.');
+            return $this->cartError($request, 'يرجى اختيار اللون/المقاس قبل الإضافة إلى السلة.');
         }
 
         $quantity = $validated['quantity'] ?? 1;
@@ -56,7 +56,7 @@ class CartController extends Controller
 
         $stock = $variant ? $variant->stock_quantity : $product->stock_quantity;
         if ($stock < 1) {
-            return back()->with('error', 'هذا المتغير غير متوفر حالياً.');
+            return $this->cartError($request, 'هذا المتغير غير متوفر حالياً.');
         }
 
         $item = CartItem::firstOrNew([
@@ -75,7 +75,24 @@ class CartController extends Controller
         $item->original_unit_price = $originalUnitPrice;
         $item->save();
 
+        // الإضافة من غير مغادرة الصفحة (حركة «طيران» المنتج للسلة): نرجع العدد الجديد للشارة
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('تمت الإضافة للسلة.'),
+                'cart_count' => (int) $request->user()->cartItems()->sum('quantity'),
+                'cart_url' => route('customer.cart.index'),
+            ]);
+        }
+
         return redirect()->route('customer.cart.index')->with('success', 'تمت الإضافة للسلة.');
+    }
+
+    /** رسالة فشل الإضافة: JSON لطلبات الصفحة نفسها، ورجوع مع رسالة للنموذج العادي. */
+    private function cartError(Request $request, string $message)
+    {
+        return $request->expectsJson()
+            ? response()->json(['message' => __($message)], 422)
+            : back()->with('error', $message);
     }
 
     public function update(Request $request, CartItem $cartItem)
