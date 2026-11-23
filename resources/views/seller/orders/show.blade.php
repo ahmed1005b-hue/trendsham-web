@@ -71,7 +71,14 @@
     <nav class="navbar ts-header mb-4">
         <div class="container">
             <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - الطلب</span>
-            <a href="{{ route('seller.orders.index') }}" class="btn btn-outline-secondary btn-sm">كل الطلبات</a>
+            <div class="d-flex gap-2">
+                @unless (in_array($parcel->status, App\Models\Shipment::CLOSED, true))
+                    <a href="{{ route('seller.orders.label', $order) }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+                        <i class="bi bi-printer" aria-hidden="true"></i> {{ __('طباعة ملصق الشحنة') }}
+                    </a>
+                @endunless
+                <a href="{{ route('seller.orders.index') }}" class="btn btn-outline-secondary btn-sm">كل الطلبات</a>
+            </div>
         </div>
     </nav>
 

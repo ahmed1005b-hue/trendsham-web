@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Seller;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Pdf\PdfService;
 use App\Services\SellerOrderService;
+use App\Shipping\ParcelLabel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -60,6 +62,20 @@ class OrderController extends Controller
             'nextStatuses' => $service->nextStatuses($order, $vendor),
             'isShared' => ! $order->isSingleVendor(),
         ]);
+    }
+
+    /** ملصق الشحنة PDF: يطبعه البائع ويلصقه على طرده. */
+    public function label(Request $request, Order $order, ParcelLabel $label, PdfService $pdf)
+    {
+        Gate::authorize('viewAsSeller', $order);
+
+        try {
+            $bytes = $label->render($request->user()->sellerProfile, $order);
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $pdf->respond($bytes, $label->filename($order));
     }
 
     public function updateStatus(Request $request, Order $order)

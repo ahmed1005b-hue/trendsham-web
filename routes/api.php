@@ -59,6 +59,7 @@ use App\Http\Controllers\Api\Seller\ProductOptionsController;
 use App\Http\Controllers\Api\Seller\ProfileController as SellerProfileController;
 use App\Http\Controllers\Api\Seller\QuestionController;
 use App\Http\Controllers\Api\Seller\ReturnController as SellerReturnController;
+use App\Http\Controllers\Api\Seller\ShippingSettingsController as SellerShippingSettingsController;
 use App\Http\Controllers\Api\Seller\ShowcaseController as SellerShowcaseController;
 use App\Http\Controllers\Api\Seller\StoryController as SellerStoryController;
 use App\Http\Controllers\Api\Seller\SupportController;
@@ -257,6 +258,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard', [SellerDashboardController::class, 'show']);
         Route::get('/dashboard/analytics', [SellerDashboardController::class, 'analytics']);
         Route::put('/store', [SellerDashboardController::class, 'updateStore']);
+        Route::get('/shipping', [SellerShippingSettingsController::class, 'show']);
+        Route::put('/shipping', [SellerShippingSettingsController::class, 'update']);
 
         Route::get('/product-options', ProductOptionsController::class);
         Route::get('/products', [SellerProductController::class, 'index']);
@@ -295,6 +298,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/daily-deals/{deal}', [SellerDailyDealController::class, 'destroy']);
         Route::post('/daily-deals/{deal}/toggle', [SellerDailyDealController::class, 'toggle']);
         Route::put('/orders/{order}/status', [SellerOrderController::class, 'updateStatus']);
+        Route::get('/orders/{order}', [SellerOrderController::class, 'show']);
+        Route::get('/orders/{order}/label', [SellerOrderController::class, 'label']);
 
         // دعم البائع - التواصل مع الإدارة
         Route::get('/support', [SupportController::class, 'index'])->name('api.seller.support.index');

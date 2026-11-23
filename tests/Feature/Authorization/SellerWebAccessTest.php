@@ -52,6 +52,7 @@ class SellerWebAccessTest extends TestCase
         ['GET', 'seller/conversations/{conversation}', 'conversation', []],
         ['POST', 'seller/conversations/{conversation}/messages', 'conversation', ['body' => 'x']],
         ['GET', 'seller/orders/{order}', 'order', []],
+        ['GET', 'seller/orders/{order}/label', 'order', []],
         ['POST', 'seller/orders/{order}/status', 'order', ['status' => 'shipped']],
         ['GET', 'seller/returns/{returnRequest}', 'returnRequest', []],
         ['POST', 'seller/returns/{returnRequest}/approve', 'returnRequest', ['note' => 'x']],

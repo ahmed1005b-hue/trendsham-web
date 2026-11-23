@@ -400,6 +400,7 @@ Route::middleware(['auth', 'role:seller', 'seller.store'])->prefix('seller')->na
 
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/label', [SellerOrderController::class, 'label'])->name('orders.label');
     Route::post('/orders/{order}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
     // إعدادات الشحن: شركة الشحن أو توصيل المتجر بنفسه بأسعاره لكل محافظة، والاستلام من المحل

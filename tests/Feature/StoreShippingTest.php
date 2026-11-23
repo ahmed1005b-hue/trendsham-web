@@ -238,6 +238,58 @@ class StoreShippingTest extends TestCase
             ->assertSessionHasErrors('pickup_address');
     }
 
+    public function test_seller_reads_and_saves_shipping_settings_from_the_app(): void
+    {
+        $a = $this->tenant('a');
+        $api = $this->actingAs($a['seller'], 'sanctum');
+
+        $api->getJson('/api/v1/seller/shipping')->assertOk()
+            ->assertJsonPath('mode', 'platform')
+            ->assertJsonPath('allow_pickup', false)
+            ->assertJsonCount(count(Governorates::ALL), 'rates')
+            ->assertJsonPath('rates.0.enabled', false)
+            ->assertJsonPath('status.debt', 0);
+
+        $api->putJson('/api/v1/seller/shipping', ['mode' => 'self', 'prep_days' => 1, 'delivery_days' => 2])
+            ->assertStatus(422)->assertJsonValidationErrors('rates');
+
+        $api->putJson('/api/v1/seller/shipping', [
+            'mode' => 'self', 'prep_days' => 0, 'delivery_days' => 1, 'free_over' => 150000,
+            'rates' => ['دمشق' => ['enabled' => true, 'fee' => 5000], 'حلب' => ['enabled' => false, 'fee' => 9000]],
+            'allow_pickup' => true, 'pickup_address' => 'دمشق - الحمرا',
+        ])->assertOk()
+            ->assertJsonPath('mode', 'self')
+            ->assertJsonPath('free_over', 150000)
+            ->assertJsonPath('allow_pickup', true)
+            ->assertJsonPath('pickup_address', 'دمشق - الحمرا');
+
+        $this->assertSame(['دمشق' => 500000], $a['store']->shippingRates()->pluck('fee', 'governorate')->all());
+        $damascus = collect($api->getJson('/api/v1/seller/shipping')->json('rates'))->firstWhere('governorate', 'دمشق');
+        $this->assertTrue($damascus['enabled']);
+        $this->assertEquals(5000, $damascus['fee']);
+
+        $api->putJson('/api/v1/seller/shipping', ['mode' => 'platform', 'prep_days' => 1, 'delivery_days' => 2, 'allow_pickup' => true])
+            ->assertStatus(422)->assertJsonValidationErrors('pickup_address');
+    }
+
+    public function test_the_app_shows_the_store_debt_and_why_self_delivery_is_paused(): void
+    {
+        $a = $this->tenant('a');
+        $this->selfDelivering($a['store']);
+        $a['store']->walletOrCreate()->update(['balance' => -2500000]);
+
+        $this->actingAs($a['seller'], 'sanctum')->getJson('/api/v1/seller/shipping')->assertOk()
+            ->assertJsonPath('mode', 'self')
+            ->assertJsonPath('status.debt', 25000);
+    }
+
+    public function test_customers_cannot_open_store_shipping_settings_in_the_app(): void
+    {
+        $a = $this->tenant('a');
+
+        $this->actingAs($a['customer'], 'sanctum')->getJson('/api/v1/seller/shipping')->assertForbidden();
+    }
+
     public function test_the_app_gets_each_parcel_with_its_mode_and_arrival_time(): void
     {
         $a = $this->tenant('a');

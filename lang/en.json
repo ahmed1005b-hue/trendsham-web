@@ -3646,5 +3646,16 @@
     "تواصل معنا للانضمام": "Contact us to join",
     "الانضمام كبائع يكون بدعوة من إدارة تريندشام. راسلنا ونرسل لك رابط الدعوة.": "Joining as a seller is by invitation from TrendSham. Message us and we'll send you an invitation link.",
     "البيع على تريندشام بدعوة من الإدارة. راسلنا على الإيميل أدناه، ونرسل لك رابط دعوة خاص بك.": "Selling on TrendSham is by invitation. Email us below and we'll send you a personal invitation link.",
-    "افتح الرابط وأنشئ حسابك (أو اقبله بحسابك الحالي)، فيعمل متجرك مباشرة.": "Open the link and create your account (or accept with your current one), and your store goes live right away."
+    "افتح الرابط وأنشئ حسابك (أو اقبله بحسابك الحالي)، فيعمل متجرك مباشرة.": "Open the link and create your account (or accept with your current one), and your store goes live right away.",
+    "طباعة ملصق الشحنة": "Print shipping label",
+    "هذا الطرد ملغي أو مرتجع، لا يحتاج ملصق شحنة.": "This parcel is cancelled or returned; it needs no shipping label.",
+    "طرد رقم": "Parcel no.",
+    "إلى (المستلم)": "To (recipient)",
+    "يستلمه الزبون من المحل": "Customer picks it up from the shop",
+    "المبلغ المطلوب من الزبون عند التسليم": "Amount to collect from the customer on delivery",
+    "مدفوع مسبقاً — لا تحصّل أي مبلغ": "Prepaid — collect nothing",
+    "من (المتجر)": "From (store)",
+    "التوصيل:": "Delivery:",
+    "محتويات الطرد": "Parcel contents",
+    "و:count منتجات أخرى": "and :count more items"
 }

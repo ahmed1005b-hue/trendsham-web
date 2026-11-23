@@ -7,7 +7,10 @@ use App\Http\Resources\OrderItemResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Shipment;
+use App\Services\Pdf\PdfService;
 use App\Services\SellerOrderService;
+use App\Shipping\ParcelLabel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -60,7 +63,39 @@ class OrderController extends Controller
         $vendor = $request->user()->sellerProfile;
         Gate::authorize('viewAsSeller', $order);
 
-        return new OrderResource($order->load($this->vendorItems($vendor->id)));
+        $parcel = $this->orders->parcelFor($vendor, $order);
+        $shared = ! $order->isSingleVendor(); // قبل تحميل بنود المتجر وحده
+
+        // طرد البائع في هذا الطلب: كيف يُوصَّل، وكم يحصّل من الزبون، وما الخطوة التالية (مثل صفحة الطلب في الموقع)
+        return (new OrderResource($order->load($this->vendorItems($vendor->id))))->additional(['parcel' => [
+            'id' => $parcel->id,
+            'status' => $parcel->status,
+            'status_label' => __($parcel->statusLabel()),
+            'delivery_mode' => $parcel->delivery_mode ?? 'platform',
+            'delivery_mode_label' => __($parcel->deliveryModeLabel()),
+            'seller_delivers' => $parcel->isSellerDelivered(),
+            'cod_amount' => (int) $parcel->cod_amount / 100,
+            'shipping_fee' => (int) $parcel->shipping_fee / 100,
+            'tracking_number' => $parcel->tracking_number,
+            'shipping_governorate' => $order->shipping_governorate,
+            'is_shared' => $shared,
+            'next_statuses' => $this->orders->nextStatuses($order, $vendor),
+            'can_print_label' => ! in_array($parcel->status, Shipment::CLOSED, true),
+        ]]);
+    }
+
+    /** ملصق الشحنة PDF (نفس ملصق الموقع). */
+    public function label(Request $request, Order $order, ParcelLabel $label, PdfService $pdf)
+    {
+        Gate::authorize('viewAsSeller', $order);
+
+        try {
+            $bytes = $label->render($request->user()->sellerProfile, $order);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return $pdf->respond($bytes, $label->filename($order));
     }
 
     public function updateStatus(Request $request, Order $order)

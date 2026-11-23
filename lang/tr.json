@@ -3647,5 +3647,16 @@
     "تواصل معنا للانضمام": "Katılmak için bize ulaşın",
     "الانضمام كبائع يكون بدعوة من إدارة تريندشام. راسلنا ونرسل لك رابط الدعوة.": "Satıcı olarak katılım TrendSham davetiyle olur. Bize yazın, size davet bağlantısı gönderelim.",
     "البيع على تريندشام بدعوة من الإدارة. راسلنا على الإيميل أدناه، ونرسل لك رابط دعوة خاص بك.": "TrendSham'da satış davetle olur. Aşağıdaki e-postadan bize yazın, size özel davet bağlantısı gönderelim.",
-    "افتح الرابط وأنشئ حسابك (أو اقبله بحسابك الحالي)، فيعمل متجرك مباشرة.": "Bağlantıyı açıp hesabınızı oluşturun (veya mevcut hesabınızla kabul edin), mağazanız hemen açılır."
+    "افتح الرابط وأنشئ حسابك (أو اقبله بحسابك الحالي)، فيعمل متجرك مباشرة.": "Bağlantıyı açıp hesabınızı oluşturun (veya mevcut hesabınızla kabul edin), mağazanız hemen açılır.",
+    "طباعة ملصق الشحنة": "Kargo etiketini yazdır",
+    "هذا الطرد ملغي أو مرتجع، لا يحتاج ملصق شحنة.": "Bu paket iptal edildi veya iade edildi; kargo etiketine gerek yok.",
+    "طرد رقم": "Paket no.",
+    "إلى (المستلم)": "Alıcı",
+    "يستلمه الزبون من المحل": "Müşteri mağazadan teslim alacak",
+    "المبلغ المطلوب من الزبون عند التسليم": "Teslimatta müşteriden tahsil edilecek tutar",
+    "مدفوع مسبقاً — لا تحصّل أي مبلغ": "Ön ödemeli — tahsilat yapmayın",
+    "من (المتجر)": "Gönderen (mağaza)",
+    "التوصيل:": "Teslimat:",
+    "محتويات الطرد": "Paket içeriği",
+    "و:count منتجات أخرى": "ve :count ürün daha"
 }

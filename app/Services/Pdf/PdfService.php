@@ -11,12 +11,14 @@ class PdfService
      * توليد محتوى PDF كنص خام من Blade view، مع إعدادات تضمن ظهور العربي
      * متصل وباتجاه صحيح (dompdf ما بيدعم ربط الأحرف العربية أصلاً، لهيك
      * استخدمنا mPDF).
+     *
+     * @param  array<string, mixed>  $page  إعدادات صفحة إضافية لـ mPDF (مثل مقاس ملصق الشحنة)
      */
-    public function render(string $view, array $data = []): string
+    public function render(string $view, array $data = [], array $page = []): string
     {
         $locale = in_array(app()->getLocale(), ['ar', 'en', 'tr'], true) ? app()->getLocale() : 'ar';
         $direction = $locale === 'ar' ? 'rtl' : 'ltr';
-        $mpdf = new Mpdf([
+        $mpdf = new Mpdf($page + [
             'mode' => 'utf-8',
             'format' => 'A4',
             'default_font' => 'dejavusanscondensed',
