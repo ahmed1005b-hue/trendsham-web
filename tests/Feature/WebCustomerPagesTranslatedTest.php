@@ -93,7 +93,6 @@ class WebCustomerPagesTranslatedTest extends TestCase
             'cards' => route('customer.cards.index'),
             'notifications' => route('notifications.index'),
             'conversations' => route('customer.conversations.index'),
-            'become a seller' => route('customer.seller-application.create'),
             'invoice' => route('invoices.show', $this->order),
         ];
     }

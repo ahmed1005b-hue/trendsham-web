@@ -48,6 +48,8 @@ class RouteGuardTest extends TestCase
         'POST store/{sellerProfile}/message' => "starts the caller's own conversation",
         'POST api/v1/coupons/{campaign}/collect' => 'audience rules covered by CollectCouponTest',
         'POST coupons/{campaign}/collect' => 'audience rules covered by CollectCouponTest',
+        'POST api/v1/invitations/{token}/accept' => 'secret one-use token, rules covered by InvitationTest',
+        'POST join/{token}/accept' => 'secret one-use token, rules covered by InvitationTest',
     ];
 
     /** مسارات لا يمكن استدعاؤها كمستخدم جلسة/Sanctum في اختبار، مع السبب. المفتاح: "METHOD uri". */

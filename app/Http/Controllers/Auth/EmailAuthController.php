@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invitation;
 use App\Models\Otp;
-use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\AccountClosureService;
+use App\Services\InvitationService;
 use App\Services\Sms\SmsService;
 use App\Support\Phone;
 use Illuminate\Http\Request;
@@ -40,8 +41,16 @@ class EmailAuthController extends Controller
      */
     public function registerStart(Request $request)
     {
+        // إنشاء الحساب العام للعملاء فقط؛ البائع والموظف برابط دعوة من الإدارة
+        $invitation = $request->filled('invitation_token') ? Invitation::findByToken($request->input('invitation_token')) : null;
+        if ($request->filled('invitation_token') && ! $invitation) {
+            return response()->json(['message' => __('رابط الدعوة غير صحيح.')], 422);
+        }
+        if ($invitation && ($problem = $invitation->problem())) {
+            return response()->json(['message' => $problem], 422);
+        }
+
         $validated = $request->validate([
-            'account_type' => ['required', 'in:customer,seller,employee'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'regex:/^\+?[0-9]{9,15}$/', 'unique:users,phone'],
@@ -52,14 +61,18 @@ class EmailAuthController extends Controller
                 'confirmed',
                 Password::min(8)->mixedCase()->numbers()->symbols(),
             ],
-            'store_name' => ['required_if:account_type,seller', 'nullable', 'string', 'max:255'],
+            'store_name' => [$invitation?->role === 'seller' ? 'required' : 'nullable', 'string', 'max:255'],
             'store_description' => ['nullable', 'string'],
             'commercial_register' => ['nullable', 'string', 'max:255'],
         ], [
             'phone.regex' => 'رقم الهاتف غير صالح.',
             'password.confirmed' => 'تأكيد كلمة السر غير مطابق.',
-            'store_name.required_if' => 'اسم المتجر مطلوب لحساب البائع.',
+            'store_name.required' => 'اسم المتجر مطلوب لحساب البائع.',
         ]);
+        if ($invitation && ! $invitation->allows($validated['phone'], $validated['email'])) {
+            return response()->json(['message' => __('هذه الدعوة مخصصة لشخص آخر (رقم هاتف أو بريد مختلف).')], 422);
+        }
+        $validated['invitation_id'] = $invitation?->id;
 
         $key = 'register-otp-send:'.$validated['phone'];
         if (RateLimiter::tooManyAttempts($key, 3)) {
@@ -130,44 +143,49 @@ class EmailAuthController extends Controller
             return response()->json(['message' => 'الحساب موجود مسبقاً، جرّب تسجيل الدخول.'], 422);
         }
 
-        $user = DB::transaction(function () use ($pending) {
-            $isEmployee = $pending['account_type'] === 'employee';
-            $user = User::create([
-                'first_name' => $pending['first_name'],
-                'last_name' => $pending['last_name'],
-                'phone' => $pending['phone'],
-                'address' => $pending['address'] ?? null,
-                'email' => $pending['email'],
-                'password' => $pending['password'],
-                'role' => $isEmployee ? 'employee' : $pending['account_type'],
-                'status' => $isEmployee ? 'suspended' : 'active',
-                'employee_status' => $isEmployee ? 'pending' : null,
-                'phone_verified_at' => now(),
-            ]);
-
-            if ($pending['account_type'] === 'seller') {
-                SellerProfile::create([
-                    'user_id' => $user->id,
-                    'store_name' => $pending['store_name'],
-                    'store_description' => $pending['store_description'] ?? null,
-                    'commercial_register' => $pending['commercial_register'] ?? null,
-                    'status' => 'pending',
+        try {
+            $user = DB::transaction(function () use ($pending) {
+                $user = User::create([
+                    'first_name' => $pending['first_name'],
+                    'last_name' => $pending['last_name'],
+                    'phone' => $pending['phone'],
+                    'address' => $pending['address'] ?? null,
+                    'email' => $pending['email'],
+                    'password' => $pending['password'],
+                    'role' => 'customer',
+                    'status' => 'active',
+                    'phone_verified_at' => now(),
                 ]);
-            }
 
-            return $user;
-        });
+                // رابط دعوة: يصبح بائعاً أو موظفاً (والدعوة تُقفل وتُستعمل هنا مرة واحدة)
+                if ($invitation = Invitation::find($pending['invitation_id'] ?? null)) {
+                    app(InvitationService::class)->claim($invitation, $user, $pending['store_name'] ?? null);
+                    $user->refresh();
+                    $user->sellerProfile?->update(array_filter([
+                        'store_description' => $pending['store_description'] ?? null,
+                        'commercial_register' => $pending['commercial_register'] ?? null,
+                    ]));
+                }
+
+                return $user;
+            });
+        } catch (\DomainException $e) {
+            $request->session()->forget(self::SESSION_KEY);
+
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         $request->session()->forget(self::SESSION_KEY);
-        if ($user->role === 'employee') {
-            return response()->json(['redirect' => route('employee.registration-pending')]);
-        }
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
         return response()->json([
-            'redirect' => route($user->role === 'seller' ? 'seller.dashboard' : 'customer.dashboard'),
+            'redirect' => route(match ($user->role) {
+                'seller' => 'seller.dashboard',
+                'employee' => 'employee.dashboard',
+                default => 'customer.dashboard',
+            }),
         ]);
     }
 

@@ -54,6 +54,7 @@ use App\Http\Controllers\Customer\ReturnController as CustomerReturnController;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\SellerApplicationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\NotificationController;
@@ -179,6 +180,10 @@ Route::post('/register/start', [EmailAuthController::class, 'registerStart'])->n
 Route::post('/register/resend', [EmailAuthController::class, 'resendRegisterOtp'])->name('register.resend')->middleware('throttle:otp');
 Route::post('/register/verify', [EmailAuthController::class, 'registerVerify'])->name('register.verify')->middleware('throttle:verify');
 
+// رابط دعوة بائع أو موظف (الحساب العام للعملاء فقط)
+Route::get('/join/{token}', [InvitationController::class, 'show'])->name('invitations.show')->middleware('throttle:30,1');
+Route::post('/join/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept')->middleware(['auth', 'throttle:10,1']);
+
 // الإشعارات - مشتركة لكل الأدوار المسجّلة
 Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -287,6 +292,9 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::post('/sellers/{sellerProfile}/suspend', [AdminSellerController::class, 'suspend'])->name('sellers.suspend');
     Route::post('/sellers/{sellerProfile}/unsuspend', [AdminSellerController::class, 'unsuspend'])->name('sellers.unsuspend');
     Route::put('/sellers/{sellerProfile}/commission', [AdminSellerController::class, 'updateCommission'])->name('sellers.updateCommission');
+    Route::get('/invitations', [App\Http\Controllers\Admin\InvitationController::class, 'index'])->name('invitations.index');
+    Route::post('/invitations', [App\Http\Controllers\Admin\InvitationController::class, 'store'])->name('invitations.store');
+    Route::post('/invitations/{invitation}/revoke', [App\Http\Controllers\Admin\InvitationController::class, 'revoke'])->name('invitations.revoke');
     Route::get('/employees', [AdminSellerController::class, 'employees'])->name('employees.index');
     Route::post('/employees/{user}/approve', [AdminSellerController::class, 'approveEmployee'])->name('employees.approve');
     Route::post('/employees/{user}/reject', [AdminSellerController::class, 'rejectEmployee'])->name('employees.reject');

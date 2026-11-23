@@ -26,7 +26,6 @@
                 <h6>عن تريندشام</h6>
                 <ul class="list-unstyled small mb-0">
                     <li class="mb-2"><a href="{{ route('pages.about') }}">من نحن</a></li>
-                    <li class="mb-2"><a href="{{ auth()->check() ? route('customer.seller-application.create') : route('login') }}">ابدأ البيع معنا</a></li>
                     <li class="mb-2"><a href="{{ route('legal.terms') }}">الشروط والأحكام</a></li>
                     <li class="mb-2"><a href="{{ route('legal.privacy') }}">سياسة الخصوصية</a></li>
                 </ul>

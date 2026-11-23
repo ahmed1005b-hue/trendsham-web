@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Mail\PasswordResetMail;
+use App\Models\Invitation;
 use App\Models\Otp;
-use App\Models\SellerProfile;
 use App\Models\User;
 use App\Referrals\ReferralCode;
 use App\Referrals\ReferralException;
 use App\Referrals\ReferralService;
 use App\Services\AccountClosureService;
+use App\Services\InvitationService;
 use App\Services\Sms\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -36,15 +37,23 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        // إنشاء الحساب للعملاء فقط؛ البائع والموظف برمز/رابط دعوة من الإدارة (invitation_token)
+        $invitation = $request->filled('invitation_token') ? Invitation::findByToken($request->input('invitation_token')) : null;
+        if ($request->filled('invitation_token') && ! $invitation) {
+            return response()->json(['message' => __('رابط الدعوة غير صحيح.'), 'errors' => ['invitation_token' => [__('رابط الدعوة غير صحيح.')]]], 422);
+        }
+        if ($invitation && ($problem = $invitation->problem())) {
+            return response()->json(['message' => $problem, 'errors' => ['invitation_token' => [$problem]]], 422);
+        }
+
         $validated = $request->validate([
-            'account_type' => ['required', 'in:customer,seller,employee'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'regex:/^\+?[0-9]{9,15}$/', 'unique:users,phone'],
             'address' => ['nullable', 'string', 'max:500'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
-            'store_name' => ['required_if:account_type,seller', 'nullable', 'string', 'max:255'],
+            'store_name' => [$invitation?->role === 'seller' ? 'required' : 'nullable', 'string', 'max:255'],
             // كود «دعوة صديق» (للعملاء فقط): يُفحص الآن ليُصحَّح قبل إرسال رمز التحقق
             'referral_code' => ['nullable', 'string', 'max:20', function (string $attribute, mixed $value, \Closure $fail) {
                 if ($value !== null && ReferralCode::decode((string) $value) === null) {
@@ -52,6 +61,11 @@ class AuthController extends Controller
                 }
             }],
         ]);
+
+        if ($invitation && ! $invitation->allows($validated['phone'], $validated['email'])) {
+            return response()->json(['message' => __('هذه الدعوة مخصصة لشخص آخر (رقم هاتف أو بريد مختلف).')], 422);
+        }
+        $validated['invitation_id'] = $invitation?->id;
 
         $key = 'api-register-otp:'.$validated['phone'];
         if (RateLimiter::tooManyAttempts($key, 3)) {
@@ -82,12 +96,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'انتهت صلاحية الطلب، ابدأ التسجيل من جديد.'], 400);
         }
 
-        if ($pending['account_type'] === 'seller') {
-            $validated = $request->validate([
-                'identity_document' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            ]) + $validated;
-        }
-
         $otp = Otp::where('phone', $validated['phone'])->where('is_used', false)->latest()->first();
         if (! $otp || $otp->isLockedOut()) {
             return response()->json(['message' => 'رمز التحقق غير صالح أو منتهي.'], 422);
@@ -96,15 +104,15 @@ class AuthController extends Controller
             return response()->json(['message' => 'رمز التحقق غير صحيح.'], 422);
         }
 
+        // وثيقة الهوية اختيارية للبائع المدعو (يمكن رفعها لاحقاً لشارة «متجر موثّق»)
         $identityDocumentPath = null;
-        if ($pending['account_type'] === 'seller') {
-            $identityDocumentPath = $request->file('identity_document')
-                ->store('seller-identities', 'identity_documents');
+        if (($pending['invitation_id'] ?? null) && $request->hasFile('identity_document')) {
+            $request->validate(['identity_document' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
+            $identityDocumentPath = $request->file('identity_document')->store('seller-identities', 'identity_documents');
         }
 
         try {
             $user = DB::transaction(function () use ($pending, $identityDocumentPath) {
-                $isEmployee = $pending['account_type'] === 'employee';
                 $user = User::create([
                     'first_name' => $pending['first_name'],
                     'last_name' => $pending['last_name'],
@@ -112,24 +120,32 @@ class AuthController extends Controller
                     'address' => $pending['address'] ?? null,
                     'email' => $pending['email'],
                     'password' => $pending['password'],
-                    'role' => $isEmployee ? 'employee' : $pending['account_type'],
-                    'status' => $isEmployee ? 'suspended' : 'active',
-                    'employee_status' => $isEmployee ? 'pending' : null,
+                    'role' => 'customer',
+                    'status' => 'active',
                     'phone_verified_at' => now(),
                 ]);
 
-                if ($pending['account_type'] === 'seller') {
-                    SellerProfile::create([
-                        'user_id' => $user->id,
-                        'store_name' => $pending['store_name'],
-                        'identity_document_path' => $identityDocumentPath,
-                        'identity_document_submitted_at' => now(),
-                        'status' => 'pending',
-                    ]);
+                // دعوة: يصبح بائعاً أو موظفاً (الدعوة تُقفل وتُستعمل هنا مرة واحدة)
+                if ($invitation = Invitation::find($pending['invitation_id'] ?? null)) {
+                    app(InvitationService::class)->claim($invitation, $user, $pending['store_name'] ?? null);
+                    $user->refresh();
+                    if ($identityDocumentPath) {
+                        $user->sellerProfile?->update([
+                            'identity_document_path' => $identityDocumentPath,
+                            'identity_document_submitted_at' => now(),
+                        ]);
+                    }
                 }
 
                 return $user;
             });
+        } catch (\DomainException $e) {
+            if ($identityDocumentPath) {
+                Storage::disk('identity_documents')->delete($identityDocumentPath);
+            }
+            cache()->forget('pending_registration:'.$validated['phone']);
+
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $exception) {
             if ($identityDocumentPath) {
                 Storage::disk('identity_documents')->delete($identityDocumentPath);
@@ -145,13 +161,6 @@ class AuthController extends Controller
             } catch (ReferralException) {
                 // كود لم يعد صالحاً لا يمنع إنشاء الحساب
             }
-        }
-
-        if ($user->role === 'employee') {
-            return response()->json([
-                'pending_approval' => true,
-                'message' => 'تم إنشاء الطلب، وسيتم تفعيل حساب الموظف بعد موافقة المدير.',
-            ]);
         }
 
         $token = $user->createToken('mobile-app')->plainTextToken;

@@ -51,6 +51,7 @@
             ]],
             ['title' => __('البائعون والفريق'), 'icon' => 'bi-shop', 'items' => [
                 ['route' => 'admin.sellers.index', 'icon' => 'bi-shop-window', 'label' => __('البائعون'), 'badge' => $pendingSellers ?? 0, 'badge_class' => 'bg-danger'],
+                ['route' => 'admin.invitations.index', 'icon' => 'bi-envelope-paper-heart', 'label' => __('دعوات الانضمام')],
                 ['route' => 'admin.employees.index', 'icon' => 'bi-person-badge', 'label' => __('طلبات الموظفين')],
             ]],
             ['title' => __('المالية'), 'icon' => 'bi-cash-stack', 'items' => [

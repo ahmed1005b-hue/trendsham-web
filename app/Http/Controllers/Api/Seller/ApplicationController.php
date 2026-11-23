@@ -16,6 +16,10 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         $profile = $user->sellerProfile;
+        // فتح متجر جديد بدعوة من الإدارة فقط؛ هنا يوثّق البائع المدعو هوية متجره
+        if (! $profile) {
+            return response()->json(['message' => __('فتح المتاجر على تريندشام بدعوة من الإدارة فقط.')], 403);
+        }
         $previousStatus = $profile?->status;
         $approvedLegacy = $profile?->status === 'approved' && ! filled($profile->identity_verified_at);
         if ($profile?->status === 'approved' && filled($profile->identity_verified_at)) {

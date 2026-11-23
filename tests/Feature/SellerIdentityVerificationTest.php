@@ -21,6 +21,8 @@ class SellerIdentityVerificationTest extends TestCase
     {
         Storage::fake('identity_documents');
         $customer = User::factory()->create(['role' => 'customer']);
+        // بائع مدعو بطلب قديم معلّق يوثّق هويته (فتح متجر جديد بدعوة فقط)
+        SellerProfile::create(['user_id' => $customer->id, 'store_name' => 'متجر التحقق', 'status' => 'pending']);
 
         $this->actingAs($customer->fresh())
             ->post(route('customer.seller-application.store'), [
@@ -53,9 +55,9 @@ class SellerIdentityVerificationTest extends TestCase
         Storage::disk('identity_documents')->assertExists($profile->identity_document_path);
     }
 
-    public function test_seller_otp_verification_requires_document_and_stores_it_privately(): void
+    public function test_self_sign_up_as_a_seller_is_no_longer_possible(): void
     {
-        Storage::fake('identity_documents');
+        // طلب قديم معلّق بنوع «بائع»: يُنشأ حساب عميل فقط (فتح المتاجر بدعوة من الإدارة)
         $phone = '+963900001234';
         Cache::put('pending_registration:'.$phone, [
             'account_type' => 'seller',
@@ -78,18 +80,9 @@ class SellerIdentityVerificationTest extends TestCase
         $this->post('/api/v1/auth/register/verify', [
             'phone' => $phone,
             'code' => '123456',
-        ], ['Accept' => 'application/json'])->assertUnprocessable();
-        $this->assertDatabaseMissing('users', ['phone' => $phone]);
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('user.role', 'customer');
 
-                $this->post('/api/v1/auth/register/verify', [
-            'phone' => $phone,
-            'code' => '123456',
-            'identity_document' => UploadedFile::fake()->image('identity.webp'),
-        ], ['Accept' => 'application/json'])->assertOk();
-
-        $profile = SellerProfile::whereHas('user', fn ($query) => $query->where('phone', \App\Support\Phone::normalize($phone)))->firstOrFail();
-        Storage::disk('identity_documents')->assertExists($profile->identity_document_path);
-        $this->assertSame('pending', $profile->status);
+        $this->assertSame(0, SellerProfile::count());
     }
 
     public function test_admin_document_access_and_approval_are_protected_and_approved_legacy_sellers_are_grandfathered(): void
@@ -182,4 +175,3 @@ class SellerIdentityVerificationTest extends TestCase
         Storage::disk('identity_documents')->assertExists($profile->identity_document_path);
     }
 }
-

@@ -132,10 +132,10 @@
 <div class="container mb-5 text-center">
     <div class="p-4 p-md-5 rounded-4" style="background: linear-gradient(135deg, var(--ts-emerald), var(--ts-emerald-dark));">
         <h2 class="h4 text-white mb-2">عندك منتج تحب تبيعه؟</h2>
-        <p class="text-white opacity-75 mb-3">انضم كبائع وابدأ الوصول لآلاف الزبائن من كل سوريا.</p>
-        <a href="{{ auth()->check() ? route('customer.seller-application.create') : route('register') }}"
+        <p class="text-white opacity-75 mb-3">الانضمام كبائع يكون بدعوة من إدارة تريندشام. راسلنا ونرسل لك رابط الدعوة.</p>
+        <a href="{{ route('pages.help') }}#sellers"
            class="btn btn-lg" style="background: var(--ts-gold); color: var(--ts-emerald-dark); font-weight:700;">
-            ابدأ البيع معنا
+            تواصل معنا للانضمام
         </a>
     </div>
 </div>

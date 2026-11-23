@@ -8,7 +8,7 @@
         <div class="card-body p-4 p-md-5">
             <div class="text-center mb-4">
                 <span class="ts-logo h3" style="color: var(--ts-emerald);">تريند<span style="color: var(--ts-gold);">شام</span></span>
-                <h1 class="text-muted small fw-normal mt-2 mb-0" style="font-family: inherit;" id="step-subtitle">أنشئ حسابك للبدء بالتسوّق أو البيع</h1>
+                <h1 class="text-muted small fw-normal mt-2 mb-0" style="font-family: inherit;" id="step-subtitle">{{ isset($invitation) ? __('أنشئ حسابك لقبول الدعوة') : __('أنشئ حسابك للبدء بالتسوّق') }}</h1>
             </div>
 
             <div id="alert-box" class="alert d-none py-2 small" role="alert"></div>
@@ -18,18 +18,14 @@
 
             {{-- ============ الخطوة 1: بيانات الحساب ============ --}}
             <form id="details-form">
-                <div class="mb-3">
-                    <label for="account_type" class="form-label small">نوع الحساب</label>
-                    <select name="account_type" id="account_type" class="form-select form-select-lg">
-                        <option value="customer" selected>عميل - أريد التسوّق</option>
-                        <option value="seller">بائع - أريد فتح متجر</option>
-                        <option value="employee">موظف - أطلب الانضمام لفريق العمل</option>
-                    </select>
-                </div>
-
-                <div id="employee-notice" class="alert alert-info d-none small">
-                    لن تتمكن من تسجيل الدخول إلى لوحة الموظف إلا بعد مراجعة المدير والموافقة على طلبك.
-                </div>
+                {{-- إنشاء الحساب العام للعملاء فقط؛ البائع والموظف يصلان إلى هنا من رابط دعوة --}}
+                @isset($invitation)
+                    <input type="hidden" name="invitation_token" value="{{ $invitationToken }}">
+                    <div class="alert alert-success small d-flex gap-2 align-items-start">
+                        <i class="bi bi-envelope-paper-heart" aria-hidden="true"></i>
+                        <div>{{ $invitation->role === 'seller' ? __('دعتك إدارة تريندشام لفتح متجر. بعد إنشاء الحساب يعمل متجرك مباشرة.') : __('دعتك إدارة تريندشام للانضمام لفريق العمل كموظف.') }}</div>
+                    </div>
+                @endisset
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
@@ -44,13 +40,15 @@
 
                 <div class="mb-3">
                     <label for="reg-phone" class="form-label small">رقم الهاتف</label>
-                    <input type="tel" name="phone" id="reg-phone" class="form-control" placeholder="09xxxxxxxx" inputmode="numeric" required>
+                    <input type="tel" name="phone" id="reg-phone" class="form-control" placeholder="09xxxxxxxx" inputmode="numeric" required
+                           @if (isset($invitation) && $invitation->phone) value="{{ $invitation->phone }}" readonly @endif>
                     <div class="form-text">رح نرسلّك رمز تأكيد على هذا الرقم بالخطوة الجاية.</div>
                 </div>
 
                 <div class="mb-3">
                     <label for="f-email" class="form-label small">البريد الإلكتروني</label>
-                    <input id="f-email" type="email" name="email" class="form-control" required>
+                    <input id="f-email" type="email" name="email" class="form-control" required
+                           @if (isset($invitation) && $invitation->email) value="{{ $invitation->email }}" readonly @endif>
                 </div>
 
                 <div class="mb-3">
@@ -58,10 +56,11 @@
                     <input id="f-address" type="text" name="address" class="form-control">
                 </div>
 
-                <div id="seller-fields" class="d-none border rounded p-3 mb-3" style="background: var(--ts-cream);">
+                @if (isset($invitation) && $invitation->role === 'seller')
+                <div id="seller-fields" class="border rounded p-3 mb-3" style="background: var(--ts-cream);">
                     <div class="mb-2">
                         <label for="f-store_name" class="form-label small">اسم المتجر</label>
-                        <input id="f-store_name" type="text" name="store_name" class="form-control">
+                        <input id="f-store_name" type="text" name="store_name" class="form-control" required value="{{ $invitation->store_name }}">
                     </div>
                     <div class="mb-2">
                         <label for="f-store_description" class="form-label small">وصف المتجر (اختياري)</label>
@@ -72,6 +71,7 @@
                         <input id="f-commercial_register" type="text" name="commercial_register" class="form-control">
                     </div>
                 </div>
+                @endif
 
                 <div class="mb-3">
                     <label for="password" class="form-label small">كلمة السر</label>
@@ -159,14 +159,6 @@ function setLoading(button, isLoading) {
     button.querySelector('.btn-label').classList.toggle('d-none', isLoading);
     button.querySelector('.spinner-border').classList.toggle('d-none', !isLoading);
 }
-
-// إظهار حقول المتجر لو اختار "بائع"
-document.getElementById('account_type').addEventListener('change', (e) => {
-    const isSeller = e.target.value === 'seller';
-    document.getElementById('seller-fields').classList.toggle('d-none', !isSeller);
-    document.querySelector('input[name="store_name"]').required = isSeller;
-    document.getElementById('employee-notice').classList.toggle('d-none', e.target.value !== 'employee');
-});
 
 // إظهار/إخفاء كلمة السر
 document.getElementById('toggle-password').addEventListener('click', () => {

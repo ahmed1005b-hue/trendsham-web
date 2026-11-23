@@ -37,9 +37,9 @@
             @if (auth()->user()?->role !== 'admin')
                 @if ($sp?->status === 'approved')
                     <a class="ts-account-link" href="{{ route('seller.dashboard') }}"><i class="bi bi-shop-window"></i> لوحة متجري <span class="badge bg-success ms-auto">موثق</span></a>
-                @else
+                @elseif ($sp)
                     <a class="ts-account-link {{ request()->routeIs('customer.seller-application.*','seller.identity-verification.*') ? 'active' : '' }}" href="{{ route('customer.seller-application.create') }}">
-                        <i class="bi bi-patch-check"></i> {{ $sp ? 'التحقق من هوية البائع' : 'افتح متجرك' }}
+                        <i class="bi bi-patch-check"></i> التحقق من هوية البائع
                         @if ($sp?->status === 'pending') <span class="badge bg-warning text-dark ms-auto">قيد المراجعة</span>
                         @elseif ($sp?->status === 'rejected') <span class="badge bg-danger ms-auto">مرفوض</span>
                         @endif

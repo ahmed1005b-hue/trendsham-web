@@ -10,7 +10,6 @@
     <div class="container ts-topbar__row">
         <span><i class="bi bi-truck" aria-hidden="true"></i> توصيل لجميع المحافظات</span>
         <div class="ts-topbar__links">
-            <a href="{{ auth()->check() ? route('customer.seller-application.create') : route('login') }}"><i class="bi bi-shop" aria-hidden="true"></i> بيع معنا</a>
             <a href="{{ route('pages.help') }}"><i class="bi bi-question-circle" aria-hidden="true"></i> مساعدة</a>
         </div>
     </div>
@@ -110,7 +109,7 @@
                     <h2 class="ts-slide__title">عندك متجر؟ <em>وصّل منتجاتك لكل المحافظات.</em></h2>
                     <p class="ts-slide__text">افتح متجرك على تريندشام، واعرض منتجاتك لآلاف المتسوقين.</p>
                     <div class="ts-slide__actions">
-                        <a href="{{ auth()->check() ? route('customer.seller-application.create') : route('login') }}" class="ts-slide__cta">ابدأ البيع معنا <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+                        <a href="{{ route('pages.help') }}#sellers" class="ts-slide__cta">تواصل معنا للانضمام <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
                     </div>
                 </div>
                 <div class="ts-slide__visual" aria-hidden="true">

@@ -15,6 +15,8 @@ class SellerApplicationController extends Controller
     {
         abort_if($request->user()?->role === 'admin', 403, 'حساب المدير مخصص لمراجعة طلبات البائعين واعتمادها، وليس لتقديم طلب تحقق كبائع.');
         $profile = $request->user()->sellerProfile;
+        // فتح متجر جديد بدعوة من الإدارة فقط؛ هذه الصفحة لتوثيق هوية متجر موجود
+        abort_unless($profile || $request->user()->role === 'seller', 403, __('فتح المتاجر على تريندشام بدعوة من الإدارة فقط.'));
         if ($profile?->status === 'approved' && filled($profile->identity_verified_at)) {
             return redirect()->route('seller.dashboard')->with('success', 'تم اعتماد هوية متجرك بالفعل.');
         }
@@ -26,6 +28,7 @@ class SellerApplicationController extends Controller
     {
         abort_if($request->user()?->role === 'admin', 403, 'حساب المدير مخصص لمراجعة طلبات البائعين واعتمادها، وليس لتقديم طلب تحقق كبائع.');
         $profile = $request->user()->sellerProfile;
+        abort_unless($profile || $request->user()->role === 'seller', 403, __('فتح المتاجر على تريندشام بدعوة من الإدارة فقط.'));
         $previousStatus = $profile?->status;
         $approvedLegacy = $profile?->status === 'approved' && ! filled($profile->identity_verified_at);
         if ($profile?->status === 'approved' && filled($profile->identity_verified_at)) {

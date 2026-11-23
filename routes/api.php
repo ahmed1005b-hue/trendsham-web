@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HomeShowcaseController;
+use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\NotificationSettingsController;
@@ -102,6 +103,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/shipping-centers', [ShippingCenterController::class, 'index']);
     Route::get('/social-links', SocialLinkController::class);
     Route::get('/app-version', AppVersionController::class);
+    Route::get('/invitations/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1');
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
     Route::get('/products', [ProductController::class, 'index']);
@@ -137,6 +139,7 @@ Route::prefix('v1')->group(function () {
 
     // ===== محمية - تحتاج توكن Sanctum =====
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept'])->middleware('throttle:10,1');
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
 
@@ -378,6 +381,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/stories', [AdminStoryController::class, 'store']);
         Route::delete('/stories/{story}', [AdminStoryController::class, 'destroy']);
 
+        Route::get('/invitations', [InvitationController::class, 'index']);
+        Route::post('/invitations', [InvitationController::class, 'store']);
+        Route::post('/invitations/{invitation}/revoke', [InvitationController::class, 'revoke']);
         Route::get('/settings', [AdminSettingController::class, 'show']);
         Route::put('/settings', [AdminSettingController::class, 'update']);
         Route::post('/store/visit', [StoreController::class, 'trackVisit']);

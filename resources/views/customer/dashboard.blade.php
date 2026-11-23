@@ -16,12 +16,7 @@
                     @if ($sp->status === 'rejected' && $sp->rejection_reason)<div class="small">سبب الرفض: {{ $sp->rejection_reason }}</div>@endif
                     <div><a href="{{ route('customer.seller-application.create') }}" class="btn btn-sm {{ $sp->status === 'rejected' ? 'btn-danger' : 'btn-outline-dark' }}">إدارة طلب التحقق</a></div>
                 </div>
-            @elseif (! $sp)
-                <div class="border rounded-2 p-3 mb-3 d-flex align-items-center justify-content-between gap-2 flex-wrap" style="border-color:var(--ts-soft-border, #ededed) !important; background:#fffaf4;">
-                    <div><strong>هل تريد البيع على تريندشام؟</strong><div class="small text-muted">ابدأ طلب فتح المتجر وأرسل وثيقة الهوية للمراجعة.</div></div>
-                    <a href="{{ route('customer.seller-application.create') }}" class="btn btn-sm btn-buy">ابدأ البيع / تحقق من الهوية</a>
-                </div>
-            @else
+            @elseif ($sp)
                 <div class="alert alert-success d-flex align-items-center justify-content-between gap-2 mb-3"><span><i class="bi bi-patch-check-fill"></i> تم اعتماد هوية متجرك.</span><a href="{{ route('seller.dashboard') }}" class="btn btn-sm btn-outline-success">لوحة المتجر</a></div>
             @endif
         @endif
