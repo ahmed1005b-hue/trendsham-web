@@ -23,7 +23,7 @@ class AssistantFaqController extends Controller
 
     public function store(Request $request)
     {
-        AssistantFaq::create($this->validated($request));
+        AssistantFaq::create(self::validated($request));
 
         return redirect()->route('admin.assistant-faqs.index')->with('success', 'تمت إضافة السؤال.');
     }
@@ -35,7 +35,7 @@ class AssistantFaqController extends Controller
 
     public function update(Request $request, AssistantFaq $assistantFaq)
     {
-        $assistantFaq->update($this->validated($request));
+        $assistantFaq->update(self::validated($request));
 
         return redirect()->route('admin.assistant-faqs.index')->with('success', 'تم حفظ التعديل.');
     }
@@ -47,7 +47,12 @@ class AssistantFaqController extends Controller
         return back()->with('success', 'تم حذف السؤال.');
     }
 
-    private function validated(Request $request): array
+    /**
+     * بيانات سؤال شائع مُتحقق منها (مشتركة مع التطبيق).
+     *
+     * @return array{question: string, keywords: string, answer: string, sort_order: int, is_active: bool}
+     */
+    public static function validated(Request $request): array
     {
         $data = $request->validate([
             'question' => ['required', 'string', 'max:255'],
@@ -55,9 +60,9 @@ class AssistantFaqController extends Controller
             'answer' => ['required', 'string', 'max:3000'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ], [
-            'question.required' => 'اكتب السؤال.',
-            'keywords.required' => 'اكتب كلمة واحدة على الأقل يعرف بها المساعد السؤال.',
-            'answer.required' => 'اكتب الجواب.',
+            'question.required' => __('اكتب السؤال.'),
+            'keywords.required' => __('اكتب كلمة واحدة على الأقل يعرف بها المساعد السؤال.'),
+            'answer.required' => __('اكتب الجواب.'),
         ]);
 
         $data['sort_order'] ??= 0;

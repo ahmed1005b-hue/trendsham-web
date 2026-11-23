@@ -42,18 +42,29 @@ class LoyaltyController extends Controller
 
     public function updateSettings(Request $request)
     {
-        // المبالغ تُدخل بالليرة وتُخزَّن ×100
-        $data = $request->validate([
+        self::saveSettings($request->validate(self::settingsRules()), $request->boolean('loyalty_enabled'));
+
+        return back()->with('success', 'تم حفظ إعدادات النقاط.');
+    }
+
+    /** قواعد إعدادات النقاط (مشتركة مع التطبيق). المبالغ بالليرة. @return array<string, list<string>> */
+    public static function settingsRules(): array
+    {
+        return [
             'loyalty_enabled' => ['nullable', 'boolean'],
             'loyalty_spend_per_point' => ['required', 'integer', 'min:1', 'max:100000000'],
             'loyalty_point_value' => ['required', 'integer', 'min:1', 'max:100000000'],
             'loyalty_min_redeem' => ['required', 'integer', 'min:1', 'max:100000'],
             'loyalty_expiry_months' => ['required', 'integer', 'min:1', 'max:120'],
             'loyalty_coupon_valid_days' => ['required', 'integer', 'min:1', 'max:365'],
-        ]);
+        ];
+    }
 
+    /** يحفظ إعدادات النقاط: المبالغ تُدخل بالليرة وتُخزَّن ×100. @param  array<string, mixed>  $data */
+    public static function saveSettings(array $data, bool $enabled): void
+    {
         PlatformSetting::current()->update([
-            'loyalty_enabled' => $request->boolean('loyalty_enabled'),
+            'loyalty_enabled' => $enabled,
             'loyalty_spend_per_point' => $data['loyalty_spend_per_point'] * 100,
             'loyalty_point_value' => $data['loyalty_point_value'] * 100,
             'loyalty_min_redeem' => $data['loyalty_min_redeem'],
@@ -61,8 +72,16 @@ class LoyaltyController extends Controller
             'loyalty_coupon_valid_days' => $data['loyalty_coupon_valid_days'],
         ]);
         app()->forgetInstance(LoyaltySettings::class);
+    }
 
-        return back()->with('success', 'تم حفظ إعدادات النقاط.');
+    /** @return array{direction: list<string>, points: list<string>, reason: list<string>} */
+    public static function adjustRules(): array
+    {
+        return [
+            'direction' => ['required', 'in:add,deduct'],
+            'points' => ['required', 'integer', 'min:1', 'max:1000000'],
+            'reason' => ['required', 'string', 'max:255'],
+        ];
     }
 
     public function show(User $user, LoyaltyLedger $ledger, LoyaltyCalculator $calc)
@@ -81,11 +100,7 @@ class LoyaltyController extends Controller
     public function adjust(Request $request, User $user, LoyaltyLedger $ledger)
     {
         abort_unless($user->role === 'customer', 404);
-        $data = $request->validate([
-            'direction' => ['required', 'in:add,deduct'],
-            'points' => ['required', 'integer', 'min:1', 'max:1000000'],
-            'reason' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(self::adjustRules());
 
         try {
             $ledger->adjust($user, $data['direction'], (int) $data['points'], $data['reason'], $request->user()->id);

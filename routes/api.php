@@ -3,21 +3,30 @@
 use App\Http\Controllers\Api\AccountClosureController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\Admin\AccountingController as AdminAccountingController;
+use App\Http\Controllers\Api\Admin\AssistantController as AdminAssistantController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\Admin\CouponCampaignController;
 use App\Http\Controllers\Api\Admin\DailyDealController as AdminDailyDealController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\GiftCardController as AdminGiftCardController;
+use App\Http\Controllers\Api\Admin\LoyaltyController as AdminLoyaltyController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\Admin\PushBroadcastController as AdminPushBroadcastController;
 use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Api\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Api\Admin\SellerController as AdminSellerController;
+use App\Http\Controllers\Api\Admin\SellerCouponController as AdminSellerCouponController;
+use App\Http\Controllers\Api\Admin\SellerDebtController as AdminSellerDebtController;
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\ShippingController as AdminShippingController;
 use App\Http\Controllers\Api\Admin\ShowcaseController as AdminShowcaseController;
 use App\Http\Controllers\Api\Admin\StatementController as AdminStatementController;
 use App\Http\Controllers\Api\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Api\Admin\SupportController as ApiAdminSupportController;
+use App\Http\Controllers\Api\Admin\TrashController as AdminTrashController;
+use App\Http\Controllers\Api\Admin\TwoFactorController as AdminTwoFactorController;
 use App\Http\Controllers\Api\Admin\WithdrawalController as AdminWithdrawalController;
 use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\AuthController;
@@ -340,6 +349,13 @@ Route::prefix('v1')->group(function () {
     });
 
     // ===== المدير - تحتاج توكن + دور admin =====
+    // أمان حساب المدير: يعمل قبل إعداد التحقق بخطوتين (باقي اللوحة مقفلة حتى يُعدّ)
+    Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/security')->group(function () {
+        Route::get('/two-factor', [AdminTwoFactorController::class, 'show']);
+        Route::post('/two-factor', [AdminTwoFactorController::class, 'confirm'])->middleware('throttle:verify');
+        Route::post('/two-factor/recovery-codes', [AdminTwoFactorController::class, 'regenerateRecoveryCodes'])->middleware('throttle:verify');
+    });
+
     Route::middleware(['auth:sanctum', 'role:admin', 'admin.2fa'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'show']);
         Route::get('/analytics', [AdminDashboardController::class, 'analytics']);
@@ -386,6 +402,38 @@ Route::prefix('v1')->group(function () {
         Route::post('/stories', [AdminStoryController::class, 'store']);
         Route::delete('/stories/{story}', [AdminStoryController::class, 'destroy']);
 
+        // المحذوفات، والمساعد الذكي (نفس صفحات الموقع)
+        Route::get('/trash', [AdminTrashController::class, 'index']);
+        Route::post('/trash/{type}/{id}/restore', [AdminTrashController::class, 'restore'])->whereNumber('id');
+        Route::get('/assistant-chats', [AdminAssistantController::class, 'chats']);
+        Route::get('/assistant-chats/{conversation}', [AdminAssistantController::class, 'chat']);
+        Route::post('/assistant-chats/{conversation}/reply', [AdminAssistantController::class, 'reply']);
+        Route::post('/assistant-chats/{conversation}/close', [AdminAssistantController::class, 'close']);
+        Route::get('/assistant-faqs', [AdminAssistantController::class, 'faqs']);
+        Route::post('/assistant-faqs', [AdminAssistantController::class, 'storeFaq']);
+        Route::put('/assistant-faqs/{assistantFaq}', [AdminAssistantController::class, 'updateFaq']);
+        Route::delete('/assistant-faqs/{assistantFaq}', [AdminAssistantController::class, 'destroyFaq']);
+        // الإشعار الجماعي، وبطاقات الهدايا، ونقاط الولاء (نفس صفحات الموقع)
+        Route::get('/push-broadcasts', [AdminPushBroadcastController::class, 'index']);
+        Route::post('/push-broadcasts', [AdminPushBroadcastController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('/gift-cards', [AdminGiftCardController::class, 'index']);
+        Route::get('/loyalty', [AdminLoyaltyController::class, 'index']);
+        Route::put('/loyalty/settings', [AdminLoyaltyController::class, 'updateSettings']);
+        Route::get('/loyalty/customers/{user}', [AdminLoyaltyController::class, 'show']);
+        Route::post('/loyalty/customers/{user}/adjust', [AdminLoyaltyController::class, 'adjust']);
+        // ديون المتاجر، والمرتجعات، وكوبونات البائعين (نفس صفحات الموقع)
+        Route::get('/accounting/debts', [AdminSellerDebtController::class, 'index']);
+        Route::post('/accounting/debts/{sellerProfile}/pay', [AdminSellerDebtController::class, 'pay']);
+        Route::get('/returns', [AdminReturnController::class, 'index']);
+        Route::get('/returns/{returnRequest}', [AdminReturnController::class, 'show'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/approve', [AdminReturnController::class, 'approve'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/reject', [AdminReturnController::class, 'reject'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/received', [AdminReturnController::class, 'received'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/refund', [AdminReturnController::class, 'refund'])->whereNumber('returnRequest');
+        Route::get('/seller-coupons', [AdminSellerCouponController::class, 'index']);
+        Route::post('/seller-coupons/{campaign}/approve', [AdminSellerCouponController::class, 'approve']);
+        Route::post('/seller-coupons/{campaign}/reject', [AdminSellerCouponController::class, 'reject']);
+        Route::post('/seller-coupons/{campaign}/suspend', [AdminSellerCouponController::class, 'suspend']);
         Route::get('/invitations', [InvitationController::class, 'index']);
         Route::post('/invitations', [InvitationController::class, 'store']);
         Route::post('/invitations/{invitation}/revoke', [InvitationController::class, 'revoke']);

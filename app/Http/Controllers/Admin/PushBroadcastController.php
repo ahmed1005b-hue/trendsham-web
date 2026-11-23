@@ -22,18 +22,30 @@ class PushBroadcastController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    /** قواعد الإشعار الجماعي (مشتركة مع التطبيق). @return array<string, mixed> */
+    public static function rules(): array
     {
-        $data = $request->validate([
+        return [
             'title' => ['required', 'string', 'max:60'],
             'body' => ['required', 'string', 'max:180'],
             'link' => ['nullable', 'string', 'max:255', 'starts_with:/', 'not_regex:#^//#'],
             'confirm' => ['accepted'],
-        ], [
-            'link.starts_with' => 'الرابط يجب أن يكون صفحة داخل الموقع ويبدأ بـ /',
-            'link.not_regex' => 'الرابط يجب أن يكون صفحة داخل الموقع ويبدأ بـ /',
-            'confirm.accepted' => 'أكّد أنك تريد الإرسال لكل العملاء.',
-        ]);
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function messages(): array
+    {
+        return [
+            'link.starts_with' => __('الرابط يجب أن يكون صفحة داخل الموقع ويبدأ بـ /'),
+            'link.not_regex' => __('الرابط يجب أن يكون صفحة داخل الموقع ويبدأ بـ /'),
+            'confirm.accepted' => __('أكّد أنك تريد الإرسال لكل العملاء.'),
+        ];
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate(self::rules(), self::messages());
 
         try {
             $broadcast = $this->service->create($data, $request->user());

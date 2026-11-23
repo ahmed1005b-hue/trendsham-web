@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\GiftCards\Models\GiftBalanceTransaction as Tx;
 use App\GiftCards\Models\GiftCard;
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -20,6 +21,23 @@ class GiftCardController extends Controller
         $status = (string) $request->query('status', '');
         $q = trim((string) $request->query('q'));
 
+        $cards = self::cards($status, $q)->paginate(25)->withQueryString();
+
+        return view('admin.gift-cards.index', [
+            ...self::totals(),
+            'cards' => $cards,
+            'status' => $status,
+            'q' => $q,
+        ]);
+    }
+
+    /**
+     * ملخص بطاقات الهدايا بالقروش (مشترك مع التطبيق).
+     *
+     * @return array{soldCount: int, soldAmount: int, spent: int, unredeemed: int, expiredUnused: int, balances: int, owed: int}
+     */
+    public static function totals(): array
+    {
         $paid = GiftCard::whereIn('status', [GiftCard::ACTIVE, GiftCard::REDEEMED]);
         $unredeemed = (int) GiftCard::where('status', GiftCard::ACTIVE)->where('expires_at', '>', now())->sum('amount');
         $expiredUnused = (int) GiftCard::where('status', GiftCard::ACTIVE)->where('expires_at', '<=', now())->sum('amount');
@@ -27,14 +45,7 @@ class GiftCardController extends Controller
             ->whereRaw('t.id = (select max(id) from gift_balance_transactions where user_id = t.user_id)')
             ->sum('t.balance_after');
 
-        $cards = GiftCard::with(['purchaser:id,first_name,last_name,email', 'redeemer:id,first_name,last_name,email'])
-            ->when(in_array($status, [GiftCard::PENDING, GiftCard::ACTIVE, GiftCard::REDEEMED, GiftCard::FAILED], true),
-                fn ($w) => $w->where('status', $status))
-            ->when($q !== '', fn ($w) => $w->whereHas('purchaser', fn ($u) => $u->where('email', 'like', "%{$q}%")
-                ->orWhere('phone', 'like', "%{$q}%")->orWhere('first_name', 'like', "%{$q}%")))
-            ->latest('id')->paginate(25)->withQueryString();
-
-        return view('admin.gift-cards.index', [
+        return [
             'soldCount' => (clone $paid)->count(),
             'soldAmount' => (int) (clone $paid)->sum('amount'),
             'spent' => (int) abs(Tx::where('type', Tx::SPEND)->sum('amount')) - (int) Tx::where('type', Tx::REFUND)->sum('amount'),
@@ -42,9 +53,17 @@ class GiftCardController extends Controller
             'expiredUnused' => $expiredUnused,
             'balances' => $balances,
             'owed' => $unredeemed + $balances,
-            'cards' => $cards,
-            'status' => $status,
-            'q' => $q,
-        ]);
+        ];
+    }
+
+    /** البطاقات مع البحث والتصفية (مشترك مع التطبيق). */
+    public static function cards(string $status, string $q): Builder
+    {
+        return GiftCard::with(['purchaser:id,first_name,last_name,email', 'redeemer:id,first_name,last_name,email'])
+            ->when(in_array($status, [GiftCard::PENDING, GiftCard::ACTIVE, GiftCard::REDEEMED, GiftCard::FAILED], true),
+                fn ($w) => $w->where('status', $status))
+            ->when($q !== '', fn ($w) => $w->whereHas('purchaser', fn ($u) => $u->where('email', 'like', "%{$q}%")
+                ->orWhere('phone', 'like', "%{$q}%")->orWhere('first_name', 'like', "%{$q}%")))
+            ->latest('id');
     }
 }

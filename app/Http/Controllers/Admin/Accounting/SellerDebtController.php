@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Accounting;
 
-use App\Accounting\Audit;
-use App\Accounting\LedgerType;
+use App\Accounting\SellerDebtPayments;
 use App\Http\Controllers\Controller;
-use App\Models\AppNotification;
 use App\Models\SellerProfile;
 use App\Models\Wallet;
-use App\Services\LedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -33,27 +29,10 @@ class SellerDebtController extends Controller
         ]);
     }
 
-    public function pay(Request $request, SellerProfile $sellerProfile, LedgerService $ledger): RedirectResponse
+    public function pay(Request $request, SellerProfile $sellerProfile, SellerDebtPayments $payments): RedirectResponse
     {
-        $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1', 'max:10000000000'],
-            'note' => ['nullable', 'string', 'max:150'],
-        ]);
-        $minor = (int) round($data['amount'] * 100);
-        $note = trim((string) ($data['note'] ?? ''));
-
-        DB::transaction(function () use ($sellerProfile, $minor, $note, $request, $ledger) {
-            $tx = $sellerProfile->walletOrCreate()->applyTransaction('credit', $minor, 'adjustment', [
-                'note' => 'تسديد دين للمنصة'.($note !== '' ? ': '.$note : ''),
-            ]);
-            $ledger->post($sellerProfile->user_id, LedgerType::DEBT_PAYMENT, 0, $minor / 100,
-                'تسديد دين للمنصة'.($note !== '' ? ': '.$note : ''), 'wallet_transaction', $tx->id, $request->user()->id);
-        });
-        Audit::log($request, 'debt_payment', $sellerProfile->user_id);
-
-        AppNotification::send($sellerProfile->user_id, 'debt_paid', __('استلمنا تسديدك'),
-            __('سجّلنا :amount ل.س تسديداً لدينك للمنصة. شكراً لك.', ['amount' => number_format($minor / 100)]),
-            route('seller.wallet.index'));
+        $data = $request->validate(SellerDebtPayments::rules());
+        $payments->record($request, $request->user(), $sellerProfile, (float) $data['amount'], $data['note'] ?? null);
 
         return back()->with('success', __('تم تسجيل التسديد وإضافته لرصيد المتجر.'));
     }
