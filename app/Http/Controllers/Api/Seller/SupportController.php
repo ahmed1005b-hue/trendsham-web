@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Seller\SupportController as WebSupportController;
 use App\Models\AppNotification;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
@@ -42,7 +43,7 @@ class SupportController extends Controller
         $vendor = $request->user()->sellerProfile;
 
         $validated = $request->validate([
-            'staff_id' => ['required', 'exists:users,id'],
+            'staff_id' => ['required', 'integer', WebSupportController::staffRule()],
             'subject' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'min:5', 'max:2000'],
         ]);

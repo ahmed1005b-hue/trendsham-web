@@ -44,4 +44,27 @@ class SellerSupportApiTest extends TestCase
             ->assertJsonPath('conversations.0.staff_name', $staff->name)
             ->assertJsonPath('conversations.0.unread_count', 1);
     }
+
+    /** البائع يراسل الإدارة أو الموظفين فقط: رقم عميل أو بائع آخر يُرفض حتى لا يُكشف اسمه ودوره. */
+    public function test_seller_can_only_open_support_with_admin_or_employee(): void
+    {
+        $seller = User::factory()->create(['role' => 'seller']);
+        $profile = SellerProfile::create(['user_id' => $seller->id, 'store_name' => 'متجر', 'status' => 'approved']);
+        $customer = User::factory()->create(['role' => 'customer']);
+        $otherSeller = User::factory()->create(['role' => 'seller']);
+        $employee = User::factory()->create(['role' => 'employee']);
+        $message = ['subject' => 'سؤال', 'body' => 'عندي سؤال عن الطلب'];
+
+        Sanctum::actingAs($seller);
+        foreach ([$customer, $otherSeller] as $notStaff) {
+            $this->postJson('/api/v1/seller/support', [...$message, 'staff_id' => $notStaff->id])
+                ->assertUnprocessable()->assertJsonValidationErrors('staff_id');
+        }
+        $this->postJson('/api/v1/seller/support', [...$message, 'staff_id' => $employee->id])->assertSuccessful();
+
+        $this->actingAs($seller)->post(route('seller.support.store'), [...$message, 'staff_id' => $customer->id])
+            ->assertSessionHasErrors('staff_id');
+
+        $this->assertSame([$employee->id], StaffConversation::where('vendor_id', $profile->id)->pluck('staff_id')->all());
+    }
 }

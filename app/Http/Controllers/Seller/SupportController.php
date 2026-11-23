@@ -9,9 +9,17 @@ use App\Models\StaffMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
 class SupportController extends Controller
 {
+    /** البائع يراسل الإدارة أو الموظفين فقط، لا أي مستخدم (وإلا كُشف اسم ودور أي حساب). */
+    public static function staffRule(): Exists
+    {
+        return Rule::exists('users', 'id')->whereIn('role', ['admin', 'employee']);
+    }
+
     public function index(Request $request)
     {
         $vendor = $request->user()->sellerProfile;
@@ -36,7 +44,7 @@ class SupportController extends Controller
         $vendor = $request->user()->sellerProfile;
 
         $validated = $request->validate([
-            'staff_id' => ['required', 'exists:users,id'],
+            'staff_id' => ['required', 'integer', self::staffRule()],
             'subject' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'min:5', 'max:2000'],
         ]);
