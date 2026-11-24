@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\AuthenticateWebSession;
 use App\Http\Middleware\EnsureSellerHasStore;
 use App\Http\Middleware\EnsureTwoFactorSetup;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ForceUtf8;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetApiLocale;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -24,7 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
             'seller.store' => EnsureSellerHasStore::class,
             'admin.2fa' => EnsureTwoFactorSetup::class,
+            'auth.session' => AuthenticateWebSession::class,
         ]);
+        $middleware->append(SecurityHeaders::class);
+        // تغيير كلمة السر يُخرج جلسات الموقع الأخرى (يشترطه Auth::logoutOtherDevices)
+        $middleware->authenticateSessions();
         $middleware->appendToGroup('web', [ForceUtf8::class, SetLocale::class, 'throttle:writes']);
         $middleware->appendToGroup('api', [ForceUtf8::class, SetApiLocale::class, 'throttle:api', 'throttle:writes']);
     })

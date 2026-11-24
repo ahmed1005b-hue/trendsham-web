@@ -341,8 +341,9 @@ class AuthController extends Controller
             }
         }
 
+        // نفس رد الرمز الخاطئ: لا نكشف هل الحساب مسجّل
         if (! $user) {
-            return response()->json(['message' => 'المستخدم غير موجود.'], 404);
+            return response()->json(['message' => 'رمز التحقق غير صحيح أو منتهي الصلاحية.'], 422);
         }
 
         $code = $validated['code'] ?? null;

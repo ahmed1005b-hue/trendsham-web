@@ -12,9 +12,7 @@ use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
-    public function __construct(private readonly ImageUploadService $imageUploadService)
-    {
-    }
+    public function __construct(private readonly ImageUploadService $imageUploadService) {}
 
     public function edit(Request $request)
     {
@@ -77,8 +75,10 @@ class ProfileController extends Controller
 
         $user->update(['password' => $validated['password']]);
 
-        // إبطال كل الجلسات الأخرى المفتوحة لنفس الحساب على أجهزة ثانية بعد تغيير كلمة السر
+        // إبطال كل الجلسات الأخرى المفتوحة لنفس الحساب على أجهزة ثانية بعد تغيير كلمة السر،
+        // ومعها جلسات التطبيق (رموز الدخول)
         Auth::logoutOtherDevices($validated['password']);
+        $user->tokens()->delete();
 
         return back()->with('success', 'تم تغيير كلمة السر.');
     }
