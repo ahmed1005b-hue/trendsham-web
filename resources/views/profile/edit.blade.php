@@ -6,7 +6,7 @@
 <nav class="navbar ts-header mb-4">
     <div class="container">
         <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - الملف الشخصي</span>
-        <a href="{{ route(match ($user->role) { 'admin' => 'admin.dashboard', 'seller' => 'seller.dashboard', default => 'customer.dashboard' }) }}"
+        <a href="{{ route(match ($user->role) { 'admin' => 'admin.dashboard', 'seller' => 'seller.dashboard', 'employee' => 'employee.dashboard', default => 'customer.dashboard' }) }}"
            class="btn btn-outline-secondary btn-sm">رجوع للوحتي</a>
     </div>
 </nav>
@@ -122,7 +122,10 @@
         </div>
     </div>
 
-    @include('profile._addresses')
+    {{-- عناوين الشحن للمشتري فقط؛ البائع والمدير والموظف لا يشترون --}}
+    @if ($user->role === 'customer')
+        @include('profile._addresses')
+    @endif
 
     <div class="card">
         <div class="card-body">

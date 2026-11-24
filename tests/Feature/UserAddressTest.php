@@ -154,6 +154,17 @@ class UserAddressTest extends TestCase
         $this->assertSame(0, $user->addresses()->count());
     }
 
+    public function test_web_profile_hides_addresses_for_staff_accounts(): void
+    {
+        foreach (['seller', 'admin', 'employee'] as $role) {
+            $staff = User::factory()->create(['role' => $role]);
+
+            $this->actingAs($staff)->get(route('profile.edit'))->assertOk()
+                ->assertDontSee('عناويني')
+                ->assertSee('تغيير كلمة السر');
+        }
+    }
+
     public function test_web_checkout_offers_saved_addresses_with_the_default_prefilled(): void
     {
         $user = $this->customer();
