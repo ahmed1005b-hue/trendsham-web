@@ -36,19 +36,21 @@ class ReturnRequestPolicy
         return $this->isSellerOwner($user, $returnRequest) ? Response::allow() : Response::deny('');
     }
 
-    /** تأكيد الاستلام: صاحب المتجر أو المدير. */
+    /** تأكيد الاستلام: صاحب المتجر أو فريق المنصة (المدير والموظف). */
     public function confirmReceived(User $user, ReturnRequest $returnRequest): Response
     {
-        return $this->isSellerOwner($user, $returnRequest) || $user->role === 'admin'
+        return $this->isSellerOwner($user, $returnRequest) || $user->isPlatformStaff()
             ? Response::allow()
             : Response::deny('');
     }
 
+    /** قرار الإدارة في النزاع: المدير أو الموظف. */
     public function adminDecide(User $user, ReturnRequest $returnRequest): Response
     {
-        return $this->adminOnly($user);
+        return $user->isPlatformStaff() ? Response::allow() : Response::deny('');
     }
 
+    /** تسجيل إرجاع المال: المدير وحده. */
     public function recordRefund(User $user, ReturnRequest $returnRequest): Response
     {
         return $this->adminOnly($user);

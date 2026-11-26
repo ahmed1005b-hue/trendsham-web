@@ -79,13 +79,17 @@
                     <form action="{{ route($employeeMode ? 'employee.orders.updateStatus' : 'admin.orders.updateStatus', $order) }}" method="POST" class="d-flex gap-2">
                         @csrf @method('PUT')
                         <select name="status" class="form-select">
-                            @foreach (['pending' => 'قيد المراجعة', 'paid' => 'مدفوع', 'processing' => 'قيد التجهيز', 'shipped' => 'تم الشحن', 'delivered' => 'تم التسليم', 'cancelled' => 'ملغي'] as $value => $label)
+                            @foreach (\App\Models\Order::STATUS_LABELS as $value => $label)
+                                @continue($employeeMode && $order->status !== $value && ! in_array($value, \App\Services\StaffOrderStatusChanger::EMPLOYEE_STATUSES, true))
                                 <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                         <button class="btn btn-primary">حفظ</button>
                     </form>
                     <p class="text-muted small mt-2 mb-0">تحديد "تم التسليم" يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.</p>
+                    @if ($employeeMode && $order->isAwaitingOnlinePayment())
+                        <p class="alert alert-warning small mt-2 mb-0">{{ __('هذا الطلب ينتظر دفع البطاقة، فلا يُجهَّز قبل تأكيد البنك. يمكنك إلغاؤه فقط.') }}</p>
+                    @endif
                     @foreach ($order->shipments->filter(fn ($p) => in_array($p->status, ['shipped', 'in_transit'], true) && ! $p->refused_at) as $parcel)
                         <form action="{{ route($employeeMode ? 'employee.orders.refused' : 'admin.orders.refused', [$order, $parcel]) }}" method="POST" class="mt-3"
                             data-confirm="{{ __('الزبون رفض استلام الطرد؟ يُلغى الطرد وتعود كمياته، وتُسجَّل أجرة شحنه ديناً عليه ويُمنع من الدفع عند الاستلام شهراً.') }}">

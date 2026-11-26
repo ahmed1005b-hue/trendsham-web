@@ -3,18 +3,19 @@
 @section('title', 'محادثة عميل - لوحة المدير')
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <nav class="navbar ts-header mb-4">
     <div class="container">
         <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - محادثة
             {{ $conversation->user ? trim($conversation->user->first_name.' '.$conversation->user->last_name) : 'زائر' }}</span>
         <div class="d-flex gap-2">
             @if ($conversation->status === 'escalated')
-                <form action="{{ route('admin.assistant-chats.close', $conversation) }}" method="POST" data-confirm="إغلاق المحادثة وإرجاع العميل للمساعد الآلي؟">
+                <form action="{{ route($area.'.assistant-chats.close', $conversation) }}" method="POST" data-confirm="إغلاق المحادثة وإرجاع العميل للمساعد الآلي؟">
                     @csrf
                     <button class="btn btn-sm btn-outline-success">إغلاق المحادثة</button>
                 </form>
             @endif
-            <a href="{{ route('admin.assistant-chats.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
+            <a href="{{ route($area.'.assistant-chats.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
         </div>
     </div>
 </nav>
@@ -47,7 +48,7 @@
     </div>
 
     @if ($conversation->status === 'escalated')
-        <form action="{{ route('admin.assistant-chats.reply', $conversation) }}" method="POST" class="d-flex gap-2">
+        <form action="{{ route($area.'.assistant-chats.reply', $conversation) }}" method="POST" class="d-flex gap-2">
             @csrf
             <input name="message" class="form-control @error('message') is-invalid @enderror" placeholder="اكتب ردك للعميل..." maxlength="2000" autocomplete="off">
             <button class="btn btn-primary text-nowrap">إرسال</button>

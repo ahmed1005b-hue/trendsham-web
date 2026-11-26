@@ -81,6 +81,7 @@ use App\Http\Controllers\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StoreFollowController;
 use App\Http\Controllers\VerifyController;
+use App\Services\EmployeeWorkload;
 use App\Support\RecentlyViewed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -363,7 +364,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
 });
 
 Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee.')->group(function () {
-    Route::get('/dashboard', fn () => view('employee.dashboard'))->name('dashboard');
+    Route::get('/dashboard', fn (EmployeeWorkload $workload) => view('employee.dashboard', ['counts' => $workload->counts()]))->name('dashboard');
 
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
@@ -377,6 +378,24 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
     Route::post('/products/{product}/archive', [AdminProductController::class, 'archive'])->name('products.archive');
     Route::post('/products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
     Route::post('/products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
+
+    // دعم البائعين، ومحادثات العملاء المحوّلة من المساعد، والمرتجعات (إرجاع المال يبقى للمدير)
+    Route::get('/support', [AdminSupportController::class, 'index'])->name('support.index');
+    Route::get('/support/{conversation}', [AdminSupportController::class, 'show'])->name('support.show');
+    Route::post('/support/{conversation}/message', [AdminSupportController::class, 'sendMessage'])->name('support.message');
+    Route::post('/support/{conversation}/close', [AdminSupportController::class, 'close'])->name('support.close');
+    Route::post('/support/{conversation}/reopen', [AdminSupportController::class, 'reopen'])->name('support.reopen');
+
+    Route::get('/assistant-chats', [AssistantChatController::class, 'index'])->name('assistant-chats.index');
+    Route::get('/assistant-chats/{conversation}', [AssistantChatController::class, 'show'])->name('assistant-chats.show');
+    Route::post('/assistant-chats/{conversation}/reply', [AssistantChatController::class, 'reply'])->name('assistant-chats.reply');
+    Route::post('/assistant-chats/{conversation}/close', [AssistantChatController::class, 'close'])->name('assistant-chats.close');
+
+    Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
+    Route::get('/returns/{returnRequest}', [AdminReturnController::class, 'show'])->name('returns.show')->whereNumber('returnRequest');
+    Route::post('/returns/{returnRequest}/approve', [AdminReturnController::class, 'approve'])->name('returns.approve')->whereNumber('returnRequest');
+    Route::post('/returns/{returnRequest}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject')->whereNumber('returnRequest');
+    Route::post('/returns/{returnRequest}/received', [AdminReturnController::class, 'received'])->name('returns.received')->whereNumber('returnRequest');
 });
 
 // لوحة البائع

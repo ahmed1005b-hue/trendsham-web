@@ -336,6 +336,8 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'role:employee'])->prefix('employee')->group(function () {
+        Route::get('/dashboard', [EmployeeController::class, 'dashboard']);
+
         Route::get('/orders', [EmployeeController::class, 'orders']);
         Route::get('/orders/{order}', [EmployeeController::class, 'showOrder']);
         Route::put('/orders/{order}/status', [EmployeeController::class, 'updateOrderStatus']);
@@ -346,6 +348,22 @@ Route::prefix('v1')->group(function () {
         Route::post('/products/{product}/archive', [EmployeeController::class, 'archiveProduct']);
         Route::post('/products/{product}/approve', [AdminProductController::class, 'approve']);
         Route::post('/products/{product}/reject', [AdminProductController::class, 'reject']);
+
+        // نفس صفحات المدير في الدعم ومحادثات العملاء والمرتجعات (إرجاع المال للمدير وحده)
+        Route::get('/support', [ApiAdminSupportController::class, 'index']);
+        Route::get('/support/{conversation}', [ApiAdminSupportController::class, 'show']);
+        Route::post('/support/{conversation}/message', [ApiAdminSupportController::class, 'sendMessage']);
+        Route::post('/support/{conversation}/close', [ApiAdminSupportController::class, 'close']);
+        Route::post('/support/{conversation}/reopen', [ApiAdminSupportController::class, 'reopen']);
+        Route::get('/assistant-chats', [AdminAssistantController::class, 'chats']);
+        Route::get('/assistant-chats/{conversation}', [AdminAssistantController::class, 'chat']);
+        Route::post('/assistant-chats/{conversation}/reply', [AdminAssistantController::class, 'reply']);
+        Route::post('/assistant-chats/{conversation}/close', [AdminAssistantController::class, 'close']);
+        Route::get('/returns', [AdminReturnController::class, 'index']);
+        Route::get('/returns/{returnRequest}', [AdminReturnController::class, 'show'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/approve', [AdminReturnController::class, 'approve'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/reject', [AdminReturnController::class, 'reject'])->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/received', [AdminReturnController::class, 'received'])->whereNumber('returnRequest');
     });
 
     // ===== المدير - تحتاج توكن + دور admin =====

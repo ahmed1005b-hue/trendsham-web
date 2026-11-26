@@ -121,7 +121,8 @@ class ReturnController extends Controller
             'actions' => [
                 'decide' => $returnRequest->status === 'escalated',
                 'confirm_received' => $returnRequest->status === 'approved',
-                'record_refund' => $returnRequest->status === 'received',
+                // إرجاع المال للمدير وحده؛ الموظف يرى الحالة دون الزر
+                'record_refund' => $returnRequest->status === 'received' && $request->user()->isAdmin(),
             ],
             'refund_form' => [
                 'suggested_amount' => $returnRequest->refund_amount / 100,

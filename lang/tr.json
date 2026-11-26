@@ -3664,5 +3664,19 @@
     "انتهت مهلة دفع هذا الطلب. سيُلغى تلقائياً، ويمكنك الطلب من جديد.": "Bu siparişin ödeme süresi doldu. Otomatik olarak iptal edilecek; yeniden sipariş verebilirsiniz.",
     "هذا الطلب بالدفع عند الاستلام، يُدفع عند التسليم.": "Bu sipariş kapıda ödemelidir; teslimatta ödenir.",
     "تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.": "Sepetinizdeki bazı ürünlerin fiyatı değişti (bir fırsat sona erdi veya satıcı fiyatı güncelledi). Sepetinizi kontrol edip siparişi onaylayın.",
-    "الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.": "Bir ürün için kalan “Günün fırsatı” miktarı sepetinizdeki miktardan az. Miktarı azaltın veya ürünü sepetten çıkarın."
+    "الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.": "Bir ürün için kalan “Günün fırsatı” miktarı sepetinizdeki miktardan az. Miktarı azaltın veya ürünü sepetten çıkarın.",
+    "اقبلها أو ارفضها مع ذكر السبب.": "Gerekçesiyle onaylayın veya reddedin.",
+    "دعم البائعين": "Satıcı desteği",
+    "رسائل بائعين لم تُقرأ بعد.": "Henüz okunmamış satıcı mesajları.",
+    "شغل اليوم: ما ينتظر تصرّفك الآن.": "Bugünün işleri: şu an sizi bekleyenler.",
+    "طلبات جديدة": "Yeni siparişler",
+    "طلبات متأخرة": "Geciken siparişler",
+    "طلبات وصلت للبائعين ولم تُجهَّز بعد.": "Satıcılara ulaşan ve henüz hazırlanmayan siparişler.",
+    "عملاء طلبوا التحدث مع موظف.": "Bir çalışanla konuşmak isteyen müşteriler.",
+    "لم تُشحن بعد أكثر من :days أيام.": ":days günden fazla süredir kargolanmadı.",
+    "مرحبًا، :name": "Merhaba, :name",
+    "منتجات تنتظر المراجعة": "İnceleme bekleyen ürünler",
+    "نزاعات إرجاع تحتاج قراراً. إرجاع المال يسجّله المدير.": "Karar bekleyen iade anlaşmazlıkları. Para iadesini yönetici kaydeder.",
+    "هذا الطلب ينتظر دفع البطاقة، فلا يُجهَّز قبل تأكيد البنك. يمكنك إلغاؤه فقط.": "Bu sipariş kart ödemesini bekliyor; banka onaylamadan hazırlanamaz. Yalnızca iptal edebilirsiniz.",
+    "هذه الحالة يضعها المدير فقط.": "Bu durumu yalnızca yönetici ayarlayabilir."
 }

@@ -17,7 +17,7 @@ class SupportController extends Controller
             ->get();
 
         return response()->json([
-            'conversations' => $conversations->map(function ($c) {
+            'conversations' => $conversations->map(function ($c) use ($request) {
                 return [
                     'id' => $c->id,
                     'vendor_id' => $c->vendor_id,
@@ -78,7 +78,7 @@ class SupportController extends Controller
         AppNotification::send(
             $conversation->vendor->user_id,
             'staff_message',
-            "رد جديد من الإدارة",
+            'رد جديد من الإدارة',
             mb_substr($validated['body'], 0, 120),
             route('seller.support.show', $conversation)
         );
@@ -91,12 +91,14 @@ class SupportController extends Controller
     public function close(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'closed']);
+
         return response()->json(['message' => 'تم إغلاق المحادثة.']);
     }
 
     public function reopen(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'open']);
+
         return response()->json(['message' => 'تم إعادة فتح المحادثة.']);
     }
 }

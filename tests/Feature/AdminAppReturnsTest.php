@@ -124,4 +124,27 @@ class AdminAppReturnsTest extends TestCase
         $this->actingAs($this->seller->user, 'sanctum')->getJson('/api/v1/admin/returns')->assertForbidden();
         $this->actingAs($this->customer, 'sanctum')->postJson("/api/v1/admin/returns/{$request->id}/approve")->assertForbidden();
     }
+
+    /** الموظف يقرر في النزاع ويؤكد الاستلام (الموقع والتطبيق)، أما إرجاع المال فللمدير وحده. */
+    public function test_the_employee_decides_and_receives_returns_but_cannot_refund(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee', 'employee_status' => 'approved', 'status' => 'active']);
+        $request = $this->escalated();
+        $api = $this->actingAs($employee, 'sanctum');
+
+        $api->getJson('/api/v1/employee/returns')->assertOk()->assertJsonPath('data.0.number', $request->number);
+        $api->postJson("/api/v1/employee/returns/{$request->id}/approve", ['note' => 'العيب ظاهر'])->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+        $api->postJson("/api/v1/employee/returns/{$request->id}/received")->assertOk()
+            ->assertJsonPath('data.status', 'received')
+            ->assertJsonPath('actions.record_refund', false);
+
+        $api->postJson("/api/v1/employee/returns/{$request->id}/refund", ['amount' => 10000, 'method' => 'bank_transfer'])->assertNotFound();
+        $api->postJson("/api/v1/admin/returns/{$request->id}/refund", ['amount' => 10000, 'method' => 'bank_transfer'])->assertForbidden();
+
+        $this->actingAs($employee)->get(route('employee.returns.show', $request))->assertOk()
+            ->assertSee(route('employee.orders.show', $request->order), false)
+            ->assertDontSee(route('admin.returns.refund', $request), false);
+        $this->assertNull($request->fresh()->refund);
+    }
 }

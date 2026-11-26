@@ -3,10 +3,11 @@
 @section('title', __('طلب إرجاع :number', ['number' => $returnRequest->number]))
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <nav class="navbar ts-header mb-4">
     <div class="container">
         <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - {{ __('طلب إرجاع :number', ['number' => $returnRequest->number]) }}</span>
-        <a href="{{ route('admin.returns.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('كل المرتجعات') }}</a>
+        <a href="{{ route($area.'.returns.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('كل المرتجعات') }}</a>
     </div>
 </nav>
 
@@ -24,7 +25,7 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <p class="mb-1">{{ __('الحالة') }}: <span class="badge bg-secondary">{{ __(\App\Returns\Models\ReturnRequest::STATUS_LABELS[$returnRequest->status] ?? $returnRequest->status) }}</span></p>
-            <p class="small mb-1">{{ __('الطلب') }}: <a href="{{ route('admin.orders.show', $returnRequest->order) }}">{{ $returnRequest->order->order_number }}</a></p>
+            <p class="small mb-1">{{ __('الطلب') }}: <a href="{{ route($area.'.orders.show', $returnRequest->order) }}">{{ $returnRequest->order->order_number }}</a></p>
             <p class="small mb-1">{{ __('العميل') }}: {{ $returnRequest->customer?->name }} — {{ __('المتجر') }}: {{ $returnRequest->seller?->store_name }}</p>
             <p class="small mb-1">{{ __('السبب') }}: {{ __(\App\Returns\Models\ReturnRequest::REASON_LABELS[$returnRequest->reason] ?? $returnRequest->reason) }}</p>
             @if ($returnRequest->description)
@@ -52,13 +53,13 @@
 
         <div class="col-lg-5">
             @if ($returnRequest->status === 'escalated')
-                <form action="{{ route('admin.returns.approve', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
+                <form action="{{ route($area.'.returns.approve', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
                     @csrf
                     <h2 class="h6">{{ __('قرار الإدارة: موافقة') }}</h2>
                     <textarea name="note" rows="2" maxlength="2000" class="form-control mb-2" placeholder="{{ __('ملاحظة (اختياري)') }}"></textarea>
                     <button class="btn btn-sm btn-success">{{ __('موافقة') }}</button>
                 </form>
-                <form action="{{ route('admin.returns.reject', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
+                <form action="{{ route($area.'.returns.reject', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
                     @csrf
                     <h2 class="h6">{{ __('قرار الإدارة: رفض') }}</h2>
                     <textarea name="note" rows="2" maxlength="2000" class="form-control mb-2" placeholder="{{ __('سبب الرفض (مطلوب)') }}" required>{{ old('note') }}</textarea>
@@ -67,15 +68,16 @@
             @endif
 
             @if ($returnRequest->status === 'approved')
-                <form action="{{ route('admin.returns.received', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded" data-confirm="{{ __('تأكيد استلام المنتجات المرتجعة؟') }}">
+                <form action="{{ route($area.'.returns.received', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded" data-confirm="{{ __('تأكيد استلام المنتجات المرتجعة؟') }}">
                     @csrf
                     <h2 class="h6">{{ __('استلام المرتجع') }}</h2>
                     <button class="btn btn-sm btn-primary">{{ __('تأكيد الاستلام') }}</button>
                 </form>
             @endif
 
-            @if ($returnRequest->status === 'received')
-                <form action="{{ route('admin.returns.refund', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
+            {{-- إرجاع المال للمدير وحده --}}
+            @if ($returnRequest->status === 'received' && auth()->user()->isAdmin())
+                <form action="{{ route($area.'.returns.refund', $returnRequest) }}" method="POST" class="mb-3 p-3 bg-light rounded">
                     @csrf
                     <h2 class="h6">{{ __('تسجيل الاسترداد') }}</h2>
                     <p class="small text-muted">{{ __('سجّل المبلغ الذي دفعته للعميل خارج النظام.') }}</p>

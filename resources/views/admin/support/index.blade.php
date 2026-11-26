@@ -3,12 +3,13 @@
 @section('title', 'دعم البائعين - تريندشام')
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <div class="container-fluid px-4">
 
     <nav class="navbar ts-header mb-4">
         <div class="container">
             <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - رسائل البائعين</span>
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">لوحة الإدارة</a>
+            <a href="{{ route($area.'.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ $area === 'employee' ? __('لوحة الموظف') : __('لوحة المدير') }}</a>
         </div>
     </nav>
 
@@ -64,7 +65,7 @@
                                         <span class="badge bg-{{ $conv->status === 'open' ? 'success' : 'danger' }}">{{ $conv->status === 'open' ? 'مفتوحة' : 'مغلقة' }}</span>
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.support.show', $conv) }}" class="btn btn-outline-primary btn-sm px-3">عرض والرد</a>
+                                        <a href="{{ route($area.'.support.show', $conv) }}" class="btn btn-outline-primary btn-sm px-3">عرض والرد</a>
                                     </td>
                                 </tr>
                             @endforeach

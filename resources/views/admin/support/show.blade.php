@@ -66,15 +66,16 @@
 @endsection
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <div class="container-fluid px-4">
 
     <nav class="navbar ts-header mb-4">
         <div class="container d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('admin.support.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> جميع الرسائل</a>
+                <a href="{{ route($area.'.support.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> جميع الرسائل</a>
                 <span class="badge bg-{{ $conversation->status === 'open' ? 'success' : 'danger' }}">{{ $conversation->status === 'open' ? 'مفتوحة' : 'مغلقة' }}</span>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">لوحة الإدارة</a>
+            <a href="{{ route($area.'.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ $area === 'employee' ? __('لوحة الموظف') : __('لوحة المدير') }}</a>
         </div>
     </nav>
 
@@ -93,12 +94,12 @@
                         </div>
                         <div class="d-flex gap-2">
                             @if($conversation->status === 'open')
-                                <form action="{{ route('admin.support.close', $conversation) }}" method="POST" class="d-inline">
+                                <form action="{{ route($area.'.support.close', $conversation) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button class="btn btn-outline-secondary btn-sm">إغلاق المحادثة</button>
                                 </form>
                             @else
-                                <form action="{{ route('admin.support.reopen', $conversation) }}" method="POST" class="d-inline">
+                                <form action="{{ route($area.'.support.reopen', $conversation) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button class="btn btn-outline-secondary btn-sm">إعادة الفتح</button>
                                 </form>
@@ -137,7 +138,7 @@
     <div class="row">
         <div class="col-12">
             <div class="ts-reply-form">
-                <form action="{{ route('admin.support.message', $conversation) }}" method="POST" class="d-flex gap-2">
+                <form action="{{ route($area.'.support.message', $conversation) }}" method="POST" class="d-flex gap-2">
                     @csrf
                     <input type="text" name="body" class="form-control" placeholder="اكتب ردك للبائع..." required>
                     <button class="btn btn-primary px-4">إرسال الرد</button>
@@ -147,6 +148,7 @@
     </div>
 
 </div>
+@endsection
 
 @push('scripts')
 <script>

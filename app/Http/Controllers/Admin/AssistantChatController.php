@@ -46,10 +46,10 @@ class AssistantChatController extends Controller
         return back()->with('success', 'تم إرسال الرد.');
     }
 
-    public function close(ChatConversation $conversation)
+    public function close(Request $request, ChatConversation $conversation)
     {
         $conversation->update(['status' => 'closed']);
 
-        return redirect()->route('admin.assistant-chats.index')->with('success', 'تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.');
+        return redirect()->route($request->routeIs('employee.*') ? 'employee.assistant-chats.index' : 'admin.assistant-chats.index')->with('success', 'تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.');
     }
 }

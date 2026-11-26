@@ -207,6 +207,12 @@ class User extends Authenticatable implements HasLocalePreference
         return $this->role === 'employee' && $this->employee_status === 'approved';
     }
 
+    /** فريق المنصة (المدير أو موظف معتمد): يعمل باسم الإدارة في الطلبات والدعم والمرتجعات. */
+    public function isPlatformStaff(): bool
+    {
+        return $this->isAdmin() || ($this->isEmployee() && $this->status === 'active');
+    }
+
     public function scopeSellers($query)
     {
         return $query->where('role', 'seller');

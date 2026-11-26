@@ -3,12 +3,15 @@
 @section('title', 'محادثات العملاء - لوحة المدير')
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <nav class="navbar ts-header mb-4">
     <div class="container">
         <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - محادثات العملاء</span>
         <div class="d-flex gap-2">
+            @if ($area === 'admin')
             <a href="{{ route('admin.assistant-faqs.index') }}" class="btn btn-outline-secondary btn-sm">أجوبة المساعد</a>
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">لوحة المدير</a>
+            @endif
+            <a href="{{ route($area.'.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ $area === 'employee' ? __('لوحة الموظف') : __('لوحة المدير') }}</a>
         </div>
     </div>
 </nav>
@@ -17,14 +20,14 @@
     @if (session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 
     <ul class="nav nav-pills mb-3">
-        <li class="nav-item"><a class="nav-link {{ $status === 'escalated' ? 'active' : '' }}" href="{{ route('admin.assistant-chats.index') }}">بانتظار موظف</a></li>
-        <li class="nav-item"><a class="nav-link {{ $status === 'closed' ? 'active' : '' }}" href="{{ route('admin.assistant-chats.index', ['status' => 'closed']) }}">مغلقة</a></li>
+        <li class="nav-item"><a class="nav-link {{ $status === 'escalated' ? 'active' : '' }}" href="{{ route($area.'.assistant-chats.index') }}">بانتظار موظف</a></li>
+        <li class="nav-item"><a class="nav-link {{ $status === 'closed' ? 'active' : '' }}" href="{{ route($area.'.assistant-chats.index', ['status' => 'closed']) }}">مغلقة</a></li>
     </ul>
 
     <div class="list-group">
         @forelse ($conversations as $c)
             @php $lastUser = $c->messages->last(); @endphp
-            <a href="{{ route('admin.assistant-chats.show', $c) }}" class="list-group-item list-group-item-action">
+            <a href="{{ route($area.'.assistant-chats.show', $c) }}" class="list-group-item list-group-item-action">
                 <div class="d-flex justify-content-between">
                     <strong>{{ $c->user ? trim($c->user->first_name.' '.$c->user->last_name) : 'زائر' }}</strong>
                     <small class="text-muted">{{ $c->escalated_at?->diffForHumans() }}</small>

@@ -5,13 +5,22 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\ProductResource;
-use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\EmployeeWorkload;
+use App\Services\StaffOrderStatusChanger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    /** أرقام شغل اليوم في الصفحة الرئيسية للموظف (نفس بطاقات الموقع). */
+    public function dashboard(EmployeeWorkload $workload): JsonResponse
+    {
+        return response()->json(['data' => $workload->counts()]);
+    }
+
     public function orders()
     {
         return OrderResource::collection(
@@ -22,55 +31,26 @@ class EmployeeController extends Controller
     public function showOrder(Order $order)
     {
         abort_if($order->archived_at, 404);
-        $order->load('items.vendor', 'payment', 'shipment.shippingCompany', 'user');
+        $order->load('items.vendor', 'payment', 'shipments.shippingCompany', 'shipments.seller', 'user');
 
         return new OrderResource($order);
     }
 
-    public function updateOrderStatus(Request $request, Order $order)
+    /** نفس قواعد لوحة الموظف في الموقع (StaffOrderStatusChanger). */
+    public function updateOrderStatus(Request $request, Order $order, StaffOrderStatusChanger $changer)
     {
         abort_if($order->archived_at, 404);
         $validated = $request->validate([
-            'status' => ['required', 'in:pending,paid,processing,shipped,delivered,cancelled'],
-            'tracking_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'status' => ['required', Rule::in(StaffOrderStatusChanger::EMPLOYEE_STATUSES)],
         ]);
 
         try {
-            $order->changeStatus($validated['status']);
+            $changer->change($request->user(), $order, $validated['status']);
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
-        if (array_key_exists('tracking_number', $validated) ||
-            in_array($validated['status'], ['shipped', 'delivered'], true)) {
-            $shipment = $order->shipment()->firstOrCreate([], ['status' => 'pending']);
-            $shipmentUpdates = [];
 
-            if (array_key_exists('tracking_number', $validated)) {
-                $shipmentUpdates['tracking_number'] = $validated['tracking_number'];
-            }
-            if ($validated['status'] === 'shipped') {
-                $shipmentUpdates['status'] = 'shipped';
-                $shipmentUpdates['shipped_at'] = $shipment->shipped_at ?? now();
-            } elseif ($validated['status'] === 'delivered') {
-                $shipmentUpdates['status'] = 'delivered';
-                $shipmentUpdates['shipped_at'] = $shipment->shipped_at ?? now();
-                $shipmentUpdates['delivered_at'] = $shipment->delivered_at ?? now();
-            }
-
-            if ($shipmentUpdates !== []) {
-                $shipment->update($shipmentUpdates);
-            }
-        }
-
-        AppNotification::send(
-            $order->user_id,
-            'order_status_changed',
-            "تحديث على طلبك #{$order->order_number}",
-            'الحالة الجديدة: '.$validated['status'],
-            null
-        );
-
-        return new OrderResource($order->fresh(['items', 'payment', 'shipment.shippingCompany']));
+        return new OrderResource($order->fresh(['items', 'payment', 'shipments.shippingCompany', 'shipments.seller']));
     }
 
     public function archiveOrder(Order $order)

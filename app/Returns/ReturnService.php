@@ -268,7 +268,7 @@ class ReturnService
 
     public function adminApprove(User $admin, ReturnRequest $returnRequest, ?string $note = null): ReturnRequest
     {
-        $this->assertAdmin($admin);
+        $this->assertPlatformStaff($admin);
 
         $locked = $this->transition($returnRequest, ['escalated'], function (ReturnRequest $r) use ($admin, $note) {
             $this->assertOrderNotCancelled($r);
@@ -287,7 +287,7 @@ class ReturnService
 
     public function adminReject(User $admin, ReturnRequest $returnRequest, string $note): ReturnRequest
     {
-        $this->assertAdmin($admin);
+        $this->assertPlatformStaff($admin);
         $this->requireNote($note);
 
         $locked = $this->transition($returnRequest, ['escalated'], function (ReturnRequest $r) use ($admin, $note) {
@@ -301,7 +301,7 @@ class ReturnService
 
     public function confirmReceived(User $actor, ReturnRequest $returnRequest): ReturnRequest
     {
-        $isAdmin = $actor->role === 'admin';
+        $isAdmin = $actor->isPlatformStaff();
         if (! $isAdmin && $actor->sellerProfile?->id !== $returnRequest->seller_profile_id) {
             throw new NotFoundHttpException;
         }
@@ -468,6 +468,13 @@ class ReturnService
     {
         if ($seller->id !== $r->seller_profile_id) {
             throw new NotFoundHttpException;
+        }
+    }
+
+    private function assertPlatformStaff(User $user): void
+    {
+        if (! $user->isPlatformStaff()) {
+            throw new AccessDeniedHttpException;
         }
     }
 

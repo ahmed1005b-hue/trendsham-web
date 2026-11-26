@@ -3,10 +3,11 @@
 @section('title', __('المرتجعات').' - '.__('لوحة المدير'))
 
 @section('content')
+@php $area = request()->routeIs('employee.*') ? 'employee' : 'admin'; @endphp
 <nav class="navbar ts-header mb-4">
     <div class="container">
         <span class="navbar-brand mb-0 h1 ts-logo">تريند<span>شام</span> - {{ __('المرتجعات') }}</span>
-        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ __('لوحة المدير') }}</a>
+        <a href="{{ route($area.'.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ $area === 'employee' ? __('لوحة الموظف') : __('لوحة المدير') }}</a>
     </div>
 </nav>
 
@@ -22,7 +23,7 @@
         @foreach ($tabs as $key => [$label, $statusKey])
             @php $n = $statusKey ? ($counts[$statusKey] ?? 0) : 0; @endphp
             <li class="nav-item">
-                <a class="nav-link py-1 px-3 {{ $tab === $key ? 'active' : '' }}" href="{{ route('admin.returns.index', ['tab' => $key]) }}">
+                <a class="nav-link py-1 px-3 {{ $tab === $key ? 'active' : '' }}" href="{{ route($area.'.returns.index', ['tab' => $key]) }}">
                     {{ __($label) }} @if ($n)<span class="badge bg-secondary ms-1">{{ $n }}</span>@endif
                 </a>
             </li>
@@ -41,7 +42,7 @@
                         <td>{{ $returnRequest->seller?->store_name }}</td>
                         <td>{{ number_format($returnRequest->refund_amount / 100) }} ل.س</td>
                         <td><span class="badge bg-secondary">{{ __(\App\Returns\Models\ReturnRequest::STATUS_LABELS[$returnRequest->status] ?? $returnRequest->status) }}</span></td>
-                        <td class="text-end"><a href="{{ route('admin.returns.show', $returnRequest) }}" class="btn btn-sm btn-outline-secondary">{{ __('التفاصيل') }}</a></td>
+                        <td class="text-end"><a href="{{ route($area.'.returns.show', $returnRequest) }}" class="btn btn-sm btn-outline-secondary">{{ __('التفاصيل') }}</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="7" class="text-center text-muted py-4">{{ __('لا توجد طلبات إرجاع.') }}</td></tr>

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Services\StaffOrderStatusChanger;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use Illuminate\Http\Request;
@@ -34,27 +34,17 @@ class OrderController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order, StaffOrderStatusChanger $changer)
     {
         $validated = $request->validate([
             'status' => ['required', 'in:pending,paid,processing,shipped,delivered,cancelled'],
         ]);
 
         try {
-            $order->changeStatus($validated['status']);
+            $changer->change($request->user(), $order, $validated['status']);
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
-
-        $statusLabels = Order::STATUS_LABELS;
-
-        AppNotification::send(
-            $order->user_id,
-            'order_status_changed',
-            "تحديث على طلبك #{$order->order_number}",
-            'الحالة الجديدة: '.($statusLabels[$validated['status']] ?? $validated['status']),
-            route('customer.orders.show', $order)
-        );
 
         return back()->with('success', 'تم تحديث حالة الطلب.');
     }
