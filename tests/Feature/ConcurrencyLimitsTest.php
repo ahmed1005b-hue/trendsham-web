@@ -26,6 +26,8 @@ class ConcurrencyLimitsTest extends TestCase
     /** بند السلة بسعر العرض (أرخص من السعر الأصلي). */
     private function dealPricedCart(array $a, int $quantity): void
     {
+        // سعر العرض الفعلي = السعر الأصلي - 100 (special_price بالوحدة الكبرى): الدفع يعيد حساب السعر
+        $a['deal']->update(['special_price' => ($a['product']->price - 100) / 100]);
         $a['cartItem']->update([
             'quantity' => $quantity,
             'unit_price' => $a['product']->price - 100,

@@ -57,12 +57,7 @@ class CartController extends Controller
 
         $quantity = $validated['quantity'] ?? 1;
 
-        $deal = $product->relationLoaded('activeDailyDeal') ? $product->activeDailyDeal : null;
-        $unitPrice = $deal ? (int) round($deal->discounted_price) : (int) $product->price;
-        if ($variant) {
-            $unitPrice += (int) $variant->price_adjustment;
-        }
-        $originalUnitPrice = (int) $product->price + ($variant ? (int) $variant->price_adjustment : 0);
+        [$unitPrice, $originalUnitPrice] = CartItem::currentPrices($product, $variant);
 
         $stock = $variant ? $variant->stock_quantity : $product->stock_quantity;
         abort_unless($stock > 0, 422, 'هذا المتغير غير متوفر حالياً.');

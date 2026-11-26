@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Loyalty\LoyaltyCheckout;
 use App\Loyalty\LoyaltyException;
 use App\Models\AppNotification;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -182,6 +183,11 @@ class CheckoutController extends Controller
             }
         }
 
+        // السعر يُحسب الآن لا عند الإضافة للسلة: عرض انتهى أو سعر عدّله البائع يظهر للعميل قبل الدفع
+        if (CartItem::repriceStale($items)) {
+            return redirect()->route('customer.cart.index')->with('error', __('تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.'));
+        }
+
         try {
             $order = DB::transaction(function () use ($items, $validated, $request, $deliveryMethod, $shipping) {
                 // نقفل سلة المشتري ونقرؤها من جديد قبل أي شيء: ضغطتان متزامنتان على «تأكيد الطلب»
@@ -215,6 +221,9 @@ class CheckoutController extends Controller
                     $stock = $item->variant ? $item->variant->stock_quantity : $product->stock_quantity;
                     if ($stock < $item->quantity) {
                         throw new \DomainException('stock_conflict');
+                    }
+                    if (! $item->hasCurrentPrice($product)) {
+                        throw new \DomainException('price_changed');
                     }
                     $lineSubtotal = $item->subtotal;
 
@@ -352,6 +361,11 @@ class CheckoutController extends Controller
             }
             if ($e->getMessage() === 'stock_conflict') {
                 return back()->with('error', 'الكمية المتوفرة من أحد المنتجات لم تعد كافية، رجاءً حدّث السلة.');
+            }
+            if ($e->getMessage() === 'price_changed') {
+                CartItem::repriceStale($request->user()->cartItems()->with(['product.activeDailyDeal', 'variant'])->get());
+
+                return redirect()->route('customer.cart.index')->with('error', __('تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.'));
             }
             if ($e->getMessage() === DailyDealQuota::SOLD_OUT) {
                 return back()->with('error', __('نفدت كمية «عرض اليوم» لأحد المنتجات. احذفه من السلة وأضفه من جديد بسعره الحالي.'));

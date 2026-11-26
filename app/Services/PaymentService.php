@@ -56,6 +56,9 @@ class PaymentService
 
         // كل محاولة دفع تؤجّل الإلغاء التلقائي: بعد المهلة لا محاولات جديدة، فلا يبقى المخزون محجوزاً
         abort_if($order->onlinePaymentWindowClosed(), 422, __('انتهت مهلة دفع هذا الطلب. سيُلغى تلقائياً، ويمكنك الطلب من جديد.'));
+        // طلب الدفع عند الاستلام: مبلغه مسجّل على الطرد ليحصّله المندوب، فالدفع الإلكتروني فوقه يعني دفعه مرتين
+        abort_if(Payment::where('order_id', $order->id)->oldest('id')->value('method') === 'cash_on_delivery', 422,
+            __('هذا الطلب بالدفع عند الاستلام، يُدفع عند التسليم.'));
 
         if ($card) {
             abort_unless($card->user_id === $order->user_id, 403);

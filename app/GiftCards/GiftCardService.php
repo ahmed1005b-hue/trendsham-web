@@ -92,8 +92,16 @@ class GiftCardService
     /** نتيجة البنك لشراء بطاقة. آمن للتكرار. */
     public function applyPayment(WebhookEvent $e): void
     {
-        $activated = DB::transaction(function () use ($e) {
+        $paidLate = null;
+        $activated = DB::transaction(function () use ($e, &$paidLate) {
             $card = GiftCard::where('reference', $e->reference)->lockForUpdate()->first();
+            if ($card && $card->status === GiftCard::FAILED && $e->status === 'paid' && $card->gateway_txn_id === null) {
+                // البنك أكّد الدفع بعد أن اعتُبرت المحاولة فاشلة (مرّ يوم): المبلغ مأخوذ ولا كود، فيُسترجع
+                $card->update(['gateway_txn_id' => $e->txnId]);
+                $paidLate = $card;
+
+                return null;
+            }
             if (! $card || $card->status !== GiftCard::PENDING || $e->status === 'pending') {
                 return null;
             }
@@ -123,6 +131,17 @@ class GiftCardService
 
             return $card;
         });
+
+        if ($paidLate) {
+            Log::critical('Gift card paid after it was marked failed — refund required', ['gift_card_id' => $paidLate->id, 'txn' => $e->txnId]);
+            User::where('role', 'admin')->pluck('id')->each(fn ($adminId) => AppNotification::send(
+                $adminId,
+                'payment_duplicate',
+                'دفعة بطاقة هدية تحتاج استرجاعاً',
+                'وصل تأكيد البنك بعد انتهاء مهلة الشراء — رقم العملية: '.$e->txnId,
+                route('admin.gift-cards.index')
+            ));
+        }
 
         if ($activated) {
             AppNotification::send($activated->purchaser_id, 'gift_card_ready', 'بطاقة الهدية جاهزة',
