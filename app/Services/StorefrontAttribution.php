@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\OrderItem;
 use App\Models\SellerProfile;
 use App\Models\StorefrontVisit;
 use Illuminate\Http\Request;
@@ -61,13 +62,13 @@ class StorefrontAttribution
             ->whereHas('orderItems', fn ($query) => $query
                 ->where('vendor_id', $sellerProfileId)
                 ->whereHas(
-                'order',
-                fn ($orders) => $orders->where('status', '!=', 'cancelled')
-            ));
+                    'order',
+                    fn ($orders) => $orders->where('status', '!=', 'cancelled')->releasedToSellers()
+                ));
 
         $visitCount = (int) $visits->count();
         $convertedCount = (int) $convertingVisits->count();
-        $attributedOrders = (int) DB::table('order_items')
+        $attributedOrders = (int) OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $sellerProfileId)
             ->whereNotNull('order_items.storefront_visit_id')

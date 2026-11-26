@@ -114,7 +114,9 @@ class Order extends Model
      */
     public function scopeAwaitingOnlinePayment(Builder $query): Builder
     {
-        return $query->where($query->qualifyColumn('payment_status'), '!=', 'paid')
+        // إن نقلت الإدارة الطلب للتجهيز (دفع أكّدته بنفسها) فهو للبائع؛ والملغى قبل الدفع لا يصله أبداً
+        return $query->whereIn($query->qualifyColumn('status'), ['pending', 'cancelled'])
+            ->where($query->qualifyColumn('payment_status'), '!=', 'paid')
             ->whereHas('payments', fn (Builder $payments) => $payments->where('method', 'card'))
             ->whereDoesntHave('payments', fn (Builder $payments) => $payments
                 ->where('method', 'cash_on_delivery')->orWhere('status', 'paid'));

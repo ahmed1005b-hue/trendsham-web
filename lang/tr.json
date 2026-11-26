@@ -3658,5 +3658,11 @@
     "من (المتجر)": "Gönderen (mağaza)",
     "التوصيل:": "Teslimat:",
     "محتويات الطرد": "Paket içeriği",
-    "و:count منتجات أخرى": "ve :count ürün daha"
+    "و:count منتجات أخرى": "ve :count ürün daha",
+    "الدفع بالبطاقة غير متاح حالياً. اختر الدفع عند الاستلام.": "Kartla ödeme şu anda kullanılamıyor. Kapıda ödemeyi seçin.",
+    "لديك طلبات بالبطاقة لم تُدفع بعد. ادفعها أو ألغها أولاً.": "Ödenmemiş kartlı siparişleriniz var. Önce bunları ödeyin veya iptal edin.",
+    "انتهت مهلة دفع هذا الطلب. سيُلغى تلقائياً، ويمكنك الطلب من جديد.": "Bu siparişin ödeme süresi doldu. Otomatik olarak iptal edilecek; yeniden sipariş verebilirsiniz.",
+    "هذا الطلب بالدفع عند الاستلام، يُدفع عند التسليم.": "Bu sipariş kapıda ödemelidir; teslimatta ödenir.",
+    "تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.": "Sepetinizdeki bazı ürünlerin fiyatı değişti (bir fırsat sona erdi veya satıcı fiyatı güncelledi). Sepetinizi kontrol edip siparişi onaylayın.",
+    "الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.": "Bir ürün için kalan “Günün fırsatı” miktarı sepetinizdeki miktardan az. Miktarı azaltın veya ürünü sepetten çıkarın."
 }

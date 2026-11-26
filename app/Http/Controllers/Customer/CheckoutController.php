@@ -368,7 +368,7 @@ class CheckoutController extends Controller
                 return redirect()->route('customer.cart.index')->with('error', __('تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.'));
             }
             if ($e->getMessage() === DailyDealQuota::SOLD_OUT) {
-                return back()->with('error', __('نفدت كمية «عرض اليوم» لأحد المنتجات. احذفه من السلة وأضفه من جديد بسعره الحالي.'));
+                return back()->with('error', __('الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.'));
             }
             if (str_starts_with($e->getMessage(), 'coupon:')) {
                 $request->session()->forget('checkout_coupon');

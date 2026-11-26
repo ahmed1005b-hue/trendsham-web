@@ -343,7 +343,11 @@ class AuthController extends Controller
 
         // نفس رد الرمز الخاطئ: لا نكشف هل الحساب مسجّل
         if (! $user) {
-            return response()->json(['message' => 'رمز التحقق غير صحيح أو منتهي الصلاحية.'], 422);
+            return response()->json(['message' => match (true) {
+                (bool) ($validated['code'] ?? null) => 'رمز التحقق غير صحيح أو منتهي الصلاحية.',
+                (bool) ($validated['token'] ?? null) => 'رابط إعادة التعيين غير صحيح أو منتهي الصلاحية.',
+                default => 'رمز أو رمز تحقق مطلوب.',
+            }], 422);
         }
 
         $code = $validated['code'] ?? null;

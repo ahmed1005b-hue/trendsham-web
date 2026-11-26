@@ -81,5 +81,15 @@ class SessionSecurityAndHeadersTest extends TestCase
         $unknown->assertStatus(422);
         $known->assertStatus(422);
         $this->assertSame($known->json('message'), $unknown->json('message'));
+
+        // نفس الشيء برابط البريد أو بلا رمز إطلاقاً
+        $withEmail = User::factory()->create(['email' => 'known@example.test']);
+        foreach ([['token' => 'garbage'], []] as $secret) {
+            $base = ['password' => self::NEW_PASSWORD, 'password_confirmation' => self::NEW_PASSWORD] + $secret;
+            $this->assertSame(
+                $this->postJson('/api/v1/auth/reset-password', ['identifier' => $withEmail->email] + $base)->assertStatus(422)->json('message'),
+                $this->postJson('/api/v1/auth/reset-password', ['identifier' => 'nobody@example.test'] + $base)->assertStatus(422)->json('message'),
+            );
+        }
     }
 }

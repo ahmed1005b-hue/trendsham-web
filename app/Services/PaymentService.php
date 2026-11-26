@@ -74,7 +74,7 @@ class PaymentService
             'currency' => config('payment.currency', 'SYP'),
             'status' => 'pending',
             // أعمدة قديمة تبقى متوافقة مع شاشات الطلبات الحالية
-            'method' => $gw->name() === 'manual' ? 'cash_on_delivery' : 'card',
+            'method' => $gw->name() === 'manual' && ! $order->isAwaitingOnlinePayment() ? 'cash_on_delivery' : 'card',
         ]);
 
         $result = $card
@@ -210,7 +210,7 @@ class PaymentService
                 'gateway_txn_id' => $e->txnId ?: $p->gateway_txn_id,
             ]);
 
-            if ($order && in_array($e->status, ['failed', 'cancelled'], true) && $order->payment_status !== 'paid') {
+            if ($order && in_array($e->status, ['failed', 'cancelled'], true) && $order->payment_status !== 'paid' && $order->status !== 'cancelled') {
                 $order->update(['payment_status' => $e->status]);
             }
         });

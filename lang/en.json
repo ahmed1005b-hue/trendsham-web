@@ -3657,5 +3657,11 @@
     "من (المتجر)": "From (store)",
     "التوصيل:": "Delivery:",
     "محتويات الطرد": "Parcel contents",
-    "و:count منتجات أخرى": "and :count more items"
+    "و:count منتجات أخرى": "and :count more items",
+    "الدفع بالبطاقة غير متاح حالياً. اختر الدفع عند الاستلام.": "Card payment is not available right now. Choose cash on delivery.",
+    "لديك طلبات بالبطاقة لم تُدفع بعد. ادفعها أو ألغها أولاً.": "You have unpaid card orders. Pay or cancel them first.",
+    "انتهت مهلة دفع هذا الطلب. سيُلغى تلقائياً، ويمكنك الطلب من جديد.": "The payment time for this order has run out. It will be cancelled automatically, and you can order again.",
+    "هذا الطلب بالدفع عند الاستلام، يُدفع عند التسليم.": "This order is cash on delivery; it is paid on delivery.",
+    "تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.": "The price of some items in your cart has changed (a deal ended or the seller updated the price). Review your cart, then confirm the order.",
+    "الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.": "The remaining “Deal of the day” quantity for an item is less than the quantity in your cart. Lower the quantity or remove the item."
 }

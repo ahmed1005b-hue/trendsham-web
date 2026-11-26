@@ -341,7 +341,7 @@ class CheckoutController extends Controller
                 return response()->json(['message' => __('تغيّر سعر بعض المنتجات في سلتك (انتهى عرض أو عدّل البائع السعر). راجع السلة ثم أكّد الطلب.'), 'code' => 'price_changed'], 422);
             }
             if ($e->getMessage() === DailyDealQuota::SOLD_OUT) {
-                return response()->json(['message' => __('نفدت كمية «عرض اليوم» لأحد المنتجات. احذفه من السلة وأضفه من جديد بسعره الحالي.'), 'code' => 'deal_sold_out'], 422);
+                return response()->json(['message' => __('الكمية المتبقية من «عرض اليوم» لأحد المنتجات أقل من الكمية في سلتك. قلّل الكمية أو احذف المنتج من السلة.'), 'code' => 'deal_sold_out'], 422);
             }
             if (str_starts_with($e->getMessage(), 'coupon:')) {
                 return response()->json(['message' => __('لا يمكن استخدام هذا الكوبون: :reason', ['reason' => substr($e->getMessage(), 7)]), 'code' => 'coupon_invalid'], 422);

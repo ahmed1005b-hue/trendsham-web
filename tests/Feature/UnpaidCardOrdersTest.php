@@ -170,6 +170,54 @@ class UnpaidCardOrdersTest extends TestCase
         $this->assertNotContains($order->id, $this->sellerOrderIds($a['seller']));
     }
 
+    public function test_an_unpaid_card_order_the_admin_moves_forward_reaches_the_seller(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->checkout($a, 'card');
+
+        // الإدارة تأكدت من الدفع بنفسها ونقلت الطلب للتجهيز: البائع يحتاجه ليشحنه
+        $order->changeStatus('processing');
+
+        $this->assertContains($order->id, $this->sellerOrderIds($a['seller']));
+    }
+
+    public function test_the_manual_gateway_does_not_release_an_unpaid_card_order(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->checkout($a, 'card');
+
+        config(['payment.driver' => 'manual']);
+        $this->startPayment($a['customer'], $order);
+
+        $this->assertTrue($order->isAwaitingOnlinePayment());
+        $this->assertNotContains($order->id, $this->sellerOrderIds($a['seller']));
+    }
+
+    public function test_a_late_failure_notice_keeps_the_cancelled_payment_status(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->checkout($a, 'card');
+        $reference = $this->startPayment($a['customer'], $order);
+        $this->travel(Order::ONLINE_PAYMENT_TIMEOUT_MINUTES + 1)->minutes();
+        $this->artisan('orders:cancel-unpaid')->assertSuccessful();
+
+        app(PaymentService::class)->apply($reference, new WebhookEvent($reference, 'failed'));
+
+        $this->assertSame('cancelled', $order->fresh()->payment_status);
+    }
+
+    public function test_the_website_pay_page_sends_an_expired_order_back_with_a_message(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->checkout($a, 'card');
+        $this->travel(Order::ONLINE_PAYMENT_TIMEOUT_MINUTES + 1)->minutes();
+
+        $this->actingAs($a['customer'])->get(route('customer.checkout.pay', $order))
+            ->assertRedirect(route('customer.orders.show', $order))->assertSessionHas('error');
+        $this->actingAs($a['customer'])->post(route('customer.checkout.pay.process', $order))
+            ->assertRedirect(route('customer.orders.show', $order));
+    }
+
     public function test_payment_attempts_cannot_extend_the_stock_hold_past_the_window(): void
     {
         $a = $this->tenant('a');

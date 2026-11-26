@@ -97,7 +97,7 @@ class GiftCardService
             $card = GiftCard::where('reference', $e->reference)->lockForUpdate()->first();
             if ($card && $card->status === GiftCard::FAILED && $e->status === 'paid' && $card->gateway_txn_id === null) {
                 // البنك أكّد الدفع بعد أن اعتُبرت المحاولة فاشلة (مرّ يوم): المبلغ مأخوذ ولا كود، فيُسترجع
-                $card->update(['gateway_txn_id' => $e->txnId]);
+                $card->update(['gateway_txn_id' => $e->txnId ?: 'late-'.$card->reference]);
                 $paidLate = $card;
 
                 return null;
