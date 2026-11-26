@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
 
 class SupportController extends Controller
@@ -40,11 +41,12 @@ class SupportController extends Controller
         ]);
 
         $conversation->update(['last_message_at' => now()]);
+        app(StaffActivityLog::class)->support($request->user(), 'support.reply', $conversation);
 
         AppNotification::send(
             $conversation->vendor->user_id,
             'staff_message',
-            "رد جديد من الإدارة",
+            'رد جديد من الإدارة',
             mb_substr($validated['body'], 0, 120),
             route('seller.support.show', $conversation)
         );
@@ -55,12 +57,16 @@ class SupportController extends Controller
     public function close(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'closed']);
+        app(StaffActivityLog::class)->support($request->user(), 'support.close', $conversation);
+
         return back()->with('success', 'تم إغلاق المحادثة.');
     }
 
     public function reopen(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'open']);
+        app(StaffActivityLog::class)->support($request->user(), 'support.reopen', $conversation);
+
         return back()->with('success', 'تم إعادة فتح المحادثة.');
     }
 }

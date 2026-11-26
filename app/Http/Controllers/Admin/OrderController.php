@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Services\StaffActivityLog;
 use App\Services\StaffOrderStatusChanger;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
@@ -50,7 +51,7 @@ class OrderController extends Controller
     }
 
     /** الزبون رفض استلام طرد: يُلغى الطرد، والمنصة تدفع شحنه وتسجّله ديناً عليه. */
-    public function markRefused(Order $order, Shipment $shipment)
+    public function markRefused(Request $request, Order $order, Shipment $shipment)
     {
         abort_unless($shipment->order_id === $order->id, 404);
 
@@ -59,15 +60,17 @@ class OrderController extends Controller
         } catch (\DomainException $e) {
             return back()->with('error', __($e->getMessage()));
         }
+        app(StaffActivityLog::class)->order($request->user(), 'order.refused', $order);
 
         return back()->with('success', $debt > 0
             ? __('سُجّل رفض الاستلام وأُلغي الطلب. أُضيف :fee ديناً على الزبون ومُنع من الدفع عند الاستلام شهراً.', ['fee' => number_format($debt / 100).' ل.س'])
             : __('سُجّل رفض الاستلام وأُلغي الطلب. الطلب كان مدفوعاً: اخصم أجرة الشحن (:fee) مما تعيده للزبون.', ['fee' => number_format(max($shipment->shipping_cost, $shipment->shipping_fee) / 100).' ل.س']));
     }
 
-    public function archive(Order $order)
+    public function archive(Request $request, Order $order)
     {
         $order->update(['archived_at' => now()]);
+        app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
 
         return redirect()->route('employee.orders.index')->with('success', 'تمت أرشفة الطلب مع الاحتفاظ بسجله.');
     }

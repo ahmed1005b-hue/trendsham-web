@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
 
 class SupportController extends Controller
@@ -74,6 +75,7 @@ class SupportController extends Controller
         ]);
 
         $conversation->update(['last_message_at' => now()]);
+        app(StaffActivityLog::class)->support($request->user(), 'support.reply', $conversation);
 
         AppNotification::send(
             $conversation->vendor->user_id,
@@ -91,6 +93,7 @@ class SupportController extends Controller
     public function close(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'closed']);
+        app(StaffActivityLog::class)->support($request->user(), 'support.close', $conversation);
 
         return response()->json(['message' => 'تم إغلاق المحادثة.']);
     }
@@ -98,6 +101,7 @@ class SupportController extends Controller
     public function reopen(Request $request, StaffConversation $conversation)
     {
         $conversation->update(['status' => 'open']);
+        app(StaffActivityLog::class)->support($request->user(), 'support.reopen', $conversation);
 
         return response()->json(['message' => 'تم إعادة فتح المحادثة.']);
     }

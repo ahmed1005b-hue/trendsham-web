@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SellerProfile;
+use App\Models\StaffActivity;
 use App\Models\User;
 use App\Returns\Models\ReturnRequest;
 use App\Returns\ReturnService;
@@ -146,5 +147,6 @@ class AdminAppReturnsTest extends TestCase
             ->assertSee(route('employee.orders.show', $request->order), false)
             ->assertDontSee(route('admin.returns.refund', $request), false);
         $this->assertNull($request->fresh()->refund);
+        $this->assertSame(['return.approve', 'return.received'], StaffActivity::orderBy('id')->pluck('action')->all());
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Admin\SellerDebtController as AdminSellerDebtContro
 use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\ShippingController as AdminShippingController;
 use App\Http\Controllers\Api\Admin\ShowcaseController as AdminShowcaseController;
+use App\Http\Controllers\Api\Admin\StaffActivityController as AdminStaffActivityController;
 use App\Http\Controllers\Api\Admin\StatementController as AdminStatementController;
 use App\Http\Controllers\Api\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Api\Admin\SupportController as ApiAdminSupportController;
@@ -386,6 +387,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/employees', [AdminSellerController::class, 'employees']);
         Route::post('/employees/{user}/approve', [AdminSellerController::class, 'approveEmployee']);
         Route::post('/employees/{user}/reject', [AdminSellerController::class, 'rejectEmployee']);
+        Route::get('/staff-activity', [AdminStaffActivityController::class, 'index']);
         Route::post('/sellers/{sellerProfile}/approve', [AdminSellerController::class, 'approve']);
         Route::post('/sellers/{sellerProfile}/reject', [AdminSellerController::class, 'reject']);
         Route::put('/sellers/{sellerProfile}/commission', [AdminSellerController::class, 'updateCommission']);

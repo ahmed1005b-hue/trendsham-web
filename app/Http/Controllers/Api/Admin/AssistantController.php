@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AssistantFaqController as WebFaqController;
 use App\Http\Controllers\Controller;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -59,14 +60,16 @@ class AssistantController extends Controller
             'tool_calls' => ['intent' => 'agent', 'agent' => true, 'agent_name' => $request->user()->first_name],
         ]);
         $conversation->update(['escalated_to' => $request->user()->id]);
+        app(StaffActivityLog::class)->chat($request->user(), 'chat.reply', $conversation);
 
         return response()->json(['message' => __('تم إرسال الرد.'), ...$this->present($conversation->fresh())]);
     }
 
-    public function close(ChatConversation $conversation): JsonResponse
+    public function close(Request $request, ChatConversation $conversation): JsonResponse
     {
         abort_if($conversation->escalated_at === null, 404);
         $conversation->update(['status' => 'closed']);
+        app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
 
         return response()->json(['message' => __('تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.'), ...$this->present($conversation)]);
     }

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Returns\Models\ReturnRefund;
 use App\Returns\Models\ReturnRequest;
 use App\Services\ImageUploadService;
+use App\Services\StaffActivityLog;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -280,6 +281,7 @@ class ReturnService
             ]);
             $this->event($r, $admin->id, 'admin', 'admin_approved', $note);
         });
+        app(StaffActivityLog::class)->returnRequest($admin, 'return.approve', $locked);
         $this->notify(fn () => $this->notifier->adminDecided($locked));
 
         return $locked;
@@ -294,6 +296,7 @@ class ReturnService
             $r->update(['status' => 'closed', 'closed_at' => now(), 'decided_by' => $admin->id, 'decision_note' => $note]);
             $this->event($r, $admin->id, 'admin', 'admin_rejected', $note);
         });
+        app(StaffActivityLog::class)->returnRequest($admin, 'return.reject', $locked, ['note' => $note]);
         $this->notify(fn () => $this->notifier->adminDecided($locked));
 
         return $locked;
@@ -311,6 +314,7 @@ class ReturnService
             $this->event($r, $actor->id, $isAdmin ? 'admin' : 'seller', 'received');
             $this->settlement->apply($r);
         });
+        app(StaffActivityLog::class)->returnRequest($actor, 'return.received', $locked);
         $this->notify(fn () => $this->notifier->received($locked));
 
         return $locked;
@@ -371,6 +375,7 @@ class ReturnService
             $r->update(['status' => 'refunded']);
             $this->event($r, $admin->id, 'admin', 'refunded', $note);
         });
+        app(StaffActivityLog::class)->returnRequest($admin, 'return.refund', $locked, ['amount' => number_format($amount / 100)]);
         $this->notify(fn () => $this->notifier->refunded($locked));
 
         return $refund;

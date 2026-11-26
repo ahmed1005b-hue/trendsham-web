@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\ShipmentController as AdminShipmentController;
 use App\Http\Controllers\Admin\ShippingCompanyController as AdminShippingCompanyController;
 use App\Http\Controllers\Admin\ShowcaseAdminController;
 use App\Http\Controllers\Admin\ShowcaseSlotAdminController;
+use App\Http\Controllers\Admin\StaffActivityController as AdminStaffActivityController;
 use App\Http\Controllers\Admin\StoryController as AdminStoryController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\TrashController as AdminTrashController;
@@ -299,6 +300,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::get('/employees', [AdminSellerController::class, 'employees'])->name('employees.index');
     Route::post('/employees/{user}/approve', [AdminSellerController::class, 'approveEmployee'])->name('employees.approve');
     Route::post('/employees/{user}/reject', [AdminSellerController::class, 'rejectEmployee'])->name('employees.reject');
+    Route::get('/staff-activity', [AdminStaffActivityController::class, 'index'])->name('staff-activity.index');
 
     Route::get('/shipping-companies', [AdminShippingCompanyController::class, 'index'])->name('shippingCompanies.index');
     Route::post('/shipping-companies', [AdminShippingCompanyController::class, 'store'])->name('shippingCompanies.store');

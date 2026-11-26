@@ -7,6 +7,7 @@ use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\ProductVariantSync;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -64,20 +65,23 @@ class ProductController extends Controller
 
         // منتج له ألوان/مقاسات: مخزونه = مجموعها (الكمية تُعدَّل لكل لون/مقاس من البائع)
         app(ProductVariantSync::class)->syncProductStock($product);
+        app(StaffActivityLog::class)->product($request->user(), 'product.update', $product);
 
         return redirect()->route('employee.products.index')->with('success', 'تم تحديث المنتج.');
     }
 
-    public function archive(Product $product)
+    public function archive(Request $request, Product $product)
     {
         $product->update(['status' => 'inactive']);
+        app(StaffActivityLog::class)->product($request->user(), 'product.archive', $product);
 
         return back()->with('success', 'تم إخفاء المنتج مع الاحتفاظ بسجله.');
     }
 
-    public function approve(Product $product)
+    public function approve(Request $request, Product $product)
     {
         $product->update(['admin_approved_at' => now(), 'rejection_note' => null]);
+        app(StaffActivityLog::class)->product($request->user(), 'product.approve', $product);
 
         AppNotification::send(
             $product->vendor->user_id,
@@ -99,6 +103,7 @@ class ProductController extends Controller
             'admin_approved_at' => null,
             'rejection_note' => $validated['rejection_note'],
         ]);
+        app(StaffActivityLog::class)->product($request->user(), 'product.reject', $product, ['note' => $validated['rejection_note']]);
 
         AppNotification::send(
             $product->vendor->user_id,

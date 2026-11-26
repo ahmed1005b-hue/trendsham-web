@@ -8,6 +8,8 @@ use App\Http\Resources\ProductResource;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\EmployeeWorkload;
+use App\Services\ProductVariantSync;
+use App\Services\StaffActivityLog;
 use App\Services\StaffOrderStatusChanger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,9 +55,10 @@ class EmployeeController extends Controller
         return new OrderResource($order->fresh(['items', 'payment', 'shipments.shippingCompany', 'shipments.seller']));
     }
 
-    public function archiveOrder(Order $order)
+    public function archiveOrder(Request $request, Order $order)
     {
         $order->update(['archived_at' => now()]);
+        app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
 
         return response()->json(['message' => 'تمت أرشفة الطلب مع الاحتفاظ بسجله.']);
     }
@@ -97,13 +100,16 @@ class EmployeeController extends Controller
                 : null,
             'stock_quantity' => $validated['stock_quantity'],
         ]);
+        app(ProductVariantSync::class)->syncProductStock($product);
+        app(StaffActivityLog::class)->product($request->user(), 'product.update', $product);
 
         return new ProductResource($product->fresh(['vendor', 'category', 'primaryImage']));
     }
 
-    public function archiveProduct(Product $product)
+    public function archiveProduct(Request $request, Product $product)
     {
         $product->update(['status' => 'inactive']);
+        app(StaffActivityLog::class)->product($request->user(), 'product.archive', $product);
 
         return response()->json(['message' => 'تم إخفاء المنتج مع الاحتفاظ بسجله.']);
     }

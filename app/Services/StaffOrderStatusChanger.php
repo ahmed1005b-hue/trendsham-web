@@ -24,11 +24,15 @@ class StaffOrderStatusChanger
             throw new \DomainException(__('هذه الحالة يضعها المدير فقط.'));
         }
 
-        $order->changeStatus($to, function (Order $locked) use ($staff, $to): void {
+        $from = $order->changeStatus($to, function (Order $locked) use ($staff, $to): void {
             if (! $staff->isAdmin() && $to !== 'cancelled' && $locked->isAwaitingOnlinePayment()) {
                 throw new \DomainException(__('هذا الطلب ينتظر دفع البطاقة، فلا يُجهَّز قبل تأكيد البنك. يمكنك إلغاؤه فقط.'));
             }
         });
+
+        if ($from !== $to) {
+            app(StaffActivityLog::class)->order($staff, 'order.status', $order, ['from' => $from, 'to' => $to]);
+        }
 
         AppNotification::send(
             $order->user_id,

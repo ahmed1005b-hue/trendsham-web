@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChatConversation;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
 
 /** محادثات المساعد التي حوّلها العملاء لموظف */
@@ -42,6 +43,7 @@ class AssistantChatController extends Controller
             'tool_calls' => ['intent' => 'agent', 'agent' => true, 'agent_name' => $request->user()->first_name],
         ]);
         $conversation->update(['escalated_to' => $request->user()->id]);
+        app(StaffActivityLog::class)->chat($request->user(), 'chat.reply', $conversation);
 
         return back()->with('success', 'تم إرسال الرد.');
     }
@@ -49,6 +51,7 @@ class AssistantChatController extends Controller
     public function close(Request $request, ChatConversation $conversation)
     {
         $conversation->update(['status' => 'closed']);
+        app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
 
         return redirect()->route($request->routeIs('employee.*') ? 'employee.assistant-chats.index' : 'admin.assistant-chats.index')->with('success', 'تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.');
     }

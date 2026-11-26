@@ -53,6 +53,7 @@
                 ['route' => 'admin.sellers.index', 'icon' => 'bi-shop-window', 'label' => __('البائعون'), 'badge' => $pendingSellers ?? 0, 'badge_class' => 'bg-danger'],
                 ['route' => 'admin.invitations.index', 'icon' => 'bi-envelope-paper-heart', 'label' => __('دعوات الانضمام')],
                 ['route' => 'admin.employees.index', 'icon' => 'bi-person-badge', 'label' => __('طلبات الموظفين')],
+                ['route' => 'admin.staff-activity.index', 'icon' => 'bi-clock-history', 'label' => __('سجل نشاط الفريق')],
             ]],
             ['title' => __('المالية'), 'icon' => 'bi-cash-stack', 'items' => [
                 ['route' => 'admin.accounting.dashboard', 'icon' => 'bi-journal-text', 'label' => __('المحاسبة')],
