@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
-use App\Models\AppNotification;
 use App\Models\Order;
+use App\Services\StaffOrderStatusChanger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -24,7 +25,7 @@ class OrderController extends Controller
         return new OrderResource($order);
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order, StaffOrderStatusChanger $changer): OrderResource|JsonResponse
     {
         $validated = $request->validate([
             'status' => ['required', 'in:pending,paid,processing,shipped,delivered,cancelled'],
@@ -32,7 +33,7 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order->changeStatus($validated['status']);
+            $changer->change($request->user(), $order, $validated['status']);
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -58,8 +59,6 @@ class OrderController extends Controller
                 $shipment->update($shipmentUpdates);
             }
         }
-
-        AppNotification::send($order->user_id, 'order_status_changed', "تحديث على طلبك #{$order->order_number}", null, null);
 
         return new OrderResource($order->fresh(['items', 'payment', 'shipment.shippingCompany']));
     }

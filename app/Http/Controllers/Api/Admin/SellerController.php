@@ -12,6 +12,7 @@ use App\Models\SellerProfile;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\SellerAccountService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -36,7 +37,7 @@ class SellerController extends Controller
     }
 
     /** الموظفون المعتمدون وأقسام كل واحد (نفس صفحة الموقع). */
-    public function team()
+    public function team(): JsonResponse
     {
         return response()->json([
             'data' => User::where('role', 'employee')->where('employee_status', 'approved')->orderBy('first_name')->get()
@@ -53,7 +54,7 @@ class SellerController extends Controller
         ]);
     }
 
-    public function updateEmployeePermissions(Request $request, User $user)
+    public function updateEmployeePermissions(Request $request, User $user): JsonResponse
     {
         abort_unless($user->isEmployee(), 404);
         $validated = $request->validate([

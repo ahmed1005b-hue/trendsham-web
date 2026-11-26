@@ -50,8 +50,11 @@ class AssistantChatController extends Controller
 
     public function close(Request $request, ChatConversation $conversation)
     {
-        $conversation->update(['status' => 'closed']);
-        app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
+        abort_if($conversation->escalated_at === null, 404);
+        if ($conversation->status !== 'closed') {
+            $conversation->update(['status' => 'closed']);
+            app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
+        }
 
         return redirect()->route($request->routeIs('employee.*') ? 'employee.assistant-chats.index' : 'admin.assistant-chats.index')->with('success', 'تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.');
     }

@@ -25,7 +25,13 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <p class="mb-1">{{ __('الحالة') }}: <span class="badge bg-secondary">{{ __(\App\Returns\Models\ReturnRequest::STATUS_LABELS[$returnRequest->status] ?? $returnRequest->status) }}</span></p>
-            <p class="small mb-1">{{ __('الطلب') }}: <a href="{{ route($area.'.orders.show', $returnRequest->order) }}">{{ $returnRequest->order->order_number }}</a></p>
+            <p class="small mb-1">{{ __('الطلب') }}:
+                @if (auth()->user()->canWorkOn('orders'))
+                    <a href="{{ route($area.'.orders.show', $returnRequest->order) }}">{{ $returnRequest->order->order_number }}</a>
+                @else
+                    {{ $returnRequest->order->order_number }}
+                @endif
+            </p>
             <p class="small mb-1">{{ __('العميل') }}: {{ $returnRequest->customer?->name }} — {{ __('المتجر') }}: {{ $returnRequest->seller?->store_name }}</p>
             <p class="small mb-1">{{ __('السبب') }}: {{ __(\App\Returns\Models\ReturnRequest::REASON_LABELS[$returnRequest->reason] ?? $returnRequest->reason) }}</p>
             @if ($returnRequest->description)

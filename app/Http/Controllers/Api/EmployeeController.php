@@ -60,8 +60,10 @@ class EmployeeController extends Controller
 
     public function archiveOrder(Request $request, Order $order)
     {
-        $order->update(['archived_at' => now()]);
-        app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
+        if ($order->archived_at === null) {
+            $order->update(['archived_at' => now()]);
+            app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
+        }
 
         return response()->json(['message' => 'تمت أرشفة الطلب مع الاحتفاظ بسجله.']);
     }

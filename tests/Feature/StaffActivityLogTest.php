@@ -9,6 +9,7 @@ use App\Models\StaffActivity;
 use App\Models\User;
 use App\Services\StaffActivityLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\Concerns\BuildsTenants;
 use Tests\TestCase;
 
@@ -129,5 +130,43 @@ class StaffActivityLogTest extends TestCase
         $activity = StaffActivity::sole();
         $this->assertNull($activity->user_id);
         $this->assertSame('سامر الموظف', $activity->actor_name);
+    }
+
+    public function test_an_admin_status_change_from_the_app_is_logged_too(): void
+    {
+        $order = $this->cashOrder($this->tenant('a'));
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'processing'])->assertOk();
+
+        $activity = StaffActivity::sole();
+        $this->assertSame('admin', $activity->actor_role);
+        $this->assertSame('order.status', $activity->action);
+    }
+
+    public function test_repeating_a_close_or_archive_is_logged_once(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->cashOrder($a);
+        $chat = ChatConversation::create(['user_id' => $a['customer']->id, 'status' => 'escalated', 'escalated_at' => now()]);
+        $api = $this->actingAs($this->employee, 'sanctum');
+
+        foreach ([1, 2] as $attempt) {
+            $api->postJson("/api/v1/employee/orders/{$order->id}/archive")->assertOk();
+            $api->postJson("/api/v1/employee/assistant-chats/{$chat->id}/close")->assertOk();
+        }
+
+        $this->assertSame(['order.archive', 'chat.close'], StaffActivity::orderBy('id')->pluck('action')->all());
+    }
+
+    public function test_a_failed_log_write_does_not_undo_or_break_the_action(): void
+    {
+        $order = $this->cashOrder($this->tenant('a'));
+        Schema::drop('staff_activities');
+
+        $this->actingAs($this->employee, 'sanctum')
+            ->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'processing'])->assertOk();
+
+        $this->assertSame('processing', $order->fresh()->status);
     }
 }

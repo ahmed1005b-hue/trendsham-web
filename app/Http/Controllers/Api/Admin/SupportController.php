@@ -18,7 +18,7 @@ class SupportController extends Controller
             ->get();
 
         return response()->json([
-            'conversations' => $conversations->map(function ($c) use ($request) {
+            'conversations' => $conversations->map(function ($c) {
                 return [
                     'id' => $c->id,
                     'vendor_id' => $c->vendor_id,
@@ -28,7 +28,7 @@ class SupportController extends Controller
                     'status' => $c->status,
                     'last_message_at' => $c->last_message_at?->toISOString(),
                     'last_message' => $c->messages->first()?->body,
-                    'unread_count' => $c->messages->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->count(),
+                    'unread_count' => $c->messages->where('sender_id', $c->vendor->user_id)->whereNull('read_at')->count(),
                 ];
             }),
         ]);
@@ -37,7 +37,8 @@ class SupportController extends Controller
     public function show(Request $request, StaffConversation $conversation)
     {
         $conversation->load('vendor', 'messages.sender');
-        $conversation->messages()->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        // رسائل البائع فقط: ردود المدير والموظفين تبقى «غير مقروءة» حتى يفتحها البائع
+        $conversation->messages()->where('sender_id', $conversation->vendor->user_id)->whereNull('read_at')->update(['read_at' => now()]);
 
         return response()->json([
             'conversation' => [

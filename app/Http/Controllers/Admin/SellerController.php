@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\SellerAccountService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,7 @@ class SellerController extends Controller
     }
 
     /** يحدد المدير أقسام لوحة الموظف التي يعمل فيها هذا الموظف. */
-    public function updateEmployeePermissions(Request $request, User $user)
+    public function updateEmployeePermissions(Request $request, User $user): RedirectResponse
     {
         abort_unless($user->isEmployee(), 404);
         $validated = $request->validate([

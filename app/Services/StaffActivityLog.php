@@ -34,16 +34,23 @@ class StaffActivityLog
             return null;
         }
 
-        return StaffActivity::create([
-            'user_id' => $actor->id,
-            'actor_name' => $actor->name,
-            'actor_role' => $actor->role,
-            'action' => $action,
-            'subject_type' => $subject ? (self::SUBJECT_TYPES[$subject::class] ?? null) : null,
-            'subject_id' => $subject?->getKey(),
-            'properties' => $properties === [] ? null : $properties,
-            'ip_address' => request()?->ip(),
-        ]);
+        // العمل نفسه تم وحُفظ: تعذّر كتابة السجل لا يُرجع خطأً للموظف ولا يمنع إشعار العميل
+        try {
+            return StaffActivity::create([
+                'user_id' => $actor->id,
+                'actor_name' => $actor->name,
+                'actor_role' => $actor->role,
+                'action' => $action,
+                'subject_type' => $subject ? (self::SUBJECT_TYPES[$subject::class] ?? null) : null,
+                'subject_id' => $subject?->getKey(),
+                'properties' => $properties === [] ? null : $properties,
+                'ip_address' => request()?->ip(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     /** نفس السجل لكل عمليات الطلب: رقمه يظهر في الوصف. */

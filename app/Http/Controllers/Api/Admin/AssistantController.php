@@ -68,8 +68,10 @@ class AssistantController extends Controller
     public function close(Request $request, ChatConversation $conversation): JsonResponse
     {
         abort_if($conversation->escalated_at === null, 404);
-        $conversation->update(['status' => 'closed']);
-        app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
+        if ($conversation->status !== 'closed') {
+            $conversation->update(['status' => 'closed']);
+            app(StaffActivityLog::class)->chat($request->user(), 'chat.close', $conversation);
+        }
 
         return response()->json(['message' => __('تم إغلاق المحادثة؛ العميل يعود للمساعد الآلي.'), ...$this->present($conversation)]);
     }

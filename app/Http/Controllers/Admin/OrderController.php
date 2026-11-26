@@ -37,6 +37,7 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, Order $order, StaffOrderStatusChanger $changer)
     {
+        abort_if($request->routeIs('employee.*') && $order->archived_at, 404);
         $validated = $request->validate([
             'status' => ['required', 'in:pending,paid,processing,shipped,delivered,cancelled'],
         ]);
@@ -69,8 +70,10 @@ class OrderController extends Controller
 
     public function archive(Request $request, Order $order)
     {
-        $order->update(['archived_at' => now()]);
-        app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
+        if ($order->archived_at === null) {
+            $order->update(['archived_at' => now()]);
+            app(StaffActivityLog::class)->order($request->user(), 'order.archive', $order);
+        }
 
         return redirect()->route('employee.orders.index')->with('success', 'تمت أرشفة الطلب مع الاحتفاظ بسجله.');
     }

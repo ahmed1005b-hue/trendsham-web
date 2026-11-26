@@ -29,7 +29,7 @@ class StaffActivityController extends Controller
      *
      * @return Collection<int, User>
      */
-    public static function staffMembers()
+    public static function staffMembers(): Collection
     {
         return User::query()
             ->where(fn ($query) => $query->where('role', 'admin')

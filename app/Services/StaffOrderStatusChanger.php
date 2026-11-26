@@ -30,9 +30,10 @@ class StaffOrderStatusChanger
             }
         });
 
-        if ($from !== $to) {
-            app(StaffActivityLog::class)->order($staff, 'order.status', $order, ['from' => $from, 'to' => $to]);
+        if ($from === $to) {
+            return;
         }
+        app(StaffActivityLog::class)->order($staff, 'order.status', $order, ['from' => $from, 'to' => $to]);
 
         AppNotification::send(
             $order->user_id,

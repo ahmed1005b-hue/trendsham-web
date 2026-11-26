@@ -23,7 +23,8 @@ class SupportController extends Controller
     public function show(Request $request, StaffConversation $conversation)
     {
         $conversation->load('vendor', 'messages.sender');
-        $conversation->messages()->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        // رسائل البائع فقط: ردود المدير والموظفين تبقى «غير مقروءة» حتى يفتحها البائع
+        $conversation->messages()->where('sender_id', $conversation->vendor->user_id)->whereNull('read_at')->update(['read_at' => now()]);
 
         return view('admin.support.show', compact('conversation'));
     }

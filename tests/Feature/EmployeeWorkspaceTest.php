@@ -164,4 +164,40 @@ class EmployeeWorkspaceTest extends TestCase
         }
         $this->actingAs($this->employee)->get(route('admin.withdrawals.index'))->assertForbidden();
     }
+
+    public function test_opening_a_support_chat_marks_only_the_seller_messages_read(): void
+    {
+        $a = $this->tenant('a');
+        $conversation = $a['supportConversation'];
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $adminReply = StaffMessage::create(['conversation_id' => $conversation->id, 'sender_id' => $admin->id, 'body' => 'رد المدير']);
+
+        $this->actingAs($this->employee)->get(route('employee.support.show', $conversation))->assertOk();
+
+        // رد المدير لم يقرأه البائع بعد؛ رسالة البائع قرأها الفريق
+        $this->assertNull($adminReply->fresh()->read_at);
+        $this->assertSame(0, StaffMessage::where('conversation_id', $conversation->id)->where('sender_id', $a['seller']->id)->whereNull('read_at')->count());
+        $this->actingAs($admin, 'sanctum')->getJson('/api/v1/admin/support')->assertOk()
+            ->assertJsonPath('conversations.0.unread_count', 0);
+    }
+
+    public function test_saving_the_same_status_does_not_notify_the_customer_again(): void
+    {
+        $a = $this->tenant('a');
+        $order = $this->checkout($a, 'cash_on_delivery');
+        $api = $this->actingAs($this->employee, 'sanctum');
+        $api->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'processing'])->assertOk();
+        $api->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'processing'])->assertOk();
+
+        $this->assertSame(1, AppNotification::where('user_id', $a['customer']->id)->where('type', 'order_status_changed')->count());
+    }
+
+    public function test_the_employee_cannot_change_an_archived_order_on_the_website(): void
+    {
+        $order = $this->checkout($this->tenant('a'), 'cash_on_delivery');
+        $order->update(['archived_at' => now()]);
+
+        $this->actingAs($this->employee)->put(route('employee.orders.updateStatus', $order), ['status' => 'processing'])->assertNotFound();
+        $this->assertSame('pending', $order->fresh()->status);
+    }
 }
