@@ -24,6 +24,7 @@ class StaffActivityLog
         StaffConversation::class => 'support',
         ChatConversation::class => 'chat',
         ReturnRequest::class => 'return',
+        User::class => 'user',
     ];
 
     /** @param  array<string, scalar|null>  $properties */

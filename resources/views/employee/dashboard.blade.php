@@ -19,15 +19,18 @@
 
     @php
         $tiles = [
-            ['route' => 'employee.orders.index', 'icon' => 'bi-bag-check', 'label' => __('طلبات جديدة'), 'hint' => __('طلبات وصلت للبائعين ولم تُجهَّز بعد.'), 'count' => $counts['new_orders']],
-            ['route' => 'employee.orders.index', 'icon' => 'bi-hourglass-split', 'label' => __('طلبات متأخرة'), 'hint' => __('لم تُشحن بعد أكثر من :days أيام.', ['days' => \App\Services\EmployeeWorkload::LATE_AFTER_DAYS]), 'count' => $counts['late_orders'], 'alert' => true],
-            ['route' => 'employee.products.index', 'params' => ['filter' => 'pending'], 'icon' => 'bi-clipboard-check', 'label' => __('منتجات تنتظر المراجعة'), 'hint' => __('اقبلها أو ارفضها مع ذكر السبب.'), 'count' => $counts['pending_products']],
-            ['route' => 'employee.assistant-chats.index', 'icon' => 'bi-chat-dots', 'label' => __('محادثات العملاء'), 'hint' => __('عملاء طلبوا التحدث مع موظف.'), 'count' => $counts['customer_chats'], 'alert' => true],
-            ['route' => 'employee.support.index', 'icon' => 'bi-headset', 'label' => __('دعم البائعين'), 'hint' => __('رسائل بائعين لم تُقرأ بعد.'), 'count' => $counts['seller_support']],
-            ['route' => 'employee.returns.index', 'icon' => 'bi-arrow-return-left', 'label' => __('المرتجعات'), 'hint' => __('نزاعات إرجاع تحتاج قراراً. إرجاع المال يسجّله المدير.'), 'count' => $counts['returns']],
+            ['route' => 'employee.orders.index', 'icon' => 'bi-bag-check', 'label' => __('طلبات جديدة'), 'hint' => __('طلبات وصلت للبائعين ولم تُجهَّز بعد.'), 'key' => 'new_orders', 'count' => $counts['new_orders'] ?? 0],
+            ['route' => 'employee.orders.index', 'icon' => 'bi-hourglass-split', 'label' => __('طلبات متأخرة'), 'hint' => __('لم تُشحن بعد أكثر من :days أيام.', ['days' => \App\Services\EmployeeWorkload::LATE_AFTER_DAYS]), 'key' => 'late_orders', 'count' => $counts['late_orders'] ?? 0, 'alert' => true],
+            ['route' => 'employee.products.index', 'params' => ['filter' => 'pending'], 'icon' => 'bi-clipboard-check', 'label' => __('منتجات تنتظر المراجعة'), 'hint' => __('اقبلها أو ارفضها مع ذكر السبب.'), 'key' => 'pending_products', 'count' => $counts['pending_products'] ?? 0],
+            ['route' => 'employee.assistant-chats.index', 'icon' => 'bi-chat-dots', 'label' => __('محادثات العملاء'), 'hint' => __('عملاء طلبوا التحدث مع موظف.'), 'key' => 'customer_chats', 'count' => $counts['customer_chats'] ?? 0, 'alert' => true],
+            ['route' => 'employee.support.index', 'icon' => 'bi-headset', 'label' => __('دعم البائعين'), 'hint' => __('رسائل بائعين لم تُقرأ بعد.'), 'key' => 'seller_support', 'count' => $counts['seller_support'] ?? 0],
+            ['route' => 'employee.returns.index', 'icon' => 'bi-arrow-return-left', 'label' => __('المرتجعات'), 'hint' => __('نزاعات إرجاع تحتاج قراراً. إرجاع المال يسجّله المدير.'), 'key' => 'returns', 'count' => $counts['returns'] ?? 0],
         ];
     @endphp
 
+    @php
+        $tiles = array_filter($tiles, fn ($tile) => array_key_exists($tile['key'], $counts));
+    @endphp
     <div class="row g-3">
         @foreach ($tiles as $tile)
             <div class="col-sm-6 col-lg-4">
@@ -43,18 +46,22 @@
     </div>
 
     <div class="row g-3 mt-1">
+        @if (auth()->user()->canWorkOn('orders'))
         <div class="col-md-6">
             <a href="{{ route('employee.orders.index') }}" class="card card-body h-100 text-decoration-none">
                 <h2 class="h6">{{ __('كل الطلبات') }}</h2>
                 <p class="text-muted small mb-0">{{ __('عرض الطلبات وتحديث حالتها وأرشفتها مع الاحتفاظ بسجلها.') }}</p>
             </a>
         </div>
+        @endif
+        @if (auth()->user()->canWorkOn('products'))
         <div class="col-md-6">
             <a href="{{ route('employee.products.index') }}" class="card card-body h-100 text-decoration-none">
                 <h2 class="h6">{{ __('كل المنتجات') }}</h2>
                 <p class="text-muted small mb-0">{{ __('مراجعة المنتجات وتعديل بياناتها أو إخفاؤها من المتجر.') }}</p>
             </a>
         </div>
+        @endif
     </div>
 </div>
 @endsection

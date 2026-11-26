@@ -9,11 +9,12 @@ use App\Models\AppNotification;
 use App\Models\OrderItem;
 use App\Models\SellerIdentityReview;
 use App\Models\SellerProfile;
-use App\Services\SellerAccountService;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\SellerAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SellerController extends Controller
 {
@@ -32,6 +33,40 @@ class SellerController extends Controller
                     'created_at' => $user->created_at,
                 ])
         );
+    }
+
+    /** الموظفون المعتمدون وأقسام كل واحد (نفس صفحة الموقع). */
+    public function team()
+    {
+        return response()->json([
+            'data' => User::where('role', 'employee')->where('employee_status', 'approved')->orderBy('first_name')->get()
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'phone' => $user->phone,
+                    'email' => $user->email,
+                    'sections' => $user->employeeSections(),
+                ])->values(),
+            'sections' => collect(User::EMPLOYEE_SECTIONS)
+                ->map(fn (string $label, string $value) => ['value' => $value, 'label' => __($label)])
+                ->values(),
+        ]);
+    }
+
+    public function updateEmployeePermissions(Request $request, User $user)
+    {
+        abort_unless($user->isEmployee(), 404);
+        $validated = $request->validate([
+            'sections' => ['required', 'array', 'min:1'],
+            'sections.*' => [Rule::in(array_keys(User::EMPLOYEE_SECTIONS))],
+        ], ['sections.required' => __('اختر قسماً واحداً على الأقل.')]);
+
+        $user->assignEmployeeSections($request->user(), $validated['sections']);
+
+        return response()->json([
+            'message' => __('تم حفظ أقسام الموظف :name.', ['name' => $user->name]),
+            'sections' => $user->employeeSections(),
+        ]);
     }
 
     public function approveEmployee(User $user)

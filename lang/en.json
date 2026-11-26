@@ -3701,5 +3701,12 @@
     "ما فعله": "What they did",
     "نوع العمل": "Type of work",
     "وافق على الإرجاع :number": "Approved return :number",
-    "وافق على المنتج «:name»": "Approved the product “:name”"
+    "وافق على المنتج «:name»": "Approved the product “:name”",
+    "هذا القسم غير متاح لحسابك. اطلب من المدير إضافته.": "This section is not available to your account. Ask the admin to add it.",
+    "تم حفظ أقسام الموظف :name.": "Sections saved for :name.",
+    "حدّد أقسام الموظف :name: :sections": "Set the sections of :name: :sections",
+    "الفريق": "Team",
+    "أقسام الموظفين": "Employee sections",
+    "اختر لكل موظف الأقسام التي يعمل فيها. لا يرى الموظف غيرها في الموقع ولا في التطبيق.": "Choose the sections each employee works in. They see nothing else on the website or in the app.",
+    "لا يوجد موظفون معتمدون بعد.": "No approved employees yet."
 }

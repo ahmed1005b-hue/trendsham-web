@@ -18,9 +18,12 @@ use Illuminate\Validation\Rule;
 class EmployeeController extends Controller
 {
     /** أرقام شغل اليوم في الصفحة الرئيسية للموظف (نفس بطاقات الموقع). */
-    public function dashboard(EmployeeWorkload $workload): JsonResponse
+    public function dashboard(Request $request, EmployeeWorkload $workload): JsonResponse
     {
-        return response()->json(['data' => $workload->counts()]);
+        return response()->json([
+            'data' => $workload->countsFor($request->user()),
+            'sections' => $request->user()->employeeSections(),
+        ]);
     }
 
     public function orders()

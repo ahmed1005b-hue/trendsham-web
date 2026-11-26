@@ -28,6 +28,8 @@ class UserResource extends JsonResource
             'gender' => $this->gender,
             'avatar' => $this->avatar ? asset('storage/'.$this->avatar) : null,
             'role' => $this->role,
+            // أقسام لوحة الموظف التي سمح بها المدير (لغير الموظف: null)
+            'employee_sections' => $this->role === 'employee' ? $this->employeeSections() : null,
             // توثيق حقيقي (شارة "موثّق") بدل عرضها لكل مستخدم
             'phone_verified' => $this->phone_verified_at !== null,
             // عناوين الشحن: تدخل في نسبة إكمال الملف وتملأ عنوان التوصيل

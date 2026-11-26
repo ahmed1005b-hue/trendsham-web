@@ -300,6 +300,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::get('/employees', [AdminSellerController::class, 'employees'])->name('employees.index');
     Route::post('/employees/{user}/approve', [AdminSellerController::class, 'approveEmployee'])->name('employees.approve');
     Route::post('/employees/{user}/reject', [AdminSellerController::class, 'rejectEmployee'])->name('employees.reject');
+    Route::put('/employees/{user}/permissions', [AdminSellerController::class, 'updateEmployeePermissions'])->name('employees.permissions');
     Route::get('/staff-activity', [AdminStaffActivityController::class, 'index'])->name('staff-activity.index');
 
     Route::get('/shipping-companies', [AdminShippingCompanyController::class, 'index'])->name('shippingCompanies.index');
@@ -366,38 +367,47 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
 });
 
 Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee.')->group(function () {
-    Route::get('/dashboard', fn (EmployeeWorkload $workload) => view('employee.dashboard', ['counts' => $workload->counts()]))->name('dashboard');
+    Route::get('/dashboard', fn (Request $request, EmployeeWorkload $workload) => view('employee.dashboard', ['counts' => $workload->countsFor($request->user())]))->name('dashboard');
 
-    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
-    Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
-    Route::post('/orders/{order}/parcels/{shipment}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
-    Route::post('/orders/{order}/archive', [AdminOrderController::class, 'archive'])->name('orders.archive');
+    Route::middleware('employee.section:orders')->group(function () {
+        Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
+        Route::post('/orders/{order}/parcels/{shipment}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
+        Route::post('/orders/{order}/archive', [AdminOrderController::class, 'archive'])->name('orders.archive');
+    });
 
-    Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
-    Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
-    Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
-    Route::post('/products/{product}/archive', [AdminProductController::class, 'archive'])->name('products.archive');
-    Route::post('/products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
-    Route::post('/products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
+    Route::middleware('employee.section:products')->group(function () {
+        Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
+        Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
+        Route::post('/products/{product}/archive', [AdminProductController::class, 'archive'])->name('products.archive');
+        Route::post('/products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
+        Route::post('/products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
+    });
 
-    // دعم البائعين، ومحادثات العملاء المحوّلة من المساعد، والمرتجعات (إرجاع المال يبقى للمدير)
-    Route::get('/support', [AdminSupportController::class, 'index'])->name('support.index');
-    Route::get('/support/{conversation}', [AdminSupportController::class, 'show'])->name('support.show');
-    Route::post('/support/{conversation}/message', [AdminSupportController::class, 'sendMessage'])->name('support.message');
-    Route::post('/support/{conversation}/close', [AdminSupportController::class, 'close'])->name('support.close');
-    Route::post('/support/{conversation}/reopen', [AdminSupportController::class, 'reopen'])->name('support.reopen');
+    Route::middleware('employee.section:support')->group(function () {
+        Route::get('/support', [AdminSupportController::class, 'index'])->name('support.index');
+        Route::get('/support/{conversation}', [AdminSupportController::class, 'show'])->name('support.show');
+        Route::post('/support/{conversation}/message', [AdminSupportController::class, 'sendMessage'])->name('support.message');
+        Route::post('/support/{conversation}/close', [AdminSupportController::class, 'close'])->name('support.close');
+        Route::post('/support/{conversation}/reopen', [AdminSupportController::class, 'reopen'])->name('support.reopen');
+    });
 
-    Route::get('/assistant-chats', [AssistantChatController::class, 'index'])->name('assistant-chats.index');
-    Route::get('/assistant-chats/{conversation}', [AssistantChatController::class, 'show'])->name('assistant-chats.show');
-    Route::post('/assistant-chats/{conversation}/reply', [AssistantChatController::class, 'reply'])->name('assistant-chats.reply');
-    Route::post('/assistant-chats/{conversation}/close', [AssistantChatController::class, 'close'])->name('assistant-chats.close');
+    Route::middleware('employee.section:chats')->group(function () {
+        Route::get('/assistant-chats', [AssistantChatController::class, 'index'])->name('assistant-chats.index');
+        Route::get('/assistant-chats/{conversation}', [AssistantChatController::class, 'show'])->name('assistant-chats.show');
+        Route::post('/assistant-chats/{conversation}/reply', [AssistantChatController::class, 'reply'])->name('assistant-chats.reply');
+        Route::post('/assistant-chats/{conversation}/close', [AssistantChatController::class, 'close'])->name('assistant-chats.close');
+    });
 
-    Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
-    Route::get('/returns/{returnRequest}', [AdminReturnController::class, 'show'])->name('returns.show')->whereNumber('returnRequest');
-    Route::post('/returns/{returnRequest}/approve', [AdminReturnController::class, 'approve'])->name('returns.approve')->whereNumber('returnRequest');
-    Route::post('/returns/{returnRequest}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject')->whereNumber('returnRequest');
-    Route::post('/returns/{returnRequest}/received', [AdminReturnController::class, 'received'])->name('returns.received')->whereNumber('returnRequest');
+    Route::middleware('employee.section:returns')->group(function () {
+        Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
+        Route::get('/returns/{returnRequest}', [AdminReturnController::class, 'show'])->name('returns.show')->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/approve', [AdminReturnController::class, 'approve'])->name('returns.approve')->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject')->whereNumber('returnRequest');
+        Route::post('/returns/{returnRequest}/received', [AdminReturnController::class, 'received'])->name('returns.received')->whereNumber('returnRequest');
+    });
 });
 
 // لوحة البائع

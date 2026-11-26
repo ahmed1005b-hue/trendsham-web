@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Loyalty\Models\LoyaltyAccount;
+use App\Services\StaffActivityLog;
 use App\Support\Phone;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -95,6 +96,7 @@ class User extends Authenticatable implements HasLocalePreference
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'employee_permissions' => 'array',
         ];
     }
 
@@ -205,6 +207,60 @@ class User extends Authenticatable implements HasLocalePreference
     public function isEmployee(): bool
     {
         return $this->role === 'employee' && $this->employee_status === 'approved';
+    }
+
+    /**
+     * أقسام لوحة الموظف. المدير يحدد لكل موظف ما يعمل فيه.
+     *
+     * @var array<string, string>
+     */
+    public const EMPLOYEE_SECTIONS = [
+        'orders' => 'الطلبات',
+        'products' => 'المنتجات',
+        'support' => 'دعم البائعين',
+        'chats' => 'محادثات العملاء',
+        'returns' => 'المرتجعات',
+    ];
+
+    /**
+     * الأقسام المسموحة لهذا الموظف (لم يحددها المدير بعد = كلها).
+     *
+     * @return list<string>
+     */
+    public function employeeSections(): array
+    {
+        $chosen = $this->employee_permissions;
+        if (! is_array($chosen)) {
+            return array_keys(self::EMPLOYEE_SECTIONS);
+        }
+
+        return array_values(array_filter(array_keys(self::EMPLOYEE_SECTIONS), fn (string $section) => in_array($section, $chosen, true)));
+    }
+
+    /**
+     * يحدد المدير أقسام الموظف ويُسجَّل ذلك في سجل نشاط الفريق.
+     *
+     * @param  list<string>  $sections
+     */
+    public function assignEmployeeSections(User $admin, array $sections): void
+    {
+        $sections = array_values(array_intersect(array_keys(self::EMPLOYEE_SECTIONS), $sections));
+        $this->forceFill(['employee_permissions' => $sections])->save();
+
+        app(StaffActivityLog::class)->record($admin, 'team.permissions', $this, [
+            'name' => $this->name,
+            'sections' => implode(',', $sections),
+        ]);
+    }
+
+    /** هل يعمل في هذا القسم؟ المدير يعمل في كل الأقسام. */
+    public function canWorkOn(string $section): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->isPlatformStaff() && in_array($section, $this->employeeSections(), true);
     }
 
     /** فريق المنصة (المدير أو موظف معتمد): يعمل باسم الإدارة في الطلبات والدعم والمرتجعات. */

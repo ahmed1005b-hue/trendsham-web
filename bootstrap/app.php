@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateWebSession;
+use App\Http\Middleware\EnsureEmployeeSection;
 use App\Http\Middleware\EnsureSellerHasStore;
 use App\Http\Middleware\EnsureTwoFactorSetup;
 use App\Http\Middleware\EnsureUserHasRole;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'seller.store' => EnsureSellerHasStore::class,
             'admin.2fa' => EnsureTwoFactorSetup::class,
             'auth.session' => AuthenticateWebSession::class,
+            'employee.section' => EnsureEmployeeSection::class,
         ]);
         $middleware->append(SecurityHeaders::class);
         // تغيير كلمة السر يُخرج جلسات الموقع الأخرى (يشترطه Auth::logoutOtherDevices)

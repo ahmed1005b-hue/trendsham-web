@@ -3702,5 +3702,12 @@
     "ما فعله": "Yaptığı",
     "نوع العمل": "İş türü",
     "وافق على الإرجاع :number": ":number iadesini onayladı",
-    "وافق على المنتج «:name»": "“:name” ürününü onayladı"
+    "وافق على المنتج «:name»": "“:name” ürününü onayladı",
+    "هذا القسم غير متاح لحسابك. اطلب من المدير إضافته.": "Bu bölüm hesabınıza açık değil. Yöneticiden eklemesini isteyin.",
+    "تم حفظ أقسام الموظف :name.": ":name için bölümler kaydedildi.",
+    "حدّد أقسام الموظف :name: :sections": ":name için bölümleri belirledi: :sections",
+    "الفريق": "Ekip",
+    "أقسام الموظفين": "Çalışan bölümleri",
+    "اختر لكل موظف الأقسام التي يعمل فيها. لا يرى الموظف غيرها في الموقع ولا في التطبيق.": "Her çalışanın çalıştığı bölümleri seçin. Web sitesinde ve uygulamada başka bölüm görmez.",
+    "لا يوجد موظفون معتمدون بعد.": "Henüz onaylı çalışan yok."
 }

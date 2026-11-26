@@ -37,6 +37,7 @@ class StaffActivity extends Model
         'return.reject' => 'رفض الإرجاع :number: :note',
         'return.received' => 'أكّد استلام المرتجع :number',
         'return.refund' => 'سجّل استرداد :amount ل.س للإرجاع :number',
+        'team.permissions' => 'حدّد أقسام الموظف :name: :sections',
     ];
 
     /** مجموعات التصفية في صفحة السجل. */
@@ -46,6 +47,7 @@ class StaffActivity extends Model
         'support' => 'دعم البائعين',
         'chat' => 'محادثات العملاء',
         'return' => 'المرتجعات',
+        'team' => 'الفريق',
     ];
 
     protected $fillable = [
@@ -100,9 +102,13 @@ class StaffActivity extends Model
     public function description(): string
     {
         $properties = collect($this->properties ?? [])
-            ->map(fn ($value, $key) => in_array($key, ['from', 'to'], true)
-                ? __(Order::STATUS_LABELS[$value] ?? (string) $value)
-                : (string) $value)
+            ->map(fn ($value, $key) => match (true) {
+                in_array($key, ['from', 'to'], true) => __(Order::STATUS_LABELS[$value] ?? (string) $value),
+                $key === 'sections' => collect(explode(',', (string) $value))
+                    ->map(fn (string $section) => __(User::EMPLOYEE_SECTIONS[$section] ?? $section))
+                    ->implode('، '),
+                default => (string) $value,
+            })
             ->all();
 
         return __(self::ACTIONS[$this->action] ?? $this->action, $properties);

@@ -7,8 +7,8 @@ use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\SellerAccountService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SellerController extends Controller
 {
@@ -19,7 +19,23 @@ class SellerController extends Controller
                 ->where('employee_status', 'pending')
                 ->latest()
                 ->paginate(20),
+            'team' => User::where('role', 'employee')->where('employee_status', 'approved')->orderBy('first_name')->get(),
+            'sections' => User::EMPLOYEE_SECTIONS,
         ]);
+    }
+
+    /** يحدد المدير أقسام لوحة الموظف التي يعمل فيها هذا الموظف. */
+    public function updateEmployeePermissions(Request $request, User $user)
+    {
+        abort_unless($user->isEmployee(), 404);
+        $validated = $request->validate([
+            'sections' => ['required', 'array', 'min:1'],
+            'sections.*' => [Rule::in(array_keys(User::EMPLOYEE_SECTIONS))],
+        ], ['sections.required' => __('اختر قسماً واحداً على الأقل.')]);
+
+        $user->assignEmployeeSections($request->user(), $validated['sections']);
+
+        return back()->with('success', __('تم حفظ أقسام الموظف :name.', ['name' => $user->name]));
     }
 
     public function approveEmployee(User $user)

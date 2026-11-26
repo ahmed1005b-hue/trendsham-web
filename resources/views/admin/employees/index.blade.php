@@ -35,5 +35,27 @@
         </div>
     </div>
     <div class="mt-3">{{ $employees->links() }}</div>
+
+    <h2 class="h5 mt-5 mb-1">{{ __('أقسام الموظفين') }}</h2>
+    <p class="text-muted small">{{ __('اختر لكل موظف الأقسام التي يعمل فيها. لا يرى الموظف غيرها في الموقع ولا في التطبيق.') }}
+        <a href="{{ route('admin.staff-activity.index') }}">{{ __('سجل نشاط الفريق') }}</a></p>
+    @error('sections') <div class="alert alert-danger">{{ $message }}</div> @enderror
+    @forelse ($team as $member)
+        <form method="POST" action="{{ route('admin.employees.permissions', $member) }}" class="card card-body mb-2" data-employee-sections="{{ $member->id }}">
+            @csrf @method('PUT')
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <strong class="me-2">{{ $member->name }}</strong>
+                @foreach ($sections as $value => $label)
+                    <div class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="checkbox" name="sections[]" value="{{ $value }}" id="section-{{ $member->id }}-{{ $value }}" @checked(in_array($value, $member->employeeSections(), true))>
+                        <label class="form-check-label" for="section-{{ $member->id }}-{{ $value }}">{{ __($label) }}</label>
+                    </div>
+                @endforeach
+                <button class="btn btn-sm btn-primary ms-auto">{{ __('حفظ') }}</button>
+            </div>
+        </form>
+    @empty
+        <div class="card card-body text-muted">{{ __('لا يوجد موظفون معتمدون بعد.') }}</div>
+    @endforelse
 </div>
 @endsection
