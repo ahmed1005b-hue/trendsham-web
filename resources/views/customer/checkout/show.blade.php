@@ -94,8 +94,7 @@
                                 @if (app(\App\Services\PaymentService::class)->onlineEnabled())
                                     <option value="card" @selected(old('payment_method') === 'card')>بطاقة بنكية (دفع إلكتروني آمن)</option>
                                 @endif
-                                <option value="wallet">محفظة إلكترونية</option>
-                            </select>
+                                </select>
                             @error('payment_method') <div class="text-danger small">{{ $message }}</div> @enderror
                         </div>
                         @if ($loyalty['enabled'] && $loyalty['balance'] > 0)

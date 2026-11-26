@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * ما يستطيع البائع فعله بطلبات منتجاته (الموقع والتطبيق — نفس القواعد).
- *  - يرى فقط الطلبات التي فيها منتجاته.
+ *  - يرى فقط الطلبات التي فيها منتجاته، وطلب البطاقة بعد تأكيد دفعه فقط.
  *  - يغيّر الحالة للأمام فقط: قيد التجهيز ← تم الشحن ← تم التسليم.
  *  - يلغي فقط قبل الشحن. لا يضع "مدفوع" (يحدده الدفع/الإدارة).
  *  - كل بائع يدير طرده فقط داخل الطلب المشترك مع متاجر أخرى.
@@ -23,12 +23,12 @@ class SellerOrderService
 
     public function query(SellerProfile $vendor): Builder
     {
-        return Order::whereHas('items', fn ($q) => $q->where('vendor_id', $vendor->id));
+        return Order::releasedToSellers()->whereHas('items', fn ($q) => $q->where('vendor_id', $vendor->id));
     }
 
     public function owns(SellerProfile $vendor, Order $order): bool
     {
-        return $order->items()->where('vendor_id', $vendor->id)->exists();
+        return $order->items()->where('vendor_id', $vendor->id)->exists() && ! $order->isAwaitingOnlinePayment();
     }
 
     /** طرد البائع في هذا الطلب (جزء الطلب الخاص بمتجره). */

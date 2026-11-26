@@ -45,7 +45,7 @@ class DashboardController extends Controller
         $vendor = $request->user()->sellerProfile;
 
         // عناصر طلبات هذا البائع (منضمة بالطلب ليستثني الملغاة)
-        $items = OrderItem::query()
+        $items = OrderItem::query()->releasedToSellers()
             ->select('order_items.*')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendor->id)
@@ -134,7 +134,7 @@ class DashboardController extends Controller
             ->count();
 
         // ===== آخر الطلبات (حصة هذا البائع فقط من مبلغ كل طلب) =====
-        $recentOrders = Order::query()
+        $recentOrders = Order::releasedToSellers()
             ->whereHas('items', fn ($query) => $query->where('vendor_id', $vendor->id))
             ->where('status', '!=', 'cancelled')
             ->with('user')
@@ -174,7 +174,7 @@ class DashboardController extends Controller
      */
     private function salesSeries(int $vendorId, Carbon $start, Carbon $end, string $interval): array
     {
-        $rows = OrderItem::query()
+        $rows = OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendorId)
             ->where('orders.status', '!=', 'cancelled')

@@ -20,6 +20,7 @@ use App\Models\ProductVariant;
 use App\Models\ShippingCenter;
 use App\Notifications\Push\SellerOrderNotifier;
 use App\Services\DailyDealQuota;
+use App\Services\PaymentService;
 use App\Shipping\Governorates;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingChoice;
@@ -144,11 +145,21 @@ class CheckoutController extends Controller
             'delivery_method' => ['nullable', 'in:'.implode(',', ShippingQuote::METHODS)],
             'pickup_center_id' => ['nullable', 'required_if:delivery_method,center', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
             'shipping_address' => ['nullable', 'required_unless:delivery_method,center', 'string', 'max:1000'],
-            'payment_method' => ['required', 'in:cash_on_delivery,card,wallet'],
+            'payment_method' => ['required', 'in:cash_on_delivery,card'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
             'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
             ...ShippingChoice::rules(),
         ], ['pickup_center_id.required_if' => __('اختر مركز الشحن الذي ستستلم منه الطلب.')]);
+
+        // البطاقة فقط حين يكون الدفع الإلكتروني مفعّلاً، وإلا بقي الطلب بلا طريقة دفع حقيقية
+        if ($validated['payment_method'] === 'card' && ! app(PaymentService::class)->onlineEnabled()) {
+            return back()->withInput()->withErrors(['payment_method' => __('الدفع بالبطاقة غير متاح حالياً. اختر الدفع عند الاستلام.')]);
+        }
+
+        if ($validated['payment_method'] === 'card'
+            && Order::openCardOrdersCount($request->user()->id) >= Order::MAX_OPEN_CARD_ORDERS) {
+            return back()->withInput()->withErrors(['payment_method' => __('لديك طلبات بالبطاقة لم تُدفع بعد. ادفعها أو ألغها أولاً.')]);
+        }
 
         if ($validated['payment_method'] === 'cash_on_delivery' && ShippingDebt::codBlocked($request->user())) {
             return back()->withInput()->withErrors(['payment_method' => ShippingDebt::codBlockedMessage($request->user())]);

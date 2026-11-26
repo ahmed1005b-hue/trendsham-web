@@ -17,27 +17,28 @@ class OrderController extends Controller
     {
         $vendor = $request->user()->sellerProfile;
 
-        $orderItems = OrderItem::with('order.user')
+        // طلب البطاقة يظهر للبائع بعد تأكيد الدفع فقط
+        $orderItems = OrderItem::releasedToSellers()->with('order.user')
             ->where('vendor_id', $vendor->id)
             ->latest()
             ->paginate(20);
 
         // إحصائيات سريعة
         $stats = [
-            'total' => OrderItem::where('vendor_id', $vendor->id)->count(),
-            'pending' => OrderItem::where('vendor_id', $vendor->id)
+            'total' => OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)->count(),
+            'pending' => OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)
                 ->whereHas('order', function ($q) {
                     $q->where('status', 'pending');
                 })->count(),
-            'processing' => OrderItem::where('vendor_id', $vendor->id)
+            'processing' => OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)
                 ->whereHas('order', function ($q) {
                     $q->where('status', 'processing');
                 })->count(),
-            'shipped' => OrderItem::where('vendor_id', $vendor->id)
+            'shipped' => OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)
                 ->whereHas('order', function ($q) {
                     $q->where('status', 'shipped');
                 })->count(),
-            'delivered' => OrderItem::where('vendor_id', $vendor->id)
+            'delivered' => OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)
                 ->whereHas('order', function ($q) {
                     $q->where('status', 'delivered');
                 })->count(),

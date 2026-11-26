@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Coupons\Models\CouponCampaign;
+use App\Coupons\Models\CustomerCoupon;
 use App\Models\CartItem;
 use App\Models\Category;
-use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\SellerProfile;
@@ -27,10 +28,10 @@ class CustomerCheckoutTest extends TestCase
 
         return Product::create([
             'vendor_id' => $profile->id,
-            'category_id' => Category::create(['name' => 'قسم', 'slug' => 'cat-' . uniqid()])->id,
+            'category_id' => Category::create(['name' => 'قسم', 'slug' => 'cat-'.uniqid()])->id,
             'name' => 'منتج اختبار',
-            'slug' => 'test-product-' . uniqid(),
-            'sku' => 'SKU-' . uniqid(),
+            'slug' => 'test-product-'.uniqid(),
+            'sku' => 'SKU-'.uniqid(),
             'price' => $price,
             'stock_quantity' => $stock,
             'status' => 'active',
@@ -114,14 +115,14 @@ class CustomerCheckoutTest extends TestCase
     }
 
     /** كوبون في محفظة العميل (النظام الجديد بلا رموز). */
-    private function walletCoupon(\App\Models\User $user, array $campaign): \App\Coupons\Models\CustomerCoupon
+    private function walletCoupon(User $user, array $campaign): CustomerCoupon
     {
-        $c = \App\Coupons\Models\CouponCampaign::create($campaign + [
+        $c = CouponCampaign::create($campaign + [
             'funder' => 'platform', 'title' => 'خصم', 'scope' => 'all', 'audience' => 'specific',
             'starts_at' => now()->subDay(), 'per_customer_limit' => 1, 'status' => 'active',
         ]);
 
-        return \App\Coupons\Models\CustomerCoupon::create(['campaign_id' => $c->id, 'user_id' => $user->id, 'status' => 'available', 'source' => 'test']);
+        return CustomerCoupon::create(['campaign_id' => $c->id, 'user_id' => $user->id, 'status' => 'available', 'source' => 'test']);
     }
 
     public function test_expired_coupon_is_not_applied(): void
@@ -153,7 +154,7 @@ class CustomerCheckoutTest extends TestCase
         $this->assertSame(1, $coupon->campaign->refresh()->redeemed_count);
     }
 
-    public function test_wallet_payment_creates_pending_payment(): void
+    public function test_unconnected_wallet_payment_method_is_refused(): void
     {
         $product = $this->makeLiveProduct();
         $this->actingAsCustomerWithCart($product, quantity: 1);
@@ -161,14 +162,10 @@ class CustomerCheckoutTest extends TestCase
         $payload = $this->checkoutPayload();
         $payload['payment_method'] = 'wallet';
 
-        $this->post('/customer/checkout', $payload);
+        // لا محفظة إلكترونية مربوطة: كان الطلب يصل للبائع بلا أي دفع، ويتجاوز منع الدفع عند الاستلام
+        $this->post('/customer/checkout', $payload)->assertSessionHasErrors('payment_method');
 
-        $order = Order::firstOrFail();
-        $this->assertDatabaseHas('payments', [
-            'order_id' => $order->id,
-            'method' => 'wallet',
-            'status' => 'pending',
-        ]);
+        $this->assertSame(0, Order::count());
     }
 
     public function test_order_items_and_shipment_are_created_correctly(): void

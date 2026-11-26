@@ -118,7 +118,7 @@ class ShippingTest extends TestCase
         $this->actingAs($customer)->post(route('customer.checkout.store'), $this->payload())->assertSessionHasErrors('payment_method');
 
         // الطلب التالي يحمل الدين، وإلغاؤه يعيد الدين على الزبون
-        $this->actingAs($customer)->post(route('customer.checkout.store'), $this->payload(['payment_method' => 'wallet']))->assertRedirect();
+        $this->actingAs($customer)->post(route('customer.checkout.store'), $this->payload(['payment_method' => 'card']))->assertRedirect();
         $next = $this->lastOrder($customer);
         $this->assertSame(1500000, (int) $next->shipping_debt_charged);
         $this->assertSame((int) $next->subtotal + (int) $next->shipping_fee + 1500000, (int) $next->total);

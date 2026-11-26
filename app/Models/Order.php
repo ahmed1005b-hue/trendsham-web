@@ -10,6 +10,7 @@ use App\Referrals\ReferralService;
 use App\Returns\Models\ReturnRequest;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -87,6 +88,47 @@ class Order extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /** مهلة إتمام الدفع بالبطاقة قبل إلغاء الطلب تلقائياً (بالدقائق). */
+    public const ONLINE_PAYMENT_TIMEOUT_MINUTES = 30;
+
+    /** أقصى عدد طلبات بطاقة غير مدفوعة مفتوحة للعميل: تمنع حجز مخزون المتاجر بطلبات لا تُدفع. */
+    public const MAX_OPEN_CARD_ORDERS = 3;
+
+    public static function openCardOrdersCount(int $userId): int
+    {
+        return static::awaitingOnlinePayment()->where('user_id', $userId)->where('status', 'pending')->count();
+    }
+
+    /** هل انتهى وقت بدء دفع جديد لطلب البطاقة؟ (لا يُمدَّد حجز المخزون بمحاولات متكررة) */
+    public function onlinePaymentWindowClosed(): bool
+    {
+        return $this->created_at->lte(now()->subMinutes(self::ONLINE_PAYMENT_TIMEOUT_MINUTES))
+            && $this->isAwaitingOnlinePayment();
+    }
+
+    /**
+     * طلب بطاقة لم يؤكّد البنك دفعه بعد: لا يراه البائع ولا يجهّزه.
+     * الدفع عند الاستلام، والطلب المدفوع (ولو برصيد الهدايا)، ظاهران للبائع فوراً.
+     */
+    public function scopeAwaitingOnlinePayment(Builder $query): Builder
+    {
+        return $query->where($query->qualifyColumn('payment_status'), '!=', 'paid')
+            ->whereHas('payments', fn (Builder $payments) => $payments->where('method', 'card'))
+            ->whereDoesntHave('payments', fn (Builder $payments) => $payments
+                ->where('method', 'cash_on_delivery')->orWhere('status', 'paid'));
+    }
+
+    /** الطلبات التي يراها البائع ويجهّزها (كل طلب إلا ما ينتظر الدفع بالبطاقة). */
+    public function scopeReleasedToSellers(Builder $query): Builder
+    {
+        return $query->whereNot(fn (Builder $awaiting) => $awaiting->awaitingOnlinePayment());
+    }
+
+    public function isAwaitingOnlinePayment(): bool
+    {
+        return static::whereKey($this->id)->awaitingOnlinePayment()->exists();
     }
 
     /** آخر محاولة دفع للطلب (قد توجد محاولات سابقة فاشلة/ملغاة) */

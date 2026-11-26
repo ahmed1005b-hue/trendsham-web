@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AppNotification;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Shipment;
 use App\Shipping\ParcelService;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,42 @@ class CustomerOrderCanceller
                 'order_cancelled',
                 "تم إلغاء طلبك #{$order->order_number}",
                 null,
+                route('customer.orders.show', $order)
+            );
+        }
+
+        return $done;
+    }
+
+    /**
+     * إلغاء تلقائي لطلب بطاقة لم يُدفع خلال المهلة: يعود المخزون والكوبون والنقاط ورصيد الهدايا.
+     * يقفل الدفعات ثم الطلب (نفس ترتيب PaymentService::apply) ويعيد الفحص تحت القفل:
+     * إن وصل تأكيد البنك قبله يبقى الطلب كما هو.
+     *
+     * @return bool false إذا دُفع الطلب أو لم يعد قابلاً للإلغاء
+     */
+    public function cancelUnpaid(Order $order): bool
+    {
+        $done = DB::transaction(function () use ($order) {
+            Payment::where('order_id', $order->id)->lockForUpdate()->get();
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if (! $locked || $locked->status !== 'pending' || ! $locked->isAwaitingOnlinePayment()) {
+                return false;
+            }
+
+            $order->changeStatus('cancelled');
+            Payment::where('order_id', $order->id)->where('status', 'pending')->update(['status' => 'cancelled']);
+            $order->update(['payment_status' => 'cancelled']);
+
+            return true;
+        });
+
+        if ($done) {
+            AppNotification::send(
+                $order->user_id,
+                'order_cancelled',
+                "تم إلغاء طلبك #{$order->order_number}",
+                'لم يكتمل الدفع بالبطاقة خلال '.Order::ONLINE_PAYMENT_TIMEOUT_MINUTES.' دقيقة. يمكنك الطلب من جديد متى شئت.',
                 route('customer.orders.show', $order)
             );
         }

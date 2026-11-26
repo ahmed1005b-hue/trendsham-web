@@ -25,7 +25,7 @@ class SellerAnalyticsService
         $prevStart = $start->copy()->subDays($days);
         $prevEnd = $start->copy()->subSecond();
 
-        $window = fn (Carbon $from, Carbon $to) => OrderItem::query()
+        $window = fn (Carbon $from, Carbon $to) => OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendor->id)
             ->where('orders.status', '!=', 'cancelled')
@@ -71,7 +71,7 @@ class SellerAnalyticsService
     /** سلسلة يومية: المبيعات وصافي الدخل لكل يوم. */
     private function dailySeries(int $vendorId, Carbon $start, Carbon $end): array
     {
-        $rows = OrderItem::query()
+        $rows = OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendorId)
             ->where('orders.status', '!=', 'cancelled')
@@ -103,7 +103,7 @@ class SellerAnalyticsService
     /** توزيع حالات الطلبات (عدد الطلبات التي فيها منتجات البائع). */
     private function statusBreakdown(int $vendorId): array
     {
-        $counts = Order::query()
+        $counts = Order::releasedToSellers()
             ->whereHas('items', fn ($q) => $q->where('order_items.vendor_id', $vendorId))
             ->select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
@@ -149,7 +149,7 @@ class SellerAnalyticsService
     /** أفضل المنتجات داخل النافذة (بعدد المبيعات ثم الإيراد). */
     private function topProducts(int $vendorId, Carbon $start, Carbon $end): array
     {
-        return OrderItem::query()
+        return OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendorId)
             ->where('orders.status', '!=', 'cancelled')

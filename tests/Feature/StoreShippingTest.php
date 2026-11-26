@@ -181,9 +181,12 @@ class StoreShippingTest extends TestCase
     {
         $a = $this->tenant('a');
         $this->selfDelivering($a['store']);
-        $this->actingAs($a['customer'])->post(route('customer.checkout.store'), $this->payload(['payment_method' => 'wallet']))->assertRedirect();
+        $this->actingAs($a['customer'])->post(route('customer.checkout.store'), $this->payload(['payment_method' => 'card']))->assertRedirect();
         $order = $this->lastOrder($a['customer']);
         $this->assertSame(0, $order->shipments()->value('cod_amount'));
+        // البنك أكّد الدفع: الطلب يصل للبائع الآن
+        $order->payments()->update(['status' => 'paid']);
+        $order->update(['payment_status' => 'paid']);
 
         $this->actingAs($a['seller'])->post(route('seller.orders.updateStatus', $order), ['status' => 'delivered'])->assertRedirect();
 

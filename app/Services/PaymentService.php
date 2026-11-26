@@ -9,6 +9,7 @@ use App\Models\CustomerCard;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Notifications\Push\SellerOrderNotifier;
 use App\Payments\BankGateway;
 use App\Payments\Contracts\PaymentGateway;
 use App\Payments\Contracts\WebhookEvent;
@@ -52,6 +53,9 @@ class PaymentService
     public function start(Order $order, ?CustomerCard $card = null): array
     {
         $gw = $this->gateway();
+
+        // كل محاولة دفع تؤجّل الإلغاء التلقائي: بعد المهلة لا محاولات جديدة، فلا يبقى المخزون محجوزاً
+        abort_if($order->onlinePaymentWindowClosed(), 422, __('انتهت مهلة دفع هذا الطلب. سيُلغى تلقائياً، ويمكنك الطلب من جديد.'));
 
         if ($card) {
             abort_unless($card->user_id === $order->user_id, 403);
@@ -111,8 +115,10 @@ class PaymentService
     {
         $notifyPaid = null;
         $duplicate = null;
+        $paidAfterCancel = null;
+        $releasedToSellers = null;
 
-        DB::transaction(function () use ($reference, $e, &$notifyPaid, &$duplicate) {
+        DB::transaction(function () use ($reference, $e, &$notifyPaid, &$duplicate, &$paidAfterCancel, &$releasedToSellers) {
             $p = Payment::where('reference', $reference)->lockForUpdate()->first();
 
             if (! $p || in_array($p->status, ['paid', 'duplicate', 'refunded'], true) || $e->status === 'pending') {
@@ -121,6 +127,21 @@ class PaymentService
 
             // قفل الطلب يمنع دفعتين متزامنتين من تسجيل الطلب كمدفوع مرتين
             $order = $p->order_id ? Order::whereKey($p->order_id)->lockForUpdate()->first() : null;
+
+            if ($e->status === 'paid' && $order?->status === 'cancelled') {
+                // البنك أكّد الدفع بعد إلغاء الطلب (انتهت المهلة أو ألغاه العميل): لا يُعاد فتح الطلب،
+                // والمبلغ يُسترجع للعميل. نسجّلها "مكررة" فلا يغيّرها إشعار لاحق.
+                $p->update([
+                    'status' => 'duplicate',
+                    'gateway_txn_id' => $e->txnId,
+                    'transaction_ref' => $e->txnId ?: $p->transaction_ref,
+                    'paid_at' => now(),
+                    'payload' => $e->raw,
+                ]);
+                $paidAfterCancel = $p;
+
+                return;
+            }
 
             if ($e->status === 'paid' && $order
                 && Payment::where('order_id', $order->id)->where('id', '!=', $p->id)->where('status', 'paid')->exists()) {
@@ -153,6 +174,9 @@ class PaymentService
                     return;
                 }
 
+                // طلب البطاقة يصل للبائع الآن فقط (قبل الدفع كان مخفياً عنه)
+                $wasAwaitingPayment = $order?->isAwaitingOnlinePayment() ?? false;
+
                 $p->update([
                     'status' => 'paid',
                     'gateway_txn_id' => $e->txnId,
@@ -168,6 +192,9 @@ class PaymentService
                 if ($order) {
                     $order->update(['payment_status' => 'paid']);
                     $notifyPaid = $order;
+                    if ($wasAwaitingPayment) {
+                        $releasedToSellers = $order;
+                    }
                 }
 
                 return;
@@ -193,6 +220,23 @@ class PaymentService
                 null,
                 route('customer.orders.show', $notifyPaid)
             );
+        }
+
+        if ($releasedToSellers) {
+            app(SellerOrderNotifier::class)->notify($releasedToSellers);
+        }
+
+        if ($paidAfterCancel) {
+            Log::critical('Payment confirmed for a cancelled order — refund required', [
+                'payment_id' => $paidAfterCancel->id, 'order_id' => $paidAfterCancel->order_id, 'txn' => $paidAfterCancel->gateway_txn_id,
+            ]);
+            User::where('role', 'admin')->pluck('id')->each(fn ($adminId) => AppNotification::send(
+                $adminId,
+                'payment_duplicate',
+                'دفعة لطلب ملغى تحتاج استرجاعاً',
+                "الطلب #{$paidAfterCancel->order?->order_number} أُلغي قبل وصول تأكيد البنك — رقم العملية: {$paidAfterCancel->gateway_txn_id}",
+                route('admin.orders.show', $paidAfterCancel->order_id)
+            ));
         }
 
         if ($duplicate) {

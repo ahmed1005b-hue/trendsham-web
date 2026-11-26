@@ -26,7 +26,7 @@ class StoreInsights
     public function sales(SellerProfile $vendor, Period $period): AssistantReply
     {
         // تجميع داخل قاعدة البيانات: لا نحمّل سطور سنة كاملة إلى الذاكرة
-        $base = OrderItem::query()
+        $base = OrderItem::query()->releasedToSellers()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.vendor_id', $vendor->id)
             ->where('orders.status', '!=', 'cancelled')

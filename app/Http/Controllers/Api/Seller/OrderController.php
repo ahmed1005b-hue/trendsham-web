@@ -30,7 +30,8 @@ class OrderController extends Controller
     {
         $vendor = $request->user()->sellerProfile;
 
-        $items = OrderItem::where('vendor_id', $vendor->id)
+        // طلب البطاقة يظهر للبائع بعد تأكيد الدفع فقط
+        $items = OrderItem::releasedToSellers()->where('vendor_id', $vendor->id)
             // تحميل مسبق: لا استعلام لكل صف (الحالات المسموحة + بيانات العرض)
             ->with(['order.items:id,order_id,vendor_id', 'product.primaryImage', 'product.images', 'review'])
             ->latest('id')

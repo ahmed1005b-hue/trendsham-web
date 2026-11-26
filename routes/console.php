@@ -47,6 +47,8 @@ Schedule::command('loyalty:daily')->dailyAt('02:30');
 Schedule::command('notifications:send-broadcasts')->everyMinute()->withoutOverlapping();
 // المرتجعات: تصعيد الطلبات المتأخرة وإغلاق المنتهية مهلتها
 Schedule::command('returns:daily')->dailyAt('02:45');
+// طلبات البطاقة غير المدفوعة بعد المهلة تُلغى فتعود كمياتها للمخزون
+Schedule::command('orders:cancel-unpaid')->everyFiveMinutes()->withoutOverlapping();
 // تذكير السلة المتروكة: كل ساعة نهاراً فقط (لا إزعاج ليلاً)
 Schedule::command('cart:remind-abandoned')->hourly()->between('10:00', '21:00')->withoutOverlapping();
 

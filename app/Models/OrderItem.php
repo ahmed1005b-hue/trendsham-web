@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Returns\Models\ReturnItem;
 use App\Returns\ReturnSettlement;
 use App\Services\LedgerService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,12 @@ class OrderItem extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** بنود طلبات يراها البائع: طلب البطاقة يظهر بعد تأكيد الدفع فقط. */
+    public function scopeReleasedToSellers(Builder $query): Builder
+    {
+        return $query->whereHas('order', fn (Builder $order) => $order->releasedToSellers());
     }
 
     public function product()

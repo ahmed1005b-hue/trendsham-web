@@ -25,7 +25,9 @@ class OrderPolicy
     {
         $storeId = $user->sellerProfile?->id;
 
+        // طلب البطاقة غير المدفوع لا يصل للبائع
         return $storeId !== null && $order->items()->where('vendor_id', $storeId)->exists()
+            && ! $order->isAwaitingOnlinePayment()
             ? Response::allow()
             : Response::deny('');
     }

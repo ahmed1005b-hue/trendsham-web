@@ -21,6 +21,7 @@ use App\Models\ProductVariant;
 use App\Models\ShippingCenter;
 use App\Notifications\Push\SellerOrderNotifier;
 use App\Services\DailyDealQuota;
+use App\Services\PaymentService;
 use App\Shipping\Governorates;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingChoice;
@@ -107,7 +108,7 @@ class CheckoutController extends Controller
             'delivery_method' => ['nullable', 'in:'.implode(',', ShippingQuote::METHODS)],
             'pickup_center_id' => ['nullable', 'required_if:delivery_method,center', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
             'shipping_address' => ['nullable', 'required_unless:delivery_method,center', 'string', 'max:1000'],
-            'payment_method' => ['required', 'in:cash_on_delivery,card,wallet'],
+            'payment_method' => ['required', 'in:cash_on_delivery,card'],
             // كوبون المحفظة: غائب = الأفضل تلقائياً، null/0 = بلا كوبون، رقم = كوبون اختاره العميل
             'customer_coupon_id' => ['nullable', 'integer'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
@@ -115,6 +116,20 @@ class CheckoutController extends Controller
             ...ShippingChoice::rules(),
         ]);
         $couponChoice = $request->has('customer_coupon_id') ? ($request->integer('customer_coupon_id') ?: 'none') : null;
+
+        // البطاقة فقط حين يكون الدفع الإلكتروني مفعّلاً، وإلا بقي الطلب بلا طريقة دفع حقيقية
+        if ($validated['payment_method'] === 'card' && ! app(PaymentService::class)->onlineEnabled()) {
+            $message = __('الدفع بالبطاقة غير متاح حالياً. اختر الدفع عند الاستلام.');
+
+            return response()->json(['message' => $message, 'errors' => ['payment_method' => [$message]]], 422);
+        }
+
+        if ($validated['payment_method'] === 'card'
+            && Order::openCardOrdersCount($request->user()->id) >= Order::MAX_OPEN_CARD_ORDERS) {
+            $message = __('لديك طلبات بالبطاقة لم تُدفع بعد. ادفعها أو ألغها أولاً.');
+
+            return response()->json(['message' => $message, 'errors' => ['payment_method' => [$message]]], 422);
+        }
 
         if ($validated['payment_method'] === 'cash_on_delivery' && ShippingDebt::codBlocked($request->user())) {
             return response()->json(['message' => ShippingDebt::codBlockedMessage($request->user()), 'errors' => [

@@ -6,11 +6,15 @@ use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\SellerProfile;
 
-/** إشعار "طلب جديد" لكل بائع في الطلب، بمجموع منتجاته فقط (بلا الهدايا المجانية). */
+/** إشعار "طلب جديد" لكل بائع في الطلب، بمجموع منتجاته فقط (بلا الهدايا المجانية)، متى صار الطلب ظاهراً للبائع. */
 class SellerOrderNotifier
 {
     public function notify(Order $order): void
     {
+        // طلب البطاقة: الإشعار يصل بعد تأكيد الدفع (PaymentService::apply)، لا عند إنشاء الطلب
+        if ($order->isAwaitingOnlinePayment()) {
+            return;
+        }
         $order->loadMissing('items');
 
         $order->items
