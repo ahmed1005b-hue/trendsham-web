@@ -128,7 +128,7 @@
                 @forelse ($conversation->messages as $message)
                     <div class="ts-message {{ $message->sender_id === auth()->id() ? 'me' : 'them' }}">
                         @if ($message->sender_id !== auth()->id())
-                            <span class="ts-message-sender">{{ $message->sender->name }}</span>
+                            <span class="ts-message-sender">{{ __('فريق الدعم') }}</span>
                         @else
                             <span class="ts-message-sender">أنت</span>
                         @endif
@@ -160,6 +160,7 @@
     </div>
 
 </div>
+@endsection
 
 @push('scripts')
 <script>

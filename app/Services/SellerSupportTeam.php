@@ -6,6 +6,7 @@ use App\Models\AppNotification;
 use App\Models\StaffConversation;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 /**
  * دعم البائعين صندوق واحد لفريق المنصة: البائع لا يختار موظفاً بالاسم (كانت أسماء الفريق تظهر له،
@@ -13,11 +14,18 @@ use Illuminate\Support\Collection;
  */
 class SellerSupportTeam
 {
-    /** صاحب المحادثة المسجّل (عمود staff_id إلزامي): أقدم مدير نشط. */
+    /** صاحب المحادثة المسجّل (عمود staff_id إلزامي): أقدم مدير نشط، وإلا أي عضو في فريق الدعم. */
     public function ownerId(): int
     {
-        return (int) User::query()->where('role', 'admin')->where('status', 'active')->orderBy('id')->value('id')
-            ?: (int) User::query()->where('role', 'admin')->orderBy('id')->value('id');
+        $id = (int) User::query()->where('role', 'admin')->where('status', 'active')->orderBy('id')->value('id')
+            ?: (int) User::query()->where('role', 'admin')->orderBy('id')->value('id')
+            ?: (int) $this->members()->first()?->id;
+
+        if ($id === 0) {
+            throw ValidationException::withMessages(['body' => __('الدعم غير متاح الآن، حاول لاحقاً.')]);
+        }
+
+        return $id;
     }
 
     /**

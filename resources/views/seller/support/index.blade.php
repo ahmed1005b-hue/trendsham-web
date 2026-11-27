@@ -64,7 +64,6 @@
                                             </div>
                                             <div class="ms-2">
                                                 <div class="fw-bold small">{{ __('فريق الدعم') }}</div>
-                                                <div class="text-muted smaller">{{ $conv->staff->role === 'admin' ? 'مدير النظام' : 'موظف دعم' }}</div>
                                             </div>
                                         </div>
                                     </td>

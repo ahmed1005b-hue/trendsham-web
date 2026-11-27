@@ -84,8 +84,9 @@ class SupportController extends Controller
                 'id' => $conversation->id,
                 'subject' => $conversation->subject,
                 'status' => $conversation->status,
-                'staff_name' => $conversation->staff->name,
-                'staff_role' => $conversation->staff->role,
+                // البائع يراسل فريق الدعم، لا يُكشف له اسم موظف بعينه
+                'staff_name' => __('فريق الدعم'),
+                'staff_role' => 'support',
                 'created_at' => $conversation->created_at->toISOString(),
             ],
             'messages' => $conversation->messages->map(function ($m) use ($request) {
@@ -93,7 +94,7 @@ class SupportController extends Controller
                     'id' => $m->id,
                     'body' => $m->body,
                     'is_me' => $m->sender_id === $request->user()->id,
-                    'sender_name' => $m->sender->name,
+                    'sender_name' => $m->sender_id === $request->user()->id ? $m->sender->name : __('فريق الدعم'),
                     'created_at' => $m->created_at->toISOString(),
                     'read_at' => $m->read_at?->toISOString(),
                 ];

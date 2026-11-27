@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\Shipment;
+use App\Returns\ReturnService;
 use App\Returns\ReturnSettings;
 use App\Services\PayoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +54,19 @@ class DeliveryPaymentAndEarningsHoldTest extends TestCase
         $cash = $order->payments()->where('method', 'cash_on_delivery')->sole();
         $this->assertSame('paid', $cash->status);
         $this->assertNotNull($cash->paid_at);
+        $this->assertSame((int) $order->total, (int) $cash->amount, 'the collected amount is what the order totals now');
+    }
+
+    /** التوصيل الخاص بالدفع عند الاستلام: البائع قبض المال بيده، فلا يُحجز ربحه ولا يُجمَّد رصيده القديم. */
+    public function test_self_delivered_cash_orders_are_not_held(): void
+    {
+        $a = $this->tenant('a');
+        $a['withdrawal']->delete();
+        $order = $this->deliveredCashOrder($a);
+        Shipment::query()->where('order_id', $order->id)->update(['delivery_mode' => 'self', 'cod_amount' => $order->total]);
+
+        $this->assertSame(0, app(PayoutService::class)->heldForReturns($a['store']));
+        $this->assertNull(app(PayoutService::class)->nextRelease($a['store']));
     }
 
     public function test_earnings_stay_in_the_balance_but_are_not_withdrawable_until_the_return_window_ends(): void
@@ -79,5 +94,24 @@ class DeliveryPaymentAndEarningsHoldTest extends TestCase
 
         $this->assertSame(0, $payouts->heldForReturns($a['store']));
         $this->assertSame($before + $earning, $payouts->available($a['store']));
+    }
+
+    public function test_an_open_return_keeps_its_earnings_held_after_the_window_ends(): void
+    {
+        $a = $this->tenant('a');
+        $a['withdrawal']->delete();
+        $payouts = app(PayoutService::class);
+        $before = $payouts->available($a['store']);
+
+        $order = $this->deliveredCashOrder($a);
+        $item = $order->items()->firstOrFail();
+        $return = app(ReturnService::class)->create($a['customer'], $order, [$item->id => 1], 'damaged', 'وصل مكسوراً');
+
+        $this->travel(app(ReturnSettings::class)->windowDays() + 1)->days();
+        $this->assertSame($before, $payouts->available($a['store']), 'earnings under an open return must stay held');
+        $this->assertNull($payouts->nextRelease($a['store']), 'an open return has no release date');
+
+        $return->update(['status' => 'closed', 'closed_at' => now()]);
+        $this->assertSame($before + (int) $item->vendor_earning, $payouts->available($a['store']));
     }
 }

@@ -6,6 +6,7 @@ use App\Models\AppNotification;
 use App\Models\OrderItem;
 use App\Models\PaymentMethod;
 use App\Models\SellerProfile;
+use App\Models\Shipment;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -16,10 +17,13 @@ use App\Payments\Payouts\PayoutGateway;
 use App\Payments\Payouts\PayoutResult;
 use App\Payments\Payouts\SandboxPayoutGateway;
 use App\Payments\SandboxGateway;
+use App\Returns\Models\ReturnItem;
+use App\Returns\Models\ReturnRequest;
 use App\Returns\ReturnSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -137,48 +141,87 @@ class PayoutService
      */
     public function available(SellerProfile $vendor): int
     {
-        // الرصيد من القاعدة مباشرة لا من نسخة محمّلة سابقاً (قد تكون قبل إيداع أرباح جديدة)
-        $balance = (int) Wallet::whereKey($vendor->walletOrCreate()->id)->value('balance');
-
-        return max(0, $balance
-            - (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount')
-            - $this->heldForReturns($vendor));
+        return max(0, $this->balance($vendor) - $this->pendingWithdrawals($vendor) - $this->heldLines($vendor)->sum('remaining'));
     }
 
-    /** أرباح بنود سُلّمت ولم تنتهِ مدة إرجاعها بعد (بعد طرح ما خُصم منها بإرجاع أو إلغاء). */
+    /**
+     * أرباح لا تُسحب بعد: بنود لم تنتهِ مدة إرجاعها، وبنود عليها طلب إرجاع لم يُحسم ولو انتهت المدة
+     * (بعد طرح ما خُصم منها). لا يتجاوز ما في الرصيد بعد طلبات السحب المعلّقة، فلا يُعرض محجوز أكبر من الرصيد.
+     */
     public function heldForReturns(SellerProfile $vendor): int
     {
-        $items = $this->itemsInReturnWindow($vendor);
-        $earned = (int) (clone $items)->sum('vendor_earning');
-        if ($earned <= 0) {
-            return 0;
-        }
+        $room = max(0, $this->balance($vendor) - $this->pendingWithdrawals($vendor));
 
-        $reversed = (int) WalletTransaction::query()
-            ->where('wallet_id', $vendor->walletOrCreate()->id)
-            ->where('type', 'debit')
-            ->whereIn('order_item_id', (clone $items)->select('id'))
-            ->sum('amount');
-
-        return max(0, $earned - $reversed);
+        return min((int) $this->heldLines($vendor)->sum('remaining'), $room);
     }
 
-    /** متى يصير أقرب مبلغ محجوز متاحاً للسحب (null إن لم يكن هناك محجوز). */
+    /** متى يصير أقرب مبلغ محجوز متاحاً للسحب (null إن لم يكن محجوز يُفرج عنه بتاريخ؛ المرتجع المفتوح يُفرج عنه عند حسمه). */
     public function nextRelease(SellerProfile $vendor): ?Carbon
     {
-        $oldest = $this->itemsInReturnWindow($vendor)->min('commission_settled_at');
-
-        return $oldest ? Carbon::parse($oldest)->addDays(app(ReturnSettings::class)->windowDays()) : null;
+        return $this->heldLines($vendor)->pluck('releases_at')->filter()->min();
     }
 
-    private function itemsInReturnWindow(SellerProfile $vendor): Builder
+    /** الرصيد من القاعدة مباشرة لا من نسخة محمّلة سابقاً (قد تكون قبل إيداع أرباح جديدة). */
+    private function balance(SellerProfile $vendor): int
+    {
+        return (int) Wallet::whereKey($vendor->walletOrCreate()->id)->value('balance');
+    }
+
+    private function pendingWithdrawals(SellerProfile $vendor): int
+    {
+        return (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount');
+    }
+
+    /**
+     * بنود محجوزة مع الباقي من أرباح كلٍّ منها بعد ما خُصم منه، وتاريخ الإفراج (null للمرتجع المفتوح).
+     * طرود التوصيل الخاص بالدفع عند الاستلام لا تُحجز: البائع قبض ثمنها بيده وخُصم من محفظته.
+     *
+     * @return Collection<int, array{remaining: int, releases_at: ?Carbon}>
+     */
+    private function heldLines(SellerProfile $vendor): Collection
     {
         $windowDays = app(ReturnSettings::class)->windowDays();
+        $openReturnItemIds = ReturnItem::query()
+            ->whereHas('returnRequest', fn (Builder $request) => $request
+                ->where('seller_profile_id', $vendor->id)
+                ->where(fn (Builder $open) => $open
+                    ->whereIn('status', ReturnRequest::OPEN)
+                    ->orWhere(fn (Builder $disputable) => $disputable->where('status', 'rejected')->where('dispute_by', '>', now()))))
+            ->pluck('order_item_id')->map(fn ($id) => (int) $id)->all();
 
-        return OrderItem::query()
+        $items = OrderItem::query()
             ->where('vendor_id', $vendor->id)
             ->where('vendor_earning', '>', 0)
-            ->where('commission_settled_at', '>', now()->subDays(max(0, $windowDays)));
+            ->whereNotNull('commission_settled_at')
+            ->whereNotIn('order_id', Shipment::query()->select('order_id')
+                ->where('seller_profile_id', $vendor->id)
+                ->where('delivery_mode', '!=', 'platform')
+                ->where('cod_amount', '>', 0))
+            ->where(fn (Builder $held) => $held
+                ->where('commission_settled_at', '>', now()->subDays(max(0, $windowDays)))
+                ->orWhereIn('id', $openReturnItemIds ?: [0]))
+            ->get(['id', 'vendor_earning', 'commission_settled_at']);
+        if ($items->isEmpty()) {
+            return collect();
+        }
+
+        $reversed = WalletTransaction::query()
+            ->where('wallet_id', $vendor->walletOrCreate()->id)
+            ->where('type', 'debit')
+            ->whereIn('order_item_id', $items->pluck('id'))
+            ->groupBy('order_item_id')
+            ->selectRaw('order_item_id, SUM(amount) as total')
+            ->pluck('total', 'order_item_id');
+
+        return $items
+            ->map(fn (OrderItem $item) => [
+                'remaining' => max(0, (int) $item->vendor_earning - (int) ($reversed[$item->id] ?? 0)),
+                'releases_at' => in_array($item->id, $openReturnItemIds, true)
+                    ? null
+                    : Carbon::parse($item->commission_settled_at)->addDays($windowDays),
+            ])
+            ->filter(fn (array $line) => $line['remaining'] > 0)
+            ->values();
     }
 
     /** @param  float  $amount  بالليرة (الوحدة الكبرى) كما يدخلها البائع */
@@ -205,7 +248,7 @@ class PayoutService
             $locked = Wallet::whereKey($wallet->id)->lockForUpdate()->first();
             $pending = (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount');
 
-            if ($minor > (int) $locked->balance - $pending - $this->heldForReturns($vendor)) {
+            if ($minor > (int) $locked->balance - $pending - (int) $this->heldLines($vendor)->sum('remaining')) {
                 throw ValidationException::withMessages(['amount' => __('المبلغ أكبر من رصيدك المتاح. أرباح الطلبات التي ما زالت في مدة الإرجاع لا تُسحب حتى تنتهي المدة.')]);
             }
 

@@ -44,6 +44,16 @@ class SellerSupportApiTest extends TestCase
             ->assertJsonPath('conversations.0.id', $conversation->id)
             ->assertJsonPath('conversations.0.staff_name', 'فريق الدعم')
             ->assertJsonPath('conversations.0.unread_count', 1);
+
+        // داخل المحادثة أيضاً: لا يظهر اسم المدير ولا اسم من رد
+        $this->getJson("/api/v1/seller/support/{$conversation->id}")
+            ->assertOk()
+            ->assertJsonPath('conversation.staff_name', 'فريق الدعم')
+            ->assertJsonPath('messages.0.sender_name', 'فريق الدعم')
+            ->assertDontSee($staff->name);
+
+        $this->actingAs($seller)->get(route('seller.support.show', $conversation))
+            ->assertOk()->assertDontSee($staff->name);
     }
 
     /** البائع يراسل «فريق الدعم» لا شخصاً باسمه: يُشعَر كل من يعمل في قسم الدعم، ولا تظهر للبائع أسماء الفريق. */
