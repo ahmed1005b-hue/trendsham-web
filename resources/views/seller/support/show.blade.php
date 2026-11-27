@@ -104,7 +104,7 @@
                         <div>
                             <h5 class="mb-1">{{ $conversation->subject }}</h5>
                             <p class="text-muted small mb-0">
-                                مع: <strong>{{ $conversation->staff->name }}</strong> ({{ $conversation->staff->role === 'admin' ? 'مدير النظام' : 'موظف دعم' }})
+                                مع: <strong>{{ __('فريق الدعم') }}</strong>
                             </p>
                         </div>
                         <div class="d-flex gap-2">

@@ -164,10 +164,30 @@ class Order extends Model
      *  - أول تسليم: تُضاف أرباح البائع لمحفظته وتُسجَّل قيود البيع والعمولة.
      *  - إلغاء بعد التسليم (استرجاع): تُخصم الأرباح من المحفظة وتُعكس القيود.
      */
+    /**
+     * الدفع عند الاستلام: تسليم الطلب يعني أن المندوب قبض المبلغ، فيصير الطلب «مدفوعاً»
+     * (كان يبقى «غير مدفوع» حتى يضغط المدير الزر بيده، فتختل التقارير والمرتجعات).
+     */
+    private function collectCashOnDelivery(): void
+    {
+        if ($this->payment_status === 'paid') {
+            return;
+        }
+
+        $cash = $this->payments()->where('method', 'cash_on_delivery')->where('status', 'pending')->latest('id')->first();
+        if (! $cash) {
+            return;
+        }
+
+        $cash->update(['status' => 'paid', 'paid_at' => now(), 'transaction_ref' => $cash->transaction_ref ?: 'cod-delivered']);
+        $this->update(['payment_status' => 'paid']);
+    }
+
     public function settleForStatusChange(string $previousStatus): void
     {
         // أرباح البائعين وإرجاع الكميات تخص كل طرد وحده (ParcelService)؛ هنا آثار الطلب كاملاً
         if ($this->status === 'delivered' && $previousStatus !== 'delivered') {
+            $this->collectCashOnDelivery();
             app(LoyaltyLedger::class)->earnForOrder($this);   // نقاط الولاء (مرة واحدة لكل طلب)
             app(ReferralService::class)->rewardForDeliveredOrder($this); // مكافأة «دعوة صديق»
             app(SellerShippingCharge::class)->charge($this);  // شحن مجاني من كوبون البائع على البائع

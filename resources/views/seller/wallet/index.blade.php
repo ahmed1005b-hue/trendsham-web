@@ -65,6 +65,12 @@
             <div class="ts-wallet-stat">
                 <div class="l">المتاح للسحب الآن</div>
                 <div class="v text-success">{{ number_format($available / 100) }} ل.س</div>
+                @if ($heldForReturns > 0)
+                    <div class="small text-muted mt-1" data-held-for-returns>
+                        {{ __('محجوز حتى تنتهي مدة الإرجاع: :amount ل.س', ['amount' => number_format($heldForReturns / 100)]) }}
+                        @if ($nextRelease) — {{ __('أقرب إفراج: :date', ['date' => $nextRelease->format('Y-m-d')]) }} @endif
+                    </div>
+                @endif
             </div>
         </div>
         <div class="col-md-4">

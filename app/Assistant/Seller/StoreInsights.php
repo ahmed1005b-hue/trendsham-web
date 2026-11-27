@@ -114,9 +114,16 @@ class StoreInsights
         $balance = (int) $vendor->walletOrCreate()->balance;
         $available = $this->payouts->available($vendor);   // نفس رقم صفحة المحفظة
 
+        $held = $this->payouts->heldForReturns($vendor);
         $text = 'المتاح للسحب: '.$this->money($available).'.';
         if ($balance > $available) {
-            $text .= "\nرصيدك الكلي ".$this->money($balance).'، منه '.$this->money($balance - $available).' محجوز بطلبات سحب قيد المراجعة.';
+            $text .= "\nرصيدك الكلي ".$this->money($balance).'.';
+            if ($held > 0) {
+                $text .= ' منه '.$this->money($held).' أرباح طلبات بمدة الإرجاع، بتصير متاحة لما تخلص المدة.';
+            }
+            if ($balance - $available - $held > 0) {
+                $text .= ' و'.$this->money($balance - $available - $held).' محجوز بطلبات سحب قيد المراجعة.';
+            }
         }
         $text .= "\nالأرباح بتنضاف للمحفظة بعد تسليم الطلب للعميل.";
 

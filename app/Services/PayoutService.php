@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\AppNotification;
+use App\Models\OrderItem;
 use App\Models\PaymentMethod;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Payments\Payouts\BankPayoutGateway;
 use App\Payments\Payouts\ManualPayoutGateway;
@@ -14,7 +16,10 @@ use App\Payments\Payouts\PayoutGateway;
 use App\Payments\Payouts\PayoutResult;
 use App\Payments\Payouts\SandboxPayoutGateway;
 use App\Payments\SandboxGateway;
+use App\Returns\ReturnSettings;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -34,9 +39,9 @@ class PayoutService
     public function gateway(): PayoutGateway
     {
         return match (config('payment.payout.driver')) {
-            'bank' => new BankPayoutGateway(),
-            'sandbox' => SandboxGateway::enabled() ? new SandboxPayoutGateway() : new ManualPayoutGateway(),
-            default => new ManualPayoutGateway(),
+            'bank' => new BankPayoutGateway,
+            'sandbox' => SandboxGateway::enabled() ? new SandboxPayoutGateway : new ManualPayoutGateway,
+            default => new ManualPayoutGateway,
         };
     }
 
@@ -126,12 +131,54 @@ class PayoutService
 
     // ------------------------------------------------------------------ طلبات السحب
 
-    /** المبلغ المتاح للسحب = الرصيد − الطلبات المعلّقة (بالوحدة الصغرى). */
+    /**
+     * المبلغ المتاح للسحب = الرصيد − طلبات السحب المعلّقة − أرباح ما زالت في مدة الإرجاع (بالوحدة الصغرى).
+     * الأرباح تدخل الرصيد عند التسليم، لكنها لا تُسحب حتى تنتهي مدة الإرجاع: إرجاعٌ بعد السحب كان يصير ديناً على البائع.
+     */
     public function available(SellerProfile $vendor): int
     {
-        $wallet = $vendor->walletOrCreate();
+        // الرصيد من القاعدة مباشرة لا من نسخة محمّلة سابقاً (قد تكون قبل إيداع أرباح جديدة)
+        $balance = (int) Wallet::whereKey($vendor->walletOrCreate()->id)->value('balance');
 
-        return max(0, (int) $wallet->balance - (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount'));
+        return max(0, $balance
+            - (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount')
+            - $this->heldForReturns($vendor));
+    }
+
+    /** أرباح بنود سُلّمت ولم تنتهِ مدة إرجاعها بعد (بعد طرح ما خُصم منها بإرجاع أو إلغاء). */
+    public function heldForReturns(SellerProfile $vendor): int
+    {
+        $items = $this->itemsInReturnWindow($vendor);
+        $earned = (int) (clone $items)->sum('vendor_earning');
+        if ($earned <= 0) {
+            return 0;
+        }
+
+        $reversed = (int) WalletTransaction::query()
+            ->where('wallet_id', $vendor->walletOrCreate()->id)
+            ->where('type', 'debit')
+            ->whereIn('order_item_id', (clone $items)->select('id'))
+            ->sum('amount');
+
+        return max(0, $earned - $reversed);
+    }
+
+    /** متى يصير أقرب مبلغ محجوز متاحاً للسحب (null إن لم يكن هناك محجوز). */
+    public function nextRelease(SellerProfile $vendor): ?Carbon
+    {
+        $oldest = $this->itemsInReturnWindow($vendor)->min('commission_settled_at');
+
+        return $oldest ? Carbon::parse($oldest)->addDays(app(ReturnSettings::class)->windowDays()) : null;
+    }
+
+    private function itemsInReturnWindow(SellerProfile $vendor): Builder
+    {
+        $windowDays = app(ReturnSettings::class)->windowDays();
+
+        return OrderItem::query()
+            ->where('vendor_id', $vendor->id)
+            ->where('vendor_earning', '>', 0)
+            ->where('commission_settled_at', '>', now()->subDays(max(0, $windowDays)));
     }
 
     /** @param  float  $amount  بالليرة (الوحدة الكبرى) كما يدخلها البائع */
@@ -158,8 +205,8 @@ class PayoutService
             $locked = Wallet::whereKey($wallet->id)->lockForUpdate()->first();
             $pending = (int) $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount');
 
-            if ($minor > (int) $locked->balance - $pending) {
-                throw ValidationException::withMessages(['amount' => 'المبلغ أكبر من رصيدك المتاح (بعد خصم طلبات السحب المعلّقة).']);
+            if ($minor > (int) $locked->balance - $pending - $this->heldForReturns($vendor)) {
+                throw ValidationException::withMessages(['amount' => __('المبلغ أكبر من رصيدك المتاح. أرباح الطلبات التي ما زالت في مدة الإرجاع لا تُسحب حتى تنتهي المدة.')]);
             }
 
             return WithdrawalRequest::create([

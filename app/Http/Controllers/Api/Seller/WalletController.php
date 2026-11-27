@@ -20,6 +20,9 @@ class WalletController extends Controller
         return response()->json([
             'balance' => $wallet->balance / 100,
             'available' => $this->payouts->available($vendor) / 100,
+            // أرباح ما زالت في مدة الإرجاع: في الرصيد لكنها لا تُسحب بعد
+            'held_for_returns' => $this->payouts->heldForReturns($vendor) / 100,
+            'next_release_at' => $this->payouts->nextRelease($vendor)?->toIso8601String(),
             'pending_withdrawals' => $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount') / 100,
             'min_withdrawal' => (int) config('payment.payout.min_amount'),
             'default_method' => $vendor->paymentMethods()->where('is_default', true)->first()?->toApiArray(),

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppNotification;
 use App\Models\SellerProfile;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
@@ -41,30 +42,32 @@ class SellerSupportApiTest extends TestCase
         $this->getJson('/api/v1/seller/support')
             ->assertOk()
             ->assertJsonPath('conversations.0.id', $conversation->id)
-            ->assertJsonPath('conversations.0.staff_name', $staff->name)
+            ->assertJsonPath('conversations.0.staff_name', 'فريق الدعم')
             ->assertJsonPath('conversations.0.unread_count', 1);
     }
 
-    /** البائع يراسل الإدارة أو الموظفين فقط: رقم عميل أو بائع آخر يُرفض حتى لا يُكشف اسمه ودوره. */
-    public function test_seller_can_only_open_support_with_admin_or_employee(): void
+    /** البائع يراسل «فريق الدعم» لا شخصاً باسمه: يُشعَر كل من يعمل في قسم الدعم، ولا تظهر للبائع أسماء الفريق. */
+    public function test_seller_writes_to_the_whole_support_team(): void
     {
         $seller = User::factory()->create(['role' => 'seller']);
         $profile = SellerProfile::create(['user_id' => $seller->id, 'store_name' => 'متجر', 'status' => 'approved']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $support = User::factory()->create(['role' => 'employee', 'employee_status' => 'approved', 'status' => 'active', 'employee_permissions' => ['support']]);
+        $ordersOnly = User::factory()->create(['role' => 'employee', 'employee_status' => 'approved', 'status' => 'active', 'employee_permissions' => ['orders']]);
         $customer = User::factory()->create(['role' => 'customer']);
-        $otherSeller = User::factory()->create(['role' => 'seller']);
-        $employee = User::factory()->create(['role' => 'employee']);
         $message = ['subject' => 'سؤال', 'body' => 'عندي سؤال عن الطلب'];
 
+        // نسخة قديمة من التطبيق ترسل staff_id: يُتجاهل ولا يكشف أحداً
         Sanctum::actingAs($seller);
-        foreach ([$customer, $otherSeller] as $notStaff) {
-            $this->postJson('/api/v1/seller/support', [...$message, 'staff_id' => $notStaff->id])
-                ->assertUnprocessable()->assertJsonValidationErrors('staff_id');
-        }
-        $this->postJson('/api/v1/seller/support', [...$message, 'staff_id' => $employee->id])->assertSuccessful();
+        $this->postJson('/api/v1/seller/support', [...$message, 'staff_id' => $customer->id])->assertCreated();
+        $this->actingAs($seller)->get(route('seller.support.create'))->assertOk()
+            ->assertDontSee($admin->name)->assertDontSee($support->name);
+        $this->actingAs($seller)->post(route('seller.support.store'), $message)->assertRedirect();
 
-        $this->actingAs($seller)->post(route('seller.support.store'), [...$message, 'staff_id' => $customer->id])
-            ->assertSessionHasErrors('staff_id');
-
-        $this->assertSame([$employee->id], StaffConversation::where('vendor_id', $profile->id)->pluck('staff_id')->all());
+        $this->assertSame([$admin->id, $admin->id], StaffConversation::where('vendor_id', $profile->id)->pluck('staff_id')->all());
+        $notified = AppNotification::where('type', 'staff_message')->pluck('user_id')->unique()->sort()->values()->all();
+        $this->assertSame([$admin->id, $support->id], $notified);
+        $this->assertStringContainsString('/employee/support/', (string) AppNotification::where('user_id', $support->id)->value('link'));
+        $this->assertSame(0, AppNotification::where('user_id', $ordersOnly->id)->count());
     }
 }

@@ -20,16 +20,7 @@
                     <form action="{{ route('seller.support.store') }}" method="POST" class="needs-validation" novalidate>
                         @csrf
 
-                        <div class="mb-3">
-                            <label for="f-staff_id" class="form-label">اختر الموظف</label>
-                            <select id="f-staff_id" name="staff_id" class="form-select" required>
-                                <option value="">اختر...</option>
-                                @foreach ($admins as $admin)
-                                    <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->role === 'admin' ? 'مدير' : 'موظف' }})</option>
-                                @endforeach
-                            </select>
-                            <div class="invalid-feedback">يرجى اختيار موظف.</div>
-                        </div>
+                        <p class="text-muted small">{{ __('تصل رسالتك لكل فريق الدعم، ويرد عليك أول موظف متاح.') }}</p>
 
                         <div class="mb-3">
                             <label for="f-subject" class="form-label">الموضوع</label>

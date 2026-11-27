@@ -22,6 +22,8 @@ class WalletController extends Controller
             'transactions' => $wallet->transactions()->latest()->paginate(15, ['*'], 'tx_page'),
             'pendingWithdrawals' => $vendor->withdrawalRequests()->where('status', 'pending')->sum('amount'),
             'available' => $this->payouts->available($vendor),
+            'heldForReturns' => $this->payouts->heldForReturns($vendor),
+            'nextRelease' => $this->payouts->nextRelease($vendor),
             'withdrawals' => $vendor->withdrawalRequests()->latest()->limit(10)->get(),
             'paymentMethods' => $vendor->paymentMethods()->latest()->get(),
             'defaultMethod' => $vendor->paymentMethods()->where('is_default', true)->first(),

@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Api\Seller;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Seller\SupportController as WebSupportController;
-use App\Models\AppNotification;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
-use App\Models\User;
+use App\Services\SellerSupportTeam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -28,8 +26,9 @@ class SupportController extends Controller
                     'id' => $c->id,
                     'subject' => $c->subject,
                     'status' => $c->status,
-                    'staff_name' => $c->staff->name,
-                    'staff_role' => $c->staff->role,
+                    // البائع يتحدث مع فريق الدعم، لا مع شخص باسمه
+                    'staff_name' => __('فريق الدعم'),
+                    'staff_role' => 'support',
                     'last_message_at' => $c->last_message_at?->toISOString(),
                     'last_message' => $c->messages->first()?->body,
                     'unread_count' => $c->messages->where('sender_id', '!=', $sellerUserId)->whereNull('read_at')->count(),
@@ -38,21 +37,19 @@ class SupportController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SellerSupportTeam $team)
     {
         $vendor = $request->user()->sellerProfile;
 
+        // البائع لا يختار موظفاً: الرسالة تصل لكل فريق الدعم (staff_id من نسخ التطبيق القديمة يُتجاهل)
         $validated = $request->validate([
-            'staff_id' => ['required', 'integer', WebSupportController::staffRule()],
             'subject' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'min:5', 'max:2000'],
         ]);
 
-        $staffUser = User::findOrFail($validated['staff_id']);
-
         $conversation = StaffConversation::create([
             'vendor_id' => $vendor->id,
-            'staff_id' => $staffUser->id,
+            'staff_id' => $team->ownerId(),
             'subject' => $validated['subject'],
             'status' => 'open',
         ]);
@@ -65,13 +62,7 @@ class SupportController extends Controller
 
         $conversation->update(['last_message_at' => now()]);
 
-        AppNotification::send(
-            $staffUser->id,
-            'staff_message',
-            "رسالة دعم جديدة من {$vendor->store_name}",
-            mb_substr($validated['body'], 0, 120),
-            route('admin.support.show', $conversation)
-        );
+        $team->notify($conversation, "رسالة دعم جديدة من {$vendor->store_name}", $validated['body']);
 
         return response()->json([
             'message' => 'تم إرسال رسالتك إلى الإدارة.',
@@ -110,7 +101,7 @@ class SupportController extends Controller
         ]);
     }
 
-    public function sendMessage(Request $request, StaffConversation $conversation)
+    public function sendMessage(Request $request, StaffConversation $conversation, SellerSupportTeam $team)
     {
         $vendor = $request->user()->sellerProfile;
 
@@ -128,13 +119,7 @@ class SupportController extends Controller
 
         $conversation->update(['last_message_at' => now()]);
 
-        AppNotification::send(
-            $conversation->staff_id,
-            'staff_message',
-            "رد جديد من {$vendor->store_name}",
-            mb_substr($validated['body'], 0, 120),
-            route('admin.support.show', $conversation)
-        );
+        $team->notify($conversation, "رد جديد من {$vendor->store_name}", $validated['body']);
 
         return response()->json([
             'message' => 'تم إرسال ردك.',
