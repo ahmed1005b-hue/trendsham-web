@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\DailyDeal;
-use App\Models\Product;
 use App\Models\Showcase;
 use App\Models\Story;
 use App\Support\AppCache;
+use App\Support\HomeProducts;
 use App\Support\RecentlyViewed;
 
 class HomeController extends Controller
@@ -56,22 +56,8 @@ class HomeController extends Controller
 
             return [
                 'stories' => Story::visible()->with('vendor')->orderByRaw('vendor_id IS NOT NULL')->latest()->limit(20)->get(),
-                'dealProducts' => Product::publiclyVisible()
-                    ->whereNotNull('compare_at_price')
-                    ->whereColumn('compare_at_price', '>', 'price')
-                    ->with(['primaryImage', 'images', 'vendor', 'activeDailyDeal'])
-                    ->withCount('reviews')
-                    ->withAvg('reviews', 'rating')
-                    ->latest()
-                    ->limit(4)
-                    ->get(),
-                'newProducts' => Product::publiclyVisible()
-                    ->with(['primaryImage', 'images', 'vendor', 'activeDailyDeal'])
-                    ->withCount('reviews')
-                    ->withAvg('reviews', 'rating')
-                    ->latest()
-                    ->limit(12)
-                    ->get(),
+                'dealProducts' => HomeProducts::deals(),
+                'newProducts' => HomeProducts::newArrivals(),
                 'dailyDeals' => $dailyDeals,
                 'dailyDeal' => $dailyDeals->first(),
                 'showcasesBySlot' => $showcasesBySlot,

@@ -25,6 +25,8 @@ class AppCache
 
     public const HOME_WEB = 'app:home:web';
 
+    public const HOME_PRODUCTS = 'app:home:products';
+
     /** مدة كاش الصفحة الرئيسية بالثواني — قصيرة لأن المخزون والعروض تتغير. */
     public const HOME_TTL = 60;
 
@@ -61,6 +63,7 @@ class AppCache
         Cache::forget(self::NAV_CATEGORIES);
         Cache::forget(self::CATEGORY_TREE);
         Cache::forget(self::HOME_WEB);
+        Cache::forget(self::HOME_PRODUCTS);
     }
 
     public static function forgetSettings(): void

@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\DailyDealController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\GiftCardController;
+use App\Http\Controllers\Api\HomeProductController;
 use App\Http\Controllers\Api\HomeShowcaseController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LoyaltyController;
@@ -133,6 +134,7 @@ Route::prefix('v1')->group(function () {
 
     // ===== الشاشة الرئيسية - مساحات العرض المؤجرة (Showcases) =====
     Route::get('/home/showcases', [HomeShowcaseController::class, 'index'])->middleware('throttle:60,1');
+    Route::get('/home/products', [HomeProductController::class, 'index'])->middleware('throttle:60,1');
     Route::post('/showcases/track', [HomeShowcaseController::class, 'track'])->middleware('throttle:30,1');
 
     // عروض اليوم - عامة للجميع (تُستخدم في الصفحة الرئيسية للتطبيق)
