@@ -18,7 +18,10 @@ class HomeShowcaseController extends Controller
             return Showcase::live()
                 ->with([
                     'slot', 'seller.user',
-                    'products' => fn ($q) => $q->where('products.status', 'active')->where('products.stock_quantity', '>', 0),
+                    // نفس شروط الموقع: منتج نشط، وافقت عليه الإدارة، وله مخزون
+                    'products' => fn ($q) => $q->where('products.status', 'active')
+                        ->whereNotNull('products.admin_approved_at')
+                        ->where('products.stock_quantity', '>', 0),
                     'products.images', 'products.primaryImage',
                 ])
                 ->get()
@@ -37,8 +40,8 @@ class HomeShowcaseController extends Controller
     public function track(Request $r)
     {
         $r->validate([
-            'events'        => 'required|array|max:20',
-            'events.*.id'   => 'required|integer',
+            'events' => 'required|array|max:20',
+            'events.*.id' => 'required|integer',
             'events.*.type' => 'required|in:impression,click',
         ]);
 

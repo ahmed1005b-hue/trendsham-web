@@ -8,8 +8,11 @@ use App\Models\SellerProfile;
 use App\Models\Showcase;
 use App\Models\ShowcaseSlot;
 use App\Models\User;
+use App\Support\ColorContrast;
 use Database\Seeders\ShowcaseSlotSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -116,6 +119,23 @@ class ShowcaseBookingFlowTest extends TestCase
         $this->get(route('home'))->assertOk()->assertSee('تخفيضات الشتاء')->assertSee('منتج 1');
     }
 
+    public function test_a_product_the_admin_has_not_approved_is_left_out_of_the_showcase_on_web_and_app(): void
+    {
+        $this->actingAs($this->seller)->post(route('seller.showcases.store'), $this->payload(['product_ids' => $this->productIds]))
+            ->assertSessionHasNoErrors();
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->post(route('admin.showcases.approve', Showcase::firstOrFail()));
+        $this->app['auth']->forgetGuards();
+
+        $unapproved = Product::findOrFail($this->productIds[5]);
+        $unapproved->update(['name' => 'منتج بانتظار الموافقة', 'admin_approved_at' => null]);
+
+        $apiProductIds = collect($this->getJson('/api/v1/home/showcases')->assertOk()->json('data.0.products'))->pluck('id');
+        $this->assertCount(5, $apiProductIds);
+        $this->assertNotContains($unapproved->id, $apiProductIds);
+
+        $this->get(route('home'))->assertOk()->assertSee('منتج 1')->assertDontSee('منتج بانتظار الموافقة');
+    }
+
     public function test_availability_endpoint_reports_the_slot(): void
     {
         $this->actingAs($this->seller)
@@ -186,8 +206,8 @@ class ShowcaseBookingFlowTest extends TestCase
 
     public function test_background_image_is_stored_and_shown_behind_product_cards(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
-        $image = \Illuminate\Http\UploadedFile::fake()->image('bg.jpg', 1600, 500);
+        Storage::fake('public');
+        $image = UploadedFile::fake()->image('bg.jpg', 1600, 500);
 
         $this->actingAs($this->seller)
             ->post(route('seller.showcases.store'), $this->payload(['background_image' => $image]))
@@ -195,7 +215,7 @@ class ShowcaseBookingFlowTest extends TestCase
 
         $showcase = Showcase::firstOrFail();
         $this->assertNotNull($showcase->background_image);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($showcase->background_image);
+        Storage::disk('public')->assertExists($showcase->background_image);
 
         $this->actingAs(User::factory()->create(['role' => 'admin']))->post(route('admin.showcases.approve', $showcase));
         $this->app['auth']->forgetGuards();
@@ -212,21 +232,21 @@ class ShowcaseBookingFlowTest extends TestCase
     public function test_background_image_must_be_an_image(): void
     {
         $this->actingAs($this->seller)
-            ->post(route('seller.showcases.store'), $this->payload(['background_image' => \Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10, 'application/pdf')]))
+            ->post(route('seller.showcases.store'), $this->payload(['background_image' => UploadedFile::fake()->create('x.pdf', 10, 'application/pdf')]))
             ->assertSessionHasErrors('background_image');
         $this->assertSame(0, Showcase::count());
     }
 
     public function test_failed_booking_does_not_leave_the_uploaded_image_behind(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
         $this->store->wallet()->first()->update(['balance' => 0]);
 
         $this->actingAs($this->seller)
-            ->post(route('seller.showcases.store'), $this->payload(['background_image' => \Illuminate\Http\UploadedFile::fake()->image('bg.jpg', 1600, 500)]))
+            ->post(route('seller.showcases.store'), $this->payload(['background_image' => UploadedFile::fake()->image('bg.jpg', 1600, 500)]))
             ->assertSessionHasErrors('amount');
 
-        $this->assertSame([], \Illuminate\Support\Facades\Storage::disk('public')->allFiles('showcases'));
+        $this->assertSame([], Storage::disk('public')->allFiles('showcases'));
     }
 
     public function test_invalid_text_color_is_rejected(): void
@@ -253,7 +273,7 @@ class ShowcaseBookingFlowTest extends TestCase
 
         foreach ($m[1] as $json) {
             $colors = json_decode(html_entity_decode($json), true);
-            [, $ratio] = \App\Support\ColorContrast::pick($colors);
+            [, $ratio] = ColorContrast::pick($colors);
             $this->assertGreaterThanOrEqual(3.0, $ratio, 'preset rejected by server: '.implode(',', $colors));
         }
     }
