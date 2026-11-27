@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\PlatformSetting;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\FindsUntranslatedArabic;
 use Tests\TestCase;
 
@@ -12,6 +14,7 @@ use Tests\TestCase;
 class WebLegalPagesTranslatedTest extends TestCase
 {
     use FindsUntranslatedArabic;
+    use RefreshDatabase;
 
     public function test_legal_pages_have_no_untranslated_arabic(): void
     {
@@ -33,10 +36,26 @@ class WebLegalPagesTranslatedTest extends TestCase
 
         $this->withSession(['locale' => 'en'])->get(route('legal.refund-policy'))
             ->assertSee('<strong>"Under review"</strong>', false)
-            ->assertSee('<strong>3 days</strong>', false);
+            ->assertSee('<strong>7 days</strong>', false);
 
         $this->withSession(['locale' => 'tr'])->get(route('legal.account-deletion'))
             ->assertSee('Profil → Hesap yönetimi</a>', false)
             ->assertSee('<strong>hesabınızı geçici olarak dondurabilirsiniz</strong>', false);
+    }
+
+    public function test_refund_policy_shows_the_return_periods_the_admin_set(): void
+    {
+        PlatformSetting::current()->update([
+            'returns_window_days' => 10,
+            'returns_seller_response_days' => 2,
+            'returns_dispute_days' => 1,
+            'returns_ship_back_days' => 21,
+        ]);
+
+        $this->get(route('legal.refund-policy'))->assertOk()
+            ->assertSee('<strong>10 أيام</strong>', false)
+            ->assertSee('<strong>يومان</strong>', false)
+            ->assertSee('<strong>يوم واحد</strong>', false)
+            ->assertSee('<strong>21 يوماً</strong>', false);
     }
 }
