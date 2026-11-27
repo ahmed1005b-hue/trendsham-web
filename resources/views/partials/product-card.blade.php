@@ -18,6 +18,8 @@
     if ($cardImages->isEmpty() && $product->primaryImage) $cardImages = collect([$product->primaryImage]);
     $outOfStock = $product->stock_quantity < 1;
     $initial = mb_substr(trim((string) $product->name), 0, 1);
+    $showDiscount = ($hasDiscount && $discountPct) || $deal;
+    $isNew = ! $showDiscount && $product->isNew();
 @endphp
 
 <article class="ts-market-card h-100 {{ $deal ? 'is-deal' : '' }}">
@@ -39,13 +41,16 @@
         </a>
 
         {{-- شارة الخصم تظهر دائماً في الزاوية عند وجود خصم (showDiscountBadge مقبول للتوافق فقط) --}}
-        @if (($hasDiscount && $discountPct) || $deal)
+        @if ($showDiscount || $isNew)
             <div class="ts-market-card__flags">
                 @if ($hasDiscount && $discountPct)
                     <span class="ts-market-badge">-{{ $discountPct }}%</span>
                 @endif
                 @if ($deal)
                     <span class="ts-market-ribbon"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i> عرض اليوم</span>
+                @endif
+                @if ($isNew)
+                    <span class="ts-market-badge ts-market-badge--new">{{ __('جديد') }}</span>
                 @endif
             </div>
         @endif
@@ -72,7 +77,7 @@
     </div>
 
     <div class="ts-market-card__body">
-        <div class="ts-market-card__brand" translate="no">
+        <div class="ts-market-card__brand {{ $brand ? '' : 'is-empty' }}" translate="no">
             @if ($brand)<i class="bi bi-shop" aria-hidden="true"></i> {{ $brand }}@else&nbsp;@endif
         </div>
         <a href="{{ route('products.show', $product) }}" class="ts-market-card__title-link">
@@ -100,21 +105,25 @@
             </div>
         @endif
 
-        <div class="ts-market-card__price-row">
-            <span class="ts-market-card__price">{{ $fmt($basePrice) }}</span>
-            @if ($hasDiscount && $oldPrice > $basePrice)
-                <del class="ts-market-card__old">{{ $fmt($oldPrice) }}</del>
-            @endif
-        </div>
-        <div class="ts-market-card__actions">
-            <form action="{{ route('customer.cart.store') }}" method="POST" class="flex-fill">
-                @csrf
-                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="ts-market-cart-btn w-100" @disabled($outOfStock)>
-                    <i class="bi {{ $outOfStock ? 'bi-x-circle' : 'bi-bag-plus' }}" aria-hidden="true"></i> {{ $outOfStock ? 'نفد من المخزون' : 'أضف للسلة' }}
-                </button>
-            </form>
+        <div class="ts-market-card__buy">
+            <div class="ts-market-card__price-row">
+                <span class="ts-market-card__price">{{ $fmt($basePrice) }}</span>
+                @if ($hasDiscount && $oldPrice > $basePrice)
+                    <del class="ts-market-card__old">{{ $fmt($oldPrice) }}</del>
+                @endif
+            </div>
+            <div class="ts-market-card__actions">
+                <form action="{{ route('customer.cart.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="ts-market-cart-btn" @disabled($outOfStock)
+                            title="{{ $outOfStock ? __('نفد من المخزون') : __('أضف للسلة') }}">
+                        <i class="bi {{ $outOfStock ? 'bi-x-lg' : 'bi-plus-lg' }}" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ $outOfStock ? __('نفد من المخزون') : __('أضف :name إلى السلة', ['name' => $product->name]) }}</span>
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </article>

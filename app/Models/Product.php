@@ -233,6 +233,15 @@ class Product extends Model
         return $this->stock_quantity <= $this->low_stock_threshold;
     }
 
+    /** أيام بعد الإضافة يحمل فيها المنتج شارة «جديد» على بطاقته. */
+    public const NEW_BADGE_DAYS = 7;
+
+    /** منتج أُضيف حديثاً: بطاقته تحمل شارة «جديد» في الموقع والتطبيق. */
+    public function isNew(): bool
+    {
+        return $this->created_at !== null && $this->created_at->gte(now()->subDays(self::NEW_BADGE_DAYS));
+    }
+
     public function scopeApplySort($query, ?string $sort)
     {
         return match ($sort) {

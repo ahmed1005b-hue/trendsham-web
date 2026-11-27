@@ -261,11 +261,15 @@
         ratingRow.innerHTML = product.average_rating == null ? '<span class="ts-market-card__reviews">' + @json(__('لا توجد مراجعات')) + '</span>' : `<span class="ts-market-card__stars"><i class="bi bi-star-fill" aria-hidden="true"></i> ${Number(product.average_rating).toFixed(1)}</span><span class="ts-market-card__reviews">(${Number(product.reviews_count || 0).toLocaleString(document.documentElement.lang || 'ar')})</span>`;
         body.append(ratingRow);
         const meta = document.createElement('div'); meta.className = 'ts-market-card__meta'; meta.innerHTML = `<span class="${product.stock_quantity > 0 ? 'text-success' : 'text-danger'}">${product.stock_quantity > 0 ? @json(__('متوفر')) : @json(__('نفد'))}</span>`; body.append(meta);
-        const row = document.createElement('div'); row.className = 'ts-market-card__price-row'; const price = document.createElement('span'); price.className = 'ts-market-card__price'; price.textContent = `${Number(product.price).toLocaleString(document.documentElement.lang || 'ar')} ${currency}`; row.append(price); body.append(row);
+        const buy = document.createElement('div'); buy.className = 'ts-market-card__buy';
+        const row = document.createElement('div'); row.className = 'ts-market-card__price-row'; const price = document.createElement('span'); price.className = 'ts-market-card__price'; price.textContent = `${Number(product.price).toLocaleString(document.documentElement.lang || 'ar')} ${currency}`; row.append(price); buy.append(row);
         const actions = document.createElement('div'); actions.className = 'ts-market-card__actions';
-        const cartForm = document.createElement('form'); cartForm.method = 'POST'; cartForm.action = @json(route('customer.cart.store')); cartForm.className = 'flex-fill'; cartForm.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="product_id" value="${product.id}"><input type="hidden" name="quantity" value="1">`;
-        const cartBtn = document.createElement('button'); cartBtn.type = 'submit'; cartBtn.className = 'ts-market-cart-btn w-100'; cartBtn.disabled = Number(product.stock_quantity) < 1; cartBtn.innerHTML = `<i class="bi bi-cart-plus" aria-hidden="true"></i> ${Number(product.stock_quantity) < 1 ? @json(__('نفد')) : @json(__('أضف للسلة'))}`;
-        cartForm.append(cartBtn); actions.append(cartForm); body.append(actions);
+        const cartForm = document.createElement('form'); cartForm.method = 'POST'; cartForm.action = @json(route('customer.cart.store')); cartForm.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="product_id" value="${product.id}"><input type="hidden" name="quantity" value="1">`;
+        const soldOut = Number(product.stock_quantity) < 1;
+        const cartBtn = document.createElement('button'); cartBtn.type = 'submit'; cartBtn.className = 'ts-market-cart-btn'; cartBtn.disabled = soldOut; cartBtn.title = soldOut ? @json(__('نفد')) : @json(__('أضف للسلة'));
+        cartBtn.innerHTML = `<i class="bi ${soldOut ? 'bi-x-lg' : 'bi-plus-lg'}" aria-hidden="true"></i>`;
+        const cartLabel = document.createElement('span'); cartLabel.className = 'visually-hidden'; cartLabel.textContent = soldOut ? @json(__('نفد')) : @json(__('أضف :name إلى السلة')).replace(':name', product.name); cartBtn.append(cartLabel);
+        cartForm.append(cartBtn); actions.append(cartForm); buy.append(actions); body.append(buy);
         article.append(body); col.append(article); return col;
     };
     const refresh = async page => {

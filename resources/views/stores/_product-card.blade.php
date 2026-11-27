@@ -25,6 +25,8 @@
         </button>
         @if ($hasDiscount && $product->discount_percentage)
             <span class="ts-market-badge">-{{ $product->discount_percentage }}%</span>
+        @elseif ($product->isNew())
+            <span class="ts-market-badge ts-market-badge--new">{{ __('جديد') }}</span>
         @endif
         @if ($cardImages->count() > 1)
             <button type="button" class="ts-card-nav ts-card-nav--prev" data-dir="-1" aria-label="الصورة السابقة"><i class="bi bi-chevron-right"></i></button>
@@ -67,24 +69,25 @@
         <div class="ts-market-card__meta">
             <span class="{{ $product->stock_quantity > 0 ? 'text-success' : 'text-danger' }}">{{ $product->stock_quantity > 0 ? 'متوفر' : 'نفد' }}</span>
         </div>
-        <div class="ts-market-card__price-row">
-            <span class="ts-market-card__price">{{ $product->formatted_price }}</span>
-            @if ($hasDiscount)
-                <del class="ts-market-card__old">{{ $product->formatted_compare_at_price }}</del>
-                @if ($product->discount_percentage)
-                    <span class="ts-market-card__off">-{{ $product->discount_percentage }}%</span>
+        <div class="ts-market-card__buy">
+            <div class="ts-market-card__price-row">
+                <span class="ts-market-card__price">{{ $product->formatted_price }}</span>
+                @if ($hasDiscount)
+                    <del class="ts-market-card__old">{{ $product->formatted_compare_at_price }}</del>
                 @endif
-            @endif
-        </div>
-        <div class="ts-market-card__actions">
-            <form action="{{ route('customer.cart.store') }}" method="POST" class="flex-fill">
-                @csrf
-                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="ts-market-cart-btn w-100" @disabled($product->stock_quantity < 1)>
-                    <i class="bi bi-cart-plus" aria-hidden="true"></i> {{ $product->stock_quantity < 1 ? 'نفد' : 'أضف للسلة' }}
-                </button>
-            </form>
+            </div>
+            <div class="ts-market-card__actions">
+                <form action="{{ route('customer.cart.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="ts-market-cart-btn" @disabled($product->stock_quantity < 1)
+                            title="{{ $product->stock_quantity < 1 ? __('نفد') : __('أضف للسلة') }}">
+                        <i class="bi {{ $product->stock_quantity < 1 ? 'bi-x-lg' : 'bi-plus-lg' }}" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ $product->stock_quantity < 1 ? __('نفد') : __('أضف :name إلى السلة', ['name' => $product->name]) }}</span>
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </article>

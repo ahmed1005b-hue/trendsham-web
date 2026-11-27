@@ -84,13 +84,14 @@ html.dark .ts-market-card:hover { border-color: #3a4740; box-shadow: 0 6px 18px 
 html.dark .ts-product-thumb, html.dark .ts-thumb { background: linear-gradient(160deg, #26302b, #1d2521); color: var(--tsd-accent); }
 html.dark .ts-product-card__title-link, html.dark .ts-market-card__title-link { color: var(--tsd-text); }
 html.dark .ts-product-card__details { border-top-color: var(--tsd-border); }
-html.dark .ts-market-card__brand, html.dark .ts-market-card__rating-row, html.dark .ts-market-card__meta, html.dark .ts-market-card__reviews { color: var(--tsd-muted); }
+html.dark .ts-market-card__brand { background: rgba(92, 200, 160, .14); color: var(--tsd-accent); }
+html.dark .ts-market-card__rating-row, html.dark .ts-market-card__meta, html.dark .ts-market-card__reviews { color: var(--tsd-muted); }
 html.dark .ts-market-card__stars { color: var(--tsd-text); }
 html.dark .ts-market-card__old { color: #8d978f; }
 html.dark .ts-market-chip--coupon { background: rgba(224, 180, 90, .16); color: var(--tsd-gold); }
 html.dark .ts-market-chip--ship { background: rgba(21, 115, 71, .25); color: #7ed8a8; }
-html.dark .ts-market-cart-btn { background: transparent; }
-html.dark .ts-market-cart-btn:disabled { background: var(--tsd-surface-2); border-color: var(--tsd-border); color: var(--tsd-muted); }
+html.dark .ts-market-cart-btn { background: var(--tsd-accent); color: #0b1a15; }
+html.dark .ts-market-cart-btn:disabled { background: var(--tsd-surface-2); color: var(--tsd-muted); }
 html.dark .ts-market-card__compare { background: rgba(31, 38, 34, .94); color: var(--tsd-text); }
 html.dark .ts-price, html.dark .ts-browse-heading h1, html.dark .ts-browse-empty h2 { color: var(--tsd-accent); }
 html.dark .ts-browse-heading { background: linear-gradient(100deg, #1f2622, #1a201c); }
@@ -257,8 +258,7 @@ html.dark .ts-market-icon-btn { background: rgba(31, 38, 34, .9); color: var(--t
 html.dark .ts-market-icon-btn:hover { color: #ff8f8f; }
 html.dark .ts-market-card__quickview:hover { color: var(--tsd-accent); }
 html.dark .ts-market-card__title-link:hover .ts-market-card__title { color: var(--tsd-accent); }
-html.dark .ts-market-cart-btn { border-color: var(--tsd-accent); color: var(--tsd-accent); }
-html.dark .ts-market-cart-btn:hover:not(:disabled), html.dark .ts-market-cart-btn:focus-visible:not(:disabled) { background: var(--tsd-accent); color: #0b1a15; }
+html.dark .ts-market-cart-btn:hover:not(:disabled), html.dark .ts-market-cart-btn:focus-visible:not(:disabled) { background: var(--tsd-text); color: #0b1a15; }
 html.dark .ts-market-card__placeholder { background: var(--ts-lattice) center/44px, radial-gradient(circle at 50% 42%, #2a3530 0, #1b231f 78%); }
 html.dark .ts-market-card__initial { background: var(--tsd-surface-2); color: var(--tsd-accent); box-shadow: 0 0 0 1px rgba(224, 180, 90, .45), 0 0 0 6px rgba(255, 255, 255, .04); }
 html.dark .ts-market-card__media-wrap:has(.ts-market-card__placeholder) { background: #1b231f; }

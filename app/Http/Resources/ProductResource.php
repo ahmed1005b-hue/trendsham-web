@@ -40,6 +40,7 @@ class ProductResource extends JsonResource
             'admin_approved' => $this->when($this->visibleToOwner($request), fn () => $this->admin_approved_at !== null),
             'rejection_note' => $this->when($this->visibleToOwner($request), fn () => $this->rejection_note),
             'in_stock' => $this->stock_quantity > 0,
+            'is_new' => $this->isNew(),
             'average_rating' => $this->average_rating,
             'reviews_count' => $this->reviews_count,
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
