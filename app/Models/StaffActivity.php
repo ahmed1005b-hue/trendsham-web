@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\OrderRefundCanceller;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +23,11 @@ class StaffActivity extends Model
      */
     public const ACTIONS = [
         'order.status' => 'غيّر حالة الطلب :order من «:from» إلى «:to»',
+        'order.cancel' => 'ألغى الطلب :order — السبب: :reason',
+        'order.refund_cancel' => 'ألغى الطلب المدفوع :order وردّ :amount ل.س للزبون (:method) — السبب: :reason',
         'order.archive' => 'أرشف الطلب :order',
+        'payment.paid' => 'أكّد دفع الطلب :order يدوياً',
+        'payment.failed' => 'علّم دفع الطلب :order كفاشل',
         'order.refused' => 'سجّل رفض استلام طرد في الطلب :order',
         'product.update' => 'عدّل بيانات المنتج «:name»',
         'product.archive' => 'أخفى المنتج «:name» من المتجر',
@@ -112,6 +117,7 @@ class StaffActivity extends Model
                     ->map(fn (string $section) => __(User::EMPLOYEE_SECTIONS[$section] ?? $section))
                     ->implode('، '),
                 $key === 'what' => __((string) $value),
+                $key === 'method' => __(OrderRefundCanceller::METHODS[$value] ?? (string) $value),
                 $key === 'item' => $value === '' ? '' : ' «'.$value.'»',
                 default => (string) $value,
             })

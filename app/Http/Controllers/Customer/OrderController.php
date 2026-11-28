@@ -36,6 +36,7 @@ class OrderController extends Controller
     {
         Gate::authorize('cancel', $order);
         abort_unless($order->status === 'pending', 409, $canceller::NOT_CANCELLABLE);
+        abort_if($order->needsRefundBeforeCancel(), 409, __($canceller::PAID_NEEDS_SUPPORT));
         abort_unless($canceller->cancel($order), 409, $canceller::NOT_CANCELLABLE);
 
         return back()->with('success', 'تم إلغاء الطلب وإرجاع المنتجات للمخزون.');
@@ -46,6 +47,8 @@ class OrderController extends Controller
     {
         Gate::authorize('cancel', $order);
         abort_unless($shipment->order_id === $order->id, 404);
+        abort_if($order->needsRefundBeforeCancel() && $order->shipments()->open()->whereKeyNot($shipment->id)->doesntExist(),
+            409, __($canceller::PAID_NEEDS_SUPPORT));
         abort_unless($canceller->cancelParcel($order, $shipment), 409, $canceller::NOT_CANCELLABLE);
 
         return back()->with('success', __('أُلغي طرد هذا المتجر وأُرجعت منتجاته، وبقية الطلب مستمرة.'));

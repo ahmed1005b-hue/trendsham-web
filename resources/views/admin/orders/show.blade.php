@@ -76,17 +76,68 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <h2 class="h6 mb-3">تحديث حالة الطلب</h2>
-                    <form action="{{ route($employeeMode ? 'employee.orders.updateStatus' : 'admin.orders.updateStatus', $order) }}" method="POST" class="d-flex gap-2">
-                        @csrf @method('PUT')
-                        <select name="status" class="form-select">
-                            @foreach (\App\Models\Order::STATUS_LABELS as $value => $label)
-                                @continue($employeeMode && $order->status !== $value && ! in_array($value, \App\Services\StaffOrderStatusChanger::EMPLOYEE_STATUSES, true))
-                                <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <button class="btn btn-primary">حفظ</button>
-                    </form>
-                    <p class="text-muted small mt-2 mb-0">تحديد "تم التسليم" يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.</p>
+                    @php
+                        $statusRank = \App\Shipping\ParcelService::RANK;
+                        $paidOrder = $order->needsRefundBeforeCancel();
+                        $shippedOrder = \App\Services\StaffOrderStatusChanger::hasShipped($order);
+                    @endphp
+                    @if ($order->status === 'cancelled')
+                        <p class="text-muted small mb-0">{{ __('الطلب ملغى.') }}</p>
+                    @else
+                        {{-- للأمام فقط؛ «مدفوع» من زر تأكيد الدفع؛ الإلغاء قبل الشحن ولغير المدفوع --}}
+                        <form action="{{ route($employeeMode ? 'employee.orders.updateStatus' : 'admin.orders.updateStatus', $order) }}" method="POST" id="tsOrderStatusForm">
+                            @csrf @method('PUT')
+                            <div class="d-flex gap-2">
+                                <select name="status" class="form-select" id="tsOrderStatus">
+                                    <option value="" disabled @selected(! old('status'))>{{ __(\App\Models\Order::STATUS_LABELS[$order->status] ?? $order->status) }} ({{ __('الحالة الحالية') }})</option>
+                                    @foreach (\App\Services\StaffOrderStatusChanger::STATUSES as $value)
+                                        @continue($value !== 'cancelled' && ($statusRank[$value] ?? 0) <= ($statusRank[$order->status] ?? 0))
+                                        @continue($value === 'cancelled' && ($paidOrder || $shippedOrder))
+                                        <option value="{{ $value }}" @selected(old('status') === $value)>{{ __(\App\Models\Order::STATUS_LABELS[$value]) }}</option>
+                                    @endforeach
+                                </select>
+                                <button class="btn btn-primary">حفظ</button>
+                            </div>
+                            <div class="mt-2" id="tsCancelReason" @if (old('status') !== 'cancelled') hidden @endif>
+                                <label for="f-reason" class="form-label small mb-1">{{ __('سبب الإلغاء (يصل للزبون والبائع)') }}</label>
+                                <textarea name="reason" id="f-reason" rows="2" maxlength="500" class="form-control form-control-sm @error('reason') is-invalid @enderror">{{ old('reason') }}</textarea>
+                                @error('reason') <div class="text-danger small">{{ $message }}</div> @enderror
+                            </div>
+                        </form>
+                        <script>
+                        (() => {
+                            const select = document.getElementById('tsOrderStatus');
+                            const box = document.getElementById('tsCancelReason');
+                            const sync = () => { const c = select.value === 'cancelled'; box.hidden = !c; box.querySelector('textarea').required = c; };
+                            select.addEventListener('change', sync); sync();
+                        })();
+                        </script>
+                        <p class="text-muted small mt-2 mb-0">{{ __('الحالة تتقدم للأمام فقط. تحديد «تم التسليم» يحتسب أرباح البائعين تلقائياً ويودعها بمحافظهم.') }}</p>
+                        @if ($shippedOrder)
+                            <p class="alert alert-light border small mt-2 mb-0">{{ __(\App\Services\StaffOrderStatusChanger::SHIPPED_CANCEL_MESSAGE) }}</p>
+                        @elseif ($paidOrder && $employeeMode)
+                            <p class="alert alert-light border small mt-2 mb-0">{{ __(\App\Services\StaffOrderStatusChanger::PAID_CANCEL_MESSAGE) }}</p>
+                        @elseif ($paidOrder)
+                            <details class="mt-3 border rounded p-2" @if ($errors->hasAny(['refund_method']) || old('refund_method')) open @endif>
+                                <summary class="small fw-bold text-danger">{{ __('إلغاء الطلب المدفوع وتسجيل رد المال') }}</summary>
+                                <form action="{{ route('admin.orders.cancelRefund', $order) }}" method="POST" class="mt-2"
+                                    data-confirm="{{ __('ألغِ الطلب وسجّل أنك رددت :amount للزبون؟', ['amount' => number_format($order->total / 100).' ل.س']) }}">
+                                    @csrf
+                                    <p class="small mb-2">{{ __('المبلغ المدفوع الذي يجب رده: :amount. رصيد الهدايا (إن وُجد) يعود للزبون تلقائياً.', ['amount' => number_format($order->total / 100).' ل.س']) }}</p>
+                                    <label for="f-refund_method" class="form-label small mb-1">{{ __('كيف رُدّ المال؟') }}</label>
+                                    <select name="refund_method" id="f-refund_method" required class="form-select form-select-sm mb-2 @error('refund_method') is-invalid @enderror">
+                                        <option value="" disabled @selected(! old('refund_method'))>{{ __('اختر') }}</option>
+                                        @foreach (\App\Services\OrderRefundCanceller::METHODS as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('refund_method') === $value)>{{ __($label) }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="text" name="refund_note" maxlength="255" value="{{ old('refund_note') }}" class="form-control form-control-sm mb-2" placeholder="{{ __('رقم العملية أو ملاحظة (اختياري)') }}">
+                                    <textarea name="reason" rows="2" maxlength="500" required class="form-control form-control-sm mb-2" placeholder="{{ __('سبب الإلغاء (يصل للزبون والبائع)') }}"></textarea>
+                                    <button class="btn btn-sm btn-danger w-100">{{ __('ألغِ الطلب وسجّل رد المال') }}</button>
+                                </form>
+                            </details>
+                        @endif
+                    @endif
                     @if ($employeeMode && $order->isAwaitingOnlinePayment())
                         <p class="alert alert-warning small mt-2 mb-0">{{ __('هذا الطلب ينتظر دفع البطاقة، فلا يُجهَّز قبل تأكيد البنك. يمكنك إلغاؤه فقط.') }}</p>
                     @endif

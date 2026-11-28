@@ -54,7 +54,7 @@ class EmployeeSectionsTest extends TestCase
         $this->actingAs($employee)->post(route('employee.products.approve', $a['product']))->assertForbidden();
         $api = $this->actingAs($employee, 'sanctum');
         $api->getJson('/api/v1/employee/orders')->assertForbidden();
-        $api->putJson("/api/v1/employee/orders/{$a['order']->id}/status", ['status' => 'cancelled'])->assertForbidden();
+        $api->putJson("/api/v1/employee/orders/{$a['order']->id}/status", ['status' => 'cancelled', 'reason' => 'سبب الاختبار'])->assertForbidden();
         $api->getJson('/api/v1/employee/assistant-chats')->assertForbidden();
         $api->postJson("/api/v1/employee/products/{$a['product']->id}/approve")->assertForbidden();
         $this->assertNotSame('cancelled', $a['order']->fresh()->status);

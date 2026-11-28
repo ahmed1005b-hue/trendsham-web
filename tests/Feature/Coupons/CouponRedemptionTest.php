@@ -126,8 +126,8 @@ class CouponRedemptionTest extends TestCase
         $order = $this->checkout($customer, $product);
         $this->deliver($order);
 
-        $this->actingAs(User::factory()->create(['role' => 'admin']))
-            ->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled']);
+        // الفريق لا يلغي طلباً مُسلَّماً من الشاشة؛ آثار الإلغاء نفسها تبقى صحيحة لكل طريق يلغي (رفض الاستلام مثلاً)
+        $order->fresh()->changeStatus('cancelled');
 
         $this->assertSame('available', $coupon->fresh()->status, 'الكوبون يعود للمحفظة');
         $this->assertSame(0, $coupon->campaign->fresh()->redeemed_count);

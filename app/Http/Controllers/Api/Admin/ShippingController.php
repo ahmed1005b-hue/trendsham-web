@@ -47,7 +47,11 @@ class ShippingController extends WebShipmentController
 
     public function update(Request $request, Order $order, Shipment $shipment)
     {
-        parent::update($request, $order, $shipment);
+        try {
+            $this->save($request, $order, $shipment);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => __($e->getMessage())], 422);
+        }
 
         return new OrderResource($order->fresh(['items.vendor', 'payment', 'shipments.shippingCompany', 'shipments.seller', 'user']));
     }

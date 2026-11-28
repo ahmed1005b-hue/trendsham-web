@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Services\OrderRefundCanceller;
 use App\Services\StaffActivityLog;
 use App\Services\StaffOrderStatusChanger;
 use App\Shipping\ParcelService;
 use App\Shipping\ShippingDebt;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -39,16 +42,41 @@ class OrderController extends Controller
     {
         abort_if($request->routeIs('employee.*') && $order->archived_at, 404);
         $validated = $request->validate([
-            'status' => ['required', 'in:pending,paid,processing,shipped,delivered,cancelled'],
+            'status' => ['required', Rule::in(StaffOrderStatusChanger::STATUSES)],
+            'reason' => ['nullable', 'required_if:status,cancelled', 'string', 'max:500'],
+        ], [
+            'status.in' => __('الدفع يُؤكَّد من زر «تم الدفع»، لا من حالة الطلب.'),
+            'reason.required_if' => __('اكتب سبب الإلغاء.'),
         ]);
 
         try {
-            $changer->change($request->user(), $order, $validated['status']);
+            $changer->change($request->user(), $order, $validated['status'], $validated['reason'] ?? null);
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
 
         return back()->with('success', 'تم تحديث حالة الطلب.');
+    }
+
+    /** إلغاء طلب مدفوع مع تسجيل رد المال للزبون (المدير فقط). */
+    public function cancelWithRefund(Request $request, Order $order, OrderRefundCanceller $canceller)
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+            'refund_method' => ['required', Rule::in(array_keys(OrderRefundCanceller::METHODS))],
+            'refund_note' => ['nullable', 'string', 'max:255'],
+        ], [
+            'reason.required' => __('اكتب سبب الإلغاء.'),
+            'refund_method.required' => __('اختر كيف رُدّ المال للزبون.'),
+        ]);
+
+        try {
+            $amount = $canceller->cancel($request->user(), $order, $validated['reason'], $validated['refund_method'], $validated['refund_note'] ?? null);
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', __('أُلغي الطلب وسُجّل رد :amount للزبون.', ['amount' => number_format($amount / 100).' ل.س']));
     }
 
     /** الزبون رفض استلام طرد: يُلغى الطرد، والمنصة تدفع شحنه وتسجّله ديناً عليه. */
@@ -62,6 +90,10 @@ class OrderController extends Controller
             return back()->with('error', __($e->getMessage()));
         }
         app(StaffActivityLog::class)->order($request->user(), 'order.refused', $order);
+        if ($sellerUserId = $shipment->seller?->user_id) {
+            AppNotification::send($sellerUserId, 'seller_order_updated', "تحديث على الطلب #{$order->order_number}",
+                'رفض الزبون استلام طردك، فأُلغي وأُعيدت كمياته إلى مخزونك.', route('seller.orders.show', $order));
+        }
 
         return back()->with('success', $debt > 0
             ? __('سُجّل رفض الاستلام وأُلغي الطلب. أُضيف :fee ديناً على الزبون ومُنع من الدفع عند الاستلام شهراً.', ['fee' => number_format($debt / 100).' ل.س'])

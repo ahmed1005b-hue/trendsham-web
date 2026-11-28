@@ -101,6 +101,15 @@ class Order extends Model
         return static::awaitingOnlinePayment()->where('user_id', $userId)->where('status', 'pending')->count();
     }
 
+    /**
+     * طلب دفع الزبون ثمنه ولم يُرد له بعد: لا يُلغى كاملاً إلا من المدير مع تسجيل رد المال
+     * (OrderRefundCanceller). رصيد الهدايا خارج هذا: يعود تلقائياً عند الإلغاء.
+     */
+    public function needsRefundBeforeCancel(): bool
+    {
+        return $this->payment_status === 'paid' && (int) $this->total > 0;
+    }
+
     /** هل انتهى وقت بدء دفع جديد لطلب البطاقة؟ (لا يُمدَّد حجز المخزون بمحاولات متكررة) */
     public function onlinePaymentWindowClosed(): bool
     {
@@ -118,8 +127,9 @@ class Order extends Model
         return $query->whereIn($query->qualifyColumn('status'), ['pending', 'cancelled'])
             ->where($query->qualifyColumn('payment_status'), '!=', 'paid')
             ->whereHas('payments', fn (Builder $payments) => $payments->where('method', 'card'))
+            // المدفوع ثم المُسترد (إلغاء من المدير مع رد المال) وصل البائع قبل إلغائه: يبقى في سجله
             ->whereDoesntHave('payments', fn (Builder $payments) => $payments
-                ->where('method', 'cash_on_delivery')->orWhere('status', 'paid'));
+                ->where('method', 'cash_on_delivery')->orWhereIn('status', ['paid', 'refunded']));
     }
 
     /** الطلبات التي يراها البائع ويجهّزها (كل طلب إلا ما ينتظر الدفع بالبطاقة). */

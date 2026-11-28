@@ -27,7 +27,7 @@ final class NotificationGroups
             'offers' => ['store_new_offer', 'store_new_product', 'broadcast'],
         ],
         'seller' => [
-            'seller_orders' => ['seller_new_order'],
+            'seller_orders' => ['seller_new_order', 'seller_order_updated'],
             'seller_messages' => ['new_message', 'product_question', 'staff_message'],
             'seller_store' => ['product_approved', 'product_rejected', 'seller_approved', 'seller_rejected', 'showcase_*'],
             'seller_payouts' => ['withdrawal_approved', 'withdrawal_paid', 'withdrawal_rejected'],

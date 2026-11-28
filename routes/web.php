@@ -252,6 +252,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
     Route::post('/orders/{order}/parcels/{shipment}/refused', [AdminOrderController::class, 'markRefused'])->name('orders.refused');
+    Route::post('/orders/{order}/cancel-refund', [AdminOrderController::class, 'cancelWithRefund'])->name('orders.cancelRefund');
 
     Route::get('/withdrawals', [AdminWithdrawalController::class, 'index'])->name('withdrawals.index');
     Route::post('/withdrawals/{withdrawalRequest}/approve', [AdminWithdrawalController::class, 'approve'])->name('withdrawals.approve');

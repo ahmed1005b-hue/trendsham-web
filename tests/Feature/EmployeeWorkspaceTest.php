@@ -58,7 +58,7 @@ class EmployeeWorkspaceTest extends TestCase
         $this->actingAs($this->employee, 'sanctum')->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'paid'])
             ->assertUnprocessable()->assertJsonValidationErrors('status');
         $this->actingAs($this->employee)->put(route('employee.orders.updateStatus', $order), ['status' => 'paid'])
-            ->assertSessionHas('error');
+            ->assertSessionHasErrors('status');
 
         $this->assertSame('pending', $order->fresh()->status);
     }
@@ -74,7 +74,7 @@ class EmployeeWorkspaceTest extends TestCase
             ->assertSessionHas('error');
         $this->assertTrue($order->fresh()->isAwaitingOnlinePayment());
 
-        $this->actingAs($this->employee, 'sanctum')->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'cancelled'])
+        $this->actingAs($this->employee, 'sanctum')->putJson("/api/v1/employee/orders/{$order->id}/status", ['status' => 'cancelled', 'reason' => 'لم يُدفع'])
             ->assertOk();
         $this->assertSame('cancelled', $order->fresh()->status);
     }

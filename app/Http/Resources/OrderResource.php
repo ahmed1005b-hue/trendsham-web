@@ -45,7 +45,9 @@ class OrderResource extends JsonResource
             ] : null,
             'shipping_debt_charged' => (int) $this->shipping_debt_charged / 100, // أجرة طلب رُفض سابقاً أُضيفت لهذا الطلب
             'refused' => $this->refused_at !== null,
-            'can_be_cancelled' => $this->status === 'pending',
+            // المدفوع لا يلغيه الزبون وحده: يلغيه المدير مع رد المال
+            'can_be_cancelled' => $this->status === 'pending' && ! $this->needsRefundBeforeCancel(),
+            'needs_refund_before_cancel' => $this->needsRefundBeforeCancel(),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
             // المتحكمات تحمّل shipment (مفرد) غالباً؛ نعرضها ضمن shipments ليقرأها التطبيق.

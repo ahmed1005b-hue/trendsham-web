@@ -165,7 +165,9 @@ class ParcelService
     {
         $status = $this->statusFromOrder($to);
         foreach ($this->ensureFor($order) as $parcel) {
-            if ($parcel->isOpen() && $parcel->status !== $status) {
+            // طرد سبق الطلب (سُلّم وغيره ما زال يُشحن) لا يُسحب للخلف معه
+            $behind = $status === 'cancelled' || (self::RANK[$parcel->status] ?? 0) < (self::RANK[$status] ?? 0);
+            if ($parcel->isOpen() && $parcel->status !== $status && $behind) {
                 $this->move($order, Shipment::whereKey($parcel->id)->lockForUpdate()->first(), $status, partial: false);
             }
         }

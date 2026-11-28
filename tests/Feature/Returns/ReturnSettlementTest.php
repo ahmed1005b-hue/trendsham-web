@@ -21,6 +21,7 @@ use App\Returns\Models\ReturnItem;
 use App\Returns\Models\ReturnRequest;
 use App\Returns\ReturnService;
 use App\Returns\ReturnSettlement;
+use App\Services\StaffOrderStatusChanger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Loyalty\LoyaltyTestHelpers;
 use Tests\TestCase;
@@ -258,13 +259,14 @@ class ReturnSettlementTest extends TestCase
         $requested = $this->service()->create($this->customer, $order, [$line->id => 1], 'changed_mind', null);
         $assertBlocked();
 
-        // نفس الرسالة عبر لوحة المدير وتطبيقه
+        // لوحة المدير وتطبيقه: الطلب المُسلَّم لا يُلغى أصلاً، فالطريق طلب الإرجاع
+        $shipped = __(StaffOrderStatusChanger::SHIPPED_CANCEL_MESSAGE);
         $this->actingAs($this->admin)->from('/back')
-            ->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled'])
-            ->assertRedirect('/back')->assertSessionHas('error', self::OPEN_RETURN_MESSAGE);
+            ->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled', 'reason' => 'سبب الاختبار'])
+            ->assertRedirect('/back')->assertSessionHas('error', $shipped);
         $this->actingAs($this->admin, 'sanctum')
-            ->putJson('/api/v1/admin/orders/'.$order->id.'/status', ['status' => 'cancelled'])
-            ->assertStatus(422)->assertJson(['message' => self::OPEN_RETURN_MESSAGE]);
+            ->putJson('/api/v1/admin/orders/'.$order->id.'/status', ['status' => 'cancelled', 'reason' => 'سبب الاختبار'])
+            ->assertStatus(422)->assertJson(['message' => $shipped]);
 
         $approved = $this->service()->sellerApprove($seller, $requested);
         $assertBlocked();

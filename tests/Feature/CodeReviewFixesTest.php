@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -100,7 +101,7 @@ class CodeReviewFixesTest extends TestCase
         $this->assertSame('paid', $a->fresh()->status);
         $this->assertSame('duplicate', $b->fresh()->status);
         $this->assertSame('TX-B', $b->fresh()->gateway_txn_id);
-        $this->assertTrue(\App\Models\AppNotification::where('type', 'payment_duplicate')->exists());
+        $this->assertTrue(AppNotification::where('type', 'payment_duplicate')->exists());
     }
 
     public function test_bank_5xx_does_not_refund_seller_and_unknown_status_is_not_failure(): void
@@ -147,7 +148,7 @@ class CodeReviewFixesTest extends TestCase
             app('router')->getRoutes()->match(request()->create('/seller/showcases/slots-availability', 'GET'))->getName());
     }
 
-    public function test_cancelling_delivered_order_from_api_reverses_wallet_and_ledger(): void
+    public function test_a_delivered_order_keeps_earnings_from_the_app_and_a_model_cancel_reverses_them_once(): void
     {
         [$sellerUser, $vendor] = $this->seller();
         $category = Category::create(['name' => 'c', 'slug' => 'c']);
@@ -160,12 +161,16 @@ class CodeReviewFixesTest extends TestCase
         $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'delivered'])->assertOk();
         $this->assertSame(9000, $vendor->wallet()->first()->balance);
 
-        $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'cancelled'])->assertOk();
+        // من التطبيق: الطلب المُسلَّم لا يُلغى (البضاعة عند الزبون، والإرجاع له طريقه) فتبقى الأرباح
+        $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'cancelled', 'reason' => 'سبب الاختبار'])
+            ->assertUnprocessable();
+        $this->assertSame(9000, $vendor->wallet()->first()->balance);
+
+        // إلغاء يمر بالنموذج (رفض استلام مثلاً) يعكس الأرباح والقيود مرة واحدة فقط
+        $order->fresh()->changeStatus('cancelled');
         $this->assertSame(0, $vendor->wallet()->first()->balance, 'أرباح الطلب المسترجع تُخصم من المحفظة');
         $this->assertDatabaseHas('ledger_entries', ['seller_id' => $sellerUser->id, 'entry_type' => 'refund']);
-
-        // تكرار الإلغاء لا يخصم مرتين
-        $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'cancelled'])->assertOk();
+        $order->fresh()->changeStatus('cancelled');
         $this->assertSame(0, $vendor->wallet()->first()->balance);
     }
 }

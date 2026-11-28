@@ -20,9 +20,9 @@ class PaymentController extends WebPaymentController
         return $this->order($order);
     }
 
-    public function markFailed(Order $order)
+    public function markFailed(Request $request, Order $order)
     {
-        parent::markFailed($order);
+        parent::markFailed($request, $order);
 
         return $this->order($order);
     }

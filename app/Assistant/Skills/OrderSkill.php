@@ -79,6 +79,9 @@ class OrderSkill
         }
 
         $order = $candidates->first();
+        if ($order->needsRefundBeforeCancel()) {
+            return new AssistantReply(CustomerOrderCanceller::PAID_NEEDS_SUPPORT, 'cancel_order', chips: [Chips::HUMAN, Chips::TRACK]);
+        }
 
         return new AssistantReply(
             "متأكد إنك بدك تلغي الطلب {$order->order_number} بقيمة ".number_format($order->total / 100).' ل.س؟',
@@ -94,6 +97,9 @@ class OrderSkill
         // التأكيد صالح فقط لصاحب الطلب نفسه، والطلب ما زال قيد المراجعة
         $order = $ctx->isCustomer() ? Order::where('user_id', $ctx->user->id)->find($orderId) : null;
 
+        if ($order?->needsRefundBeforeCancel()) {
+            return new AssistantReply(CustomerOrderCanceller::PAID_NEEDS_SUPPORT, 'cancel_order', chips: [Chips::HUMAN, Chips::TRACK]);
+        }
         if (! $order || ! $this->canceller->cancel($order)) {
             return new AssistantReply('ما قدرت ألغي الطلب: يبدو إنه دخل مرحلة التجهيز. فيك تحكي مع موظف إذا بتحب.', 'cancel_order', chips: [Chips::TRACK, Chips::HUMAN]);
         }

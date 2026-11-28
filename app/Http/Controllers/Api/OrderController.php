@@ -44,6 +44,7 @@ class OrderController extends Controller
     {
         Gate::authorize('cancel', $order);
         abort_unless($order->status === 'pending', 409, $canceller::NOT_CANCELLABLE);
+        abort_if($order->needsRefundBeforeCancel(), 409, __($canceller::PAID_NEEDS_SUPPORT));
         abort_unless($canceller->cancel($order), 409, $canceller::NOT_CANCELLABLE);
 
         return new OrderResource($order->fresh(['items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipments.seller', 'shipments.shippingCompany']));
@@ -54,6 +55,8 @@ class OrderController extends Controller
     {
         Gate::authorize('cancel', $order);
         abort_unless($shipment->order_id === $order->id, 404);
+        abort_if($order->needsRefundBeforeCancel() && $order->shipments()->open()->whereKeyNot($shipment->id)->doesntExist(),
+            409, __($canceller::PAID_NEEDS_SUPPORT));
         abort_unless($canceller->cancelParcel($order, $shipment), 409, $canceller::NOT_CANCELLABLE);
 
         return new OrderResource($order->fresh(['items.review', 'items.product.primaryImage', 'items.product.images', 'items.product.activeDailyDeal', 'items.vendor', 'payment', 'shipments.seller', 'shipments.shippingCompany']));

@@ -46,11 +46,14 @@ class EmployeeController extends Controller
     {
         abort_if($order->archived_at, 404);
         $validated = $request->validate([
-            'status' => ['required', Rule::in(StaffOrderStatusChanger::EMPLOYEE_STATUSES)],
+            'status' => ['required', Rule::in(StaffOrderStatusChanger::STATUSES)],
+            'reason' => ['nullable', 'required_if:status,cancelled', 'string', 'max:500'],
+        ], [
+            'reason.required_if' => __('اكتب سبب الإلغاء.'),
         ]);
 
         try {
-            $changer->change($request->user(), $order, $validated['status']);
+            $changer->change($request->user(), $order, $validated['status'], $validated['reason'] ?? null);
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

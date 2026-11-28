@@ -30,7 +30,9 @@
             </div>
         @endif
 
-        @if ($order->status === 'pending')
+        @if ($order->status === 'pending' && $order->needsRefundBeforeCancel())
+            <div class="alert alert-light border small">{{ __(\App\Services\CustomerOrderCanceller::PAID_NEEDS_SUPPORT) }}</div>
+        @elseif ($order->status === 'pending')
             <div class="alert alert-light border d-flex justify-content-between align-items-center">
                 <span class="small">طلبك لسا قيد المراجعة، بتقدر تلغيه لو غيّرت رأيك.</span>
                 <form action="{{ route('customer.orders.cancel', $order) }}" method="POST"

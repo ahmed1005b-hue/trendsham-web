@@ -17,11 +17,15 @@ class CustomerOrderCanceller
 {
     public const NOT_CANCELLABLE = 'ما بقدر تلغي طلب دخل مرحلة التجهيز أو تجاوزها.';
 
+    /** الطلب المدفوع يلغيه المدير مع رد المال (OrderRefundCanceller)، لا الزبون وحده. */
+    public const PAID_NEEDS_SUPPORT = 'طلبك مدفوع، فإلغاؤه يكون عن طريق فريق الدعم حتى يُرد لك المبلغ. تواصل معنا وسنساعدك.';
+
     /** @return bool false إذا لم يعد الطلب قابلاً للإلغاء */
     public function cancel(Order $order): bool
     {
         $done = DB::transaction(function () use ($order) {
-            if (Order::whereKey($order->id)->lockForUpdate()->value('status') !== 'pending') {
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if ($locked?->status !== 'pending' || $locked->needsRefundBeforeCancel()) {
                 return false;
             }
 

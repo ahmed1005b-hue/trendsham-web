@@ -218,8 +218,8 @@ class SellerOrdersAndStockTest extends TestCase
         $order = $this->order(User::factory()->create(), [[$product, 2, null]], 'processing');
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled']);
-        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled']); // تكرار
+        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled', 'reason' => 'نفد المنتج']);
+        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled', 'reason' => 'نفد المنتج']); // تكرار
 
         $this->assertSame(10, $product->fresh()->stock_quantity, 'إلغاء الإدارة يرجع الكمية مرة واحدة فقط');
     }
@@ -236,18 +236,25 @@ class SellerOrdersAndStockTest extends TestCase
         $this->assertSame('cancelled', $order->fresh()->status, 'الكمية رجعت للمخزون، فلا يُعاد فتح الطلب');
     }
 
-    public function test_cancel_after_moving_delivered_order_backwards_still_reverses_earnings(): void
+    /** الطلب المُسلَّم لا يُرجَع للخلف ولا يُلغى: البضاعة عند الزبون، والإرجاع له طريقه. */
+    public function test_a_delivered_order_cannot_be_moved_back_or_cancelled_by_staff(): void
     {
         [, $vendor] = $this->seller();
-        $order = $this->order(User::factory()->create(), [[$this->product($vendor), 1, null]], 'shipped');
+        $product = $this->product($vendor);
+        $order = $this->order(User::factory()->create(), [[$product, 1, null]], 'shipped');
         $admin = User::factory()->create(['role' => 'admin']);
 
-        foreach (['delivered', 'processing', 'cancelled'] as $status) {
-            $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => $status]);
-        }
+        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'delivered'])->assertSessionHas('success');
+        $earned = $vendor->wallet()->first()->balance;
+        $stock = $product->fresh()->stock_quantity;
 
-        $this->assertSame('cancelled', $order->fresh()->status);
-        $this->assertSame(0, $vendor->wallet()->first()->balance, 'بضاعة رجعت للمخزون = لا تبقى أرباحها للبائع');
+        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'processing'])->assertSessionHas('error');
+        $this->actingAs($admin)->put(route('admin.orders.updateStatus', $order), ['status' => 'cancelled', 'reason' => 'خطأ'])->assertSessionHas('error');
+
+        $this->assertSame('delivered', $order->fresh()->status);
+        $this->assertGreaterThan(0, $earned);
+        $this->assertSame($earned, $vendor->wallet()->first()->balance, 'أرباح البائع تبقى');
+        $this->assertSame($stock, $product->fresh()->stock_quantity, 'لا تعود للمخزون كمية عند الزبون');
     }
 
     public function test_customer_double_cancel_returns_stock_once(): void
@@ -270,7 +277,7 @@ class SellerOrdersAndStockTest extends TestCase
         $order = $this->order(User::factory()->create(), [[$product, 2, null]], 'processing');
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'cancelled'])->assertOk();
+        $this->actingAs($admin, 'sanctum')->putJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'cancelled', 'reason' => 'نفد المنتج'])->assertOk();
 
         $this->assertSame(10, $product->fresh()->stock_quantity);
     }

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AppNotification;
 use App\Models\Order;
 use App\Payments\Contracts\WebhookEvent;
 use App\Services\PaymentService;
+use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -26,7 +27,7 @@ class PaymentController extends Controller
 
         // تأكد وجود مرجع لPaymentService (متوافق مع سجلات الدفع القديمة)
         if (empty($p->reference)) {
-            $p->update(['reference' => (string) \Illuminate\Support\Str::uuid()]);
+            $p->update(['reference' => (string) Str::uuid()]);
             $p->refresh();
         }
 
@@ -47,11 +48,12 @@ class PaymentController extends Controller
         }
 
         // إشعار العميل يرسله PaymentService::apply
+        app(StaffActivityLog::class)->order($request->user(), 'payment.paid', $order);
 
         return back()->with('success', 'تم تأكيد الدفع.');
     }
 
-    public function markFailed(Order $order)
+    public function markFailed(Request $request, Order $order)
     {
         $p = $order->payments()->latest()->first() ?? $order->payment;
         abort_unless($p && $p->status === 'pending', 409, 'تمت معالجة الدفع مسبقاً.');
@@ -60,6 +62,7 @@ class PaymentController extends Controller
         if (($order->payment_status ?? null) === 'unpaid') {
             $order->update(['payment_status' => 'failed']);
         }
+        app(StaffActivityLog::class)->order($request->user(), 'payment.failed', $order);
 
         return back()->with('success', 'تم تعليم الدفع كفاشل.');
     }

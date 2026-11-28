@@ -421,6 +421,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
         Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::post('/orders/{order}/cancel-refund', [AdminOrderController::class, 'cancelWithRefund']);
 
         Route::get('/withdrawals', [AdminWithdrawalController::class, 'index']);
         Route::post('/withdrawals/{withdrawalRequest}/approve', [AdminWithdrawalController::class, 'approve']);

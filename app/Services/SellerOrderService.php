@@ -77,10 +77,15 @@ class SellerOrderService
         }
 
         // الانتقال يُفحص على الحالة المقفولة: إن غيّرتها الإدارة لحظتها (مثلاً شحنت الطرد) يُرفض إلغاء البائع
-        app(ParcelService::class)->change($parcel, $to, function (Shipment $locked) use ($to) {
+        app(ParcelService::class)->change($parcel, $to, function (Shipment $locked, Order $lockedOrder) use ($to) {
             $from = $locked->status;
             if (! $this->transitionAllowed($from, $to)) {
                 throw new \DomainException(__('لا يمكن نقل الطلب من ":from" إلى ":to".', ['from' => __(Shipment::STATUS_LABELS[$from] ?? $from), 'to' => __(Shipment::STATUS_LABELS[$to] ?? $to)]));
+            }
+            // آخر طرد في طلب مدفوع: إلغاؤه يلغي الطلب كله، والمال يرده المدير
+            if ($to === 'cancelled' && $lockedOrder->needsRefundBeforeCancel()
+                && $lockedOrder->shipments()->open()->whereKeyNot($locked->id)->doesntExist()) {
+                throw new \DomainException(__('هذا الطلب مدفوع، فإلغاؤه كاملاً يكون عن طريق فريق الدعم حتى يُرد المبلغ للزبون. تواصل مع الدعم.'));
             }
         });
 
