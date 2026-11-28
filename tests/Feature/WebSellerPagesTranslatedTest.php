@@ -37,7 +37,7 @@ class WebSellerPagesTranslatedTest extends TestCase
         CartItem::create(['user_id' => $customer->id, 'product_id' => $product->id, 'quantity' => 1]);
         $this->actingAs($customer)->post('/customer/checkout', [
             'shipping_name' => 'Sam Lee', 'shipping_phone' => '0999999999',
-            'shipping_address' => 'Damascus', 'payment_method' => 'cash_on_delivery',
+            'shipping_address' => 'Damascus', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ]);
         $order = Order::firstOrFail();
         auth()->logout();

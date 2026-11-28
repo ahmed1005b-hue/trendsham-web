@@ -147,10 +147,15 @@ class CheckoutController extends Controller
             'pickup_center_id' => ['nullable', 'required_if:delivery_method,center', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
             'shipping_address' => ['nullable', 'required_unless:delivery_method,center', 'string', 'max:1000'],
             'payment_method' => ['required', 'in:cash_on_delivery,card'],
+            'cod_confirmed' => ['accepted_if:payment_method,cash_on_delivery'],   // تعهّد صريح بالدفع عند الاستلام
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
             'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
             ...ShippingChoice::rules(),
-        ], ['pickup_center_id.required_if' => __('اختر مركز الشحن الذي ستستلم منه الطلب.')]);
+        ], [
+            'pickup_center_id.required_if' => __('اختر مركز الشحن الذي ستستلم منه الطلب.'),
+            'payment_method.required' => __('اختر طريقة الدفع.'),
+            'cod_confirmed.accepted_if' => __('أكّد أنك ستدفع المبلغ نقداً عند الاستلام، أو اختر الدفع بالبطاقة.'),
+        ]);
 
         // البطاقة فقط حين يكون الدفع الإلكتروني مفعّلاً، وإلا بقي الطلب بلا طريقة دفع حقيقية
         if ($validated['payment_method'] === 'card' && ! app(PaymentService::class)->onlineEnabled()) {

@@ -21,7 +21,7 @@ class CouponApiTest extends TestCase
 
     private function payload(array $extra = []): array
     {
-        return ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery'] + $extra;
+        return ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true] + $extra;
     }
 
     public function test_wallet_lists_available_coupons(): void

@@ -42,7 +42,7 @@ class StoreParcelsTest extends TestCase
             'unit_price' => $this->b['product']->price, 'original_unit_price' => $this->b['product']->price]);
 
         $this->actingAs($this->customer)->post(route('customer.checkout.store'), [
-            'shipping_name' => 'Sam', 'shipping_phone' => '0999999999', 'shipping_address' => 'Aleppo', 'payment_method' => $payment,
+            'shipping_name' => 'Sam', 'shipping_phone' => '0999999999', 'shipping_address' => 'Aleppo', 'payment_method' => $payment, 'cod_confirmed' => true,
         ])->assertRedirect();
 
         return Order::where('user_id', $this->customer->id)->latest('id')->firstOrFail();

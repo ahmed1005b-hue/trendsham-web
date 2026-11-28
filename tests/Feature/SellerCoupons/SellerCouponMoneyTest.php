@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\SellerCoupons;
 
+use App\Coupons\CouponSelector;
 use App\Coupons\Models\CouponRedemption;
 use App\Loyalty\LoyaltyLedger;
 use App\Loyalty\Models\LoyaltyTransaction;
@@ -72,7 +73,7 @@ class SellerCouponMoneyTest extends TestCase
 
         $this->actingAs($u)->post(route('customer.checkout.store'), [
             'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b',
-            'payment_method' => 'cash_on_delivery', 'use_points' => 20,
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true, 'use_points' => 20,
         ]);
         $order = $u->orders()->latest('id')->first();
 
@@ -91,7 +92,7 @@ class SellerCouponMoneyTest extends TestCase
         $this->cartLine($u, $mine);
         $this->cartLine($u, $other);
 
-        $res = app(\App\Coupons\CouponSelector::class)->best($u, collect([
+        $res = app(CouponSelector::class)->best($u, collect([
             (object) ['product' => $mine, 'product_id' => $mine->id, 'subtotal' => 5_000_000],
             (object) ['product' => $other, 'product_id' => $other->id, 'subtotal' => 5_000_000],
         ]), $this->shipping);

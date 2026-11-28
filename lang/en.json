@@ -3794,5 +3794,8 @@
     "حذف عرضاً يومياً": "Deleted a daily deal",
     "نشر قصة": "Posted a story",
     "حذف قصة": "Deleted a story",
-    "أجاب على سؤال عن منتج": "Answered a product question"
+    "أجاب على سؤال عن منتج": "Answered a product question",
+    "اختر طريقة الدفع.": "Choose a payment method.",
+    "أؤكد أني سأدفع المبلغ كاملاً نقداً عند استلام الطلب.": "I confirm I will pay the full amount in cash when I receive the order.",
+    "أكّد أنك ستدفع المبلغ نقداً عند الاستلام، أو اختر الدفع بالبطاقة.": "Confirm you will pay in cash on delivery, or choose card payment."
 }

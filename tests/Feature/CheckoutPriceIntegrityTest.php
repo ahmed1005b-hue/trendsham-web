@@ -24,7 +24,7 @@ class CheckoutPriceIntegrityTest extends TestCase
     use BuildsTenants;
     use RefreshDatabase;
 
-    private const PAYLOAD = ['shipping_name' => 'زبون', 'shipping_phone' => '0999999999', 'shipping_address' => 'دمشق', 'payment_method' => 'cash_on_delivery'];
+    private const PAYLOAD = ['shipping_name' => 'زبون', 'shipping_phone' => '0999999999', 'shipping_address' => 'دمشق', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true];
 
     protected function setUp(): void
     {

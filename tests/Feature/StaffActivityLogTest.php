@@ -44,7 +44,7 @@ class StaffActivityLogTest extends TestCase
 
         return Order::findOrFail($this->actingAs($tenant['customer'], 'sanctum')->postJson('/api/v1/checkout', [
             'shipping_name' => 'زبون', 'shipping_phone' => '0999999999', 'shipping_address' => 'دمشق',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ])->assertCreated()->json('data.id'));
     }
 

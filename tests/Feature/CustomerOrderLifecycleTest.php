@@ -27,10 +27,10 @@ class CustomerOrderLifecycleTest extends TestCase
 
         return Product::create([
             'vendor_id' => $profile->id,
-            'category_id' => Category::create(['name' => 'قسم', 'slug' => 'cat-' . uniqid()])->id,
+            'category_id' => Category::create(['name' => 'قسم', 'slug' => 'cat-'.uniqid()])->id,
             'name' => 'منتج اختبار',
-            'slug' => 'test-product-' . uniqid(),
-            'sku' => 'SKU-' . uniqid(),
+            'slug' => 'test-product-'.uniqid(),
+            'sku' => 'SKU-'.uniqid(),
             'price' => $price,
             'stock_quantity' => $stock,
             'status' => 'active',
@@ -55,7 +55,7 @@ class CustomerOrderLifecycleTest extends TestCase
             'shipping_name' => 'زبون تجريبي',
             'shipping_phone' => '0999999999',
             'shipping_address' => 'دمشق - شارع الاختبار',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ]);
 
         return [$customer, $product, Order::firstOrFail()];

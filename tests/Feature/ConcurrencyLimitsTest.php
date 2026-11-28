@@ -20,7 +20,7 @@ class ConcurrencyLimitsTest extends TestCase
 
     private function payload(): array
     {
-        return ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery'];
+        return ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true];
     }
 
     /** بند السلة بسعر العرض (أرخص من السعر الأصلي). */

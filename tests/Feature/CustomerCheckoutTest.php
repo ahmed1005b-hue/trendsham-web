@@ -59,7 +59,7 @@ class CustomerCheckoutTest extends TestCase
             'shipping_name' => 'زبون تجريبي',
             'shipping_phone' => '0999999999',
             'shipping_address' => 'دمشق - شارع الاختبار',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ];
     }
 
@@ -243,5 +243,38 @@ class CustomerCheckoutTest extends TestCase
             ->assertSessionHasErrors('payment_method');
 
         $this->assertNull(Order::first());
+    }
+
+    /** الدفع عند الاستلام بلا تعهّد صريح من الزبون لا يُنشئ طلباً ولا يصل للبائع. */
+    public function test_cash_on_delivery_needs_the_customer_to_confirm_paying_at_delivery(): void
+    {
+        $product = $this->makeLiveProduct();
+        $customer = $this->actingAsCustomerWithCart($product);
+        $payload = $this->checkoutPayload();
+        unset($payload['cod_confirmed']);
+
+        $this->post('/customer/checkout', $payload)->assertSessionHasErrors('cod_confirmed');
+        $this->post('/customer/checkout', ['payment_method' => ''] + $payload)->assertSessionHasErrors('payment_method');
+
+        $this->actingAs($customer, 'sanctum')->postJson('/api/v1/checkout', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors('cod_confirmed');
+
+        $this->assertNull(Order::first());
+        $this->assertSame(1, $customer->cartItems()->count());
+        $this->assertDatabaseMissing('notifications', ['type' => 'seller_new_order']);
+
+        $this->actingAs($customer)->post('/customer/checkout', $payload + ['cod_confirmed' => '1'])->assertSessionHasNoErrors();
+        $this->assertNotNull(Order::first());
+    }
+
+    public function test_checkout_page_does_not_pick_a_payment_method_for_the_customer(): void
+    {
+        $this->actingAsCustomerWithCart($this->makeLiveProduct());
+
+        $this->get(route('customer.checkout.show'))
+            ->assertOk()
+            ->assertSee('اختر طريقة الدفع')
+            ->assertSee('name="cod_confirmed"', false)
+            ->assertDontSee('<option value="cash_on_delivery" selected', false);
     }
 }

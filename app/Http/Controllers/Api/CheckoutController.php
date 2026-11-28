@@ -110,11 +110,15 @@ class CheckoutController extends Controller
             'pickup_center_id' => ['nullable', 'required_if:delivery_method,center', Rule::exists('shipping_centers', 'id')->where('is_active', true)],
             'shipping_address' => ['nullable', 'required_unless:delivery_method,center', 'string', 'max:1000'],
             'payment_method' => ['required', 'in:cash_on_delivery,card'],
+            'cod_confirmed' => ['accepted_if:payment_method,cash_on_delivery'],   // تعهّد صريح بالدفع عند الاستلام
             // كوبون المحفظة: غائب = الأفضل تلقائياً، null/0 = بلا كوبون، رقم = كوبون اختاره العميل
             'customer_coupon_id' => ['nullable', 'integer'],
             'use_points' => ['nullable', 'integer', 'min:0'],   // نقاط الولاء كخصم
             'use_gift_balance' => ['nullable', 'boolean'],      // رصيد بطاقات الهدايا
             ...ShippingChoice::rules(),
+        ], [
+            'payment_method.required' => __('اختر طريقة الدفع.'),
+            'cod_confirmed.accepted_if' => __('أكّد أنك ستدفع المبلغ نقداً عند الاستلام، أو اختر الدفع بالبطاقة.'),
         ]);
         $couponChoice = $request->has('customer_coupon_id') ? ($request->integer('customer_coupon_id') ?: 'none') : null;
 

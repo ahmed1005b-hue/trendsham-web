@@ -39,7 +39,7 @@ class EmployeeWorkspaceTest extends TestCase
 
         $orderId = $this->actingAs($tenant['customer'], 'sanctum')->postJson('/api/v1/checkout', [
             'shipping_name' => 'زبون', 'shipping_phone' => '0999999999', 'shipping_address' => 'دمشق',
-            'payment_method' => $method,
+            'payment_method' => $method, 'cod_confirmed' => true,
         ])->assertCreated()->json('data.id');
 
         return Order::findOrFail($orderId);

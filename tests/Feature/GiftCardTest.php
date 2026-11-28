@@ -122,7 +122,7 @@ class GiftCardTest extends TestCase
     private function checkoutPayload(string $method = 'cash_on_delivery'): array
     {
         return ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b',
-            'payment_method' => $method, 'use_gift_balance' => '1'];
+            'payment_method' => $method, 'cod_confirmed' => true, 'use_gift_balance' => '1'];
     }
 
     public function test_checkout_pays_part_with_gift_balance_and_cancel_returns_it(): void

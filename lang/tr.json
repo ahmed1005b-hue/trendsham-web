@@ -3795,5 +3795,8 @@
     "حذف عرضاً يومياً": "Günlük fırsatı sildi",
     "نشر قصة": "Hikâye paylaştı",
     "حذف قصة": "Hikâyeyi sildi",
-    "أجاب على سؤال عن منتج": "Bir ürün sorusunu yanıtladı"
+    "أجاب على سؤال عن منتج": "Bir ürün sorusunu yanıtladı",
+    "اختر طريقة الدفع.": "Bir ödeme yöntemi seçin.",
+    "أؤكد أني سأدفع المبلغ كاملاً نقداً عند استلام الطلب.": "Siparişi teslim aldığımda tutarın tamamını nakit ödeyeceğimi onaylıyorum.",
+    "أكّد أنك ستدفع المبلغ نقداً عند الاستلام، أو اختر الدفع بالبطاقة.": "Teslimatta nakit ödeyeceğinizi onaylayın veya kartla ödemeyi seçin."
 }

@@ -7,6 +7,7 @@ use App\Coupons\Models\CustomerCoupon;
 use App\Loyalty\Models\LoyaltyTransaction as Tx;
 use App\Loyalty\PointsCouponIssuer;
 use App\Models\CartItem;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -69,7 +70,7 @@ class CouponConversionTest extends TestCase
         CartItem::create(['user_id' => $u->id, 'product_id' => $p->id, 'quantity' => 1, 'unit_price' => $p->price]);
 
         $this->actingAs($u)->withSession(['checkout_coupon' => $coupon->id])->post(route('customer.checkout.store'), [
-            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery',
+            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ])->assertSessionHasNoErrors();
 
         $order = $u->orders()->latest('id')->firstOrFail();
@@ -98,7 +99,7 @@ class CouponConversionTest extends TestCase
         $this->grant($u, 20);
         app(PointsCouponIssuer::class)->convert($u, 20);
 
-        $this->actingAs(\App\Models\User::factory()->create(['role' => 'admin']))
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
             ->get(route('admin.coupon-campaigns.index'))->assertOk()->assertDontSee('خصم نقاط الولاء');
     }
 }

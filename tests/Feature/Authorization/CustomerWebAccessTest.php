@@ -200,7 +200,7 @@ class CustomerWebAccessTest extends TestCase
     private function checkoutPayload(array $extra = []): array
     {
         return $extra + [
-            'shipping_name' => 'A', 'shipping_phone' => '0911111111', 'shipping_address' => 'Addr', 'payment_method' => 'cash_on_delivery',
+            'shipping_name' => 'A', 'shipping_phone' => '0911111111', 'shipping_address' => 'Addr', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ];
     }
 

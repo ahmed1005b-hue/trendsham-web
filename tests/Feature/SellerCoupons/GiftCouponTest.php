@@ -103,7 +103,7 @@ class GiftCouponTest extends TestCase
         $this->cartLine($u, $buy);
 
         $this->actingAs($u, 'sanctum')->postJson('/api/v1/checkout', [
-            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery',
+            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ])->assertSuccessful();
 
         $order = $u->orders()->latest('id')->first();

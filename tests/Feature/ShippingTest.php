@@ -27,7 +27,7 @@ class ShippingTest extends TestCase
 
     private function payload(array $overrides = []): array
     {
-        return $overrides + ['shipping_name' => 'Sam', 'shipping_phone' => '0999999999', 'shipping_address' => 'Damascus', 'payment_method' => 'cash_on_delivery'];
+        return $overrides + ['shipping_name' => 'Sam', 'shipping_phone' => '0999999999', 'shipping_address' => 'Damascus', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true];
     }
 
     private function lastOrder(User $user): Order

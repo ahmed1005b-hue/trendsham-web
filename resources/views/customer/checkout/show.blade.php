@@ -87,15 +87,22 @@
                             @if ($codBlocked)
                                 <div class="alert alert-warning small py-2 mb-2"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ \App\Shipping\ShippingDebt::codBlockedMessage(auth()->user()) }}</div>
                             @endif
-                            <select id="f-payment_method" name="payment_method" class="form-select @error('payment_method') is-invalid @enderror">
+                            {{-- لا طريقة دفع مختارة مسبقاً: الطلب لا يصل للبائع إلا بدفع إلكتروني ناجح أو تعهّد صريح بالدفع عند الاستلام --}}
+                            <select id="f-payment_method" name="payment_method" required class="form-select @error('payment_method') is-invalid @enderror">
+                                <option value="" disabled @selected(! old('payment_method'))>{{ __('اختر طريقة الدفع') }}</option>
                                 @unless ($codBlocked)
-                                    <option value="cash_on_delivery">الدفع عند الاستلام</option>
+                                    <option value="cash_on_delivery" @selected(old('payment_method') === 'cash_on_delivery')>الدفع عند الاستلام</option>
                                 @endunless
                                 @if (app(\App\Services\PaymentService::class)->onlineEnabled())
                                     <option value="card" @selected(old('payment_method') === 'card')>بطاقة بنكية (دفع إلكتروني آمن)</option>
                                 @endif
                                 </select>
                             @error('payment_method') <div class="text-danger small">{{ $message }}</div> @enderror
+                            <div class="form-check border rounded p-2 ps-5 mt-2" id="tsCodConfirm" @if (old('payment_method') !== 'cash_on_delivery') hidden @endif>
+                                <input class="form-check-input @error('cod_confirmed') is-invalid @enderror" type="checkbox" name="cod_confirmed" value="1" id="f-cod_confirmed" @checked(old('cod_confirmed'))>
+                                <label class="form-check-label" for="f-cod_confirmed">{{ __('أؤكد أني سأدفع المبلغ كاملاً نقداً عند استلام الطلب.') }}</label>
+                                @error('cod_confirmed') <div class="text-danger small">{{ $message }}</div> @enderror
+                            </div>
                         </div>
                         @if ($loyalty['enabled'] && $loyalty['balance'] > 0)
                             <div class="ts-pts-use mb-3" id="tsPointsBox">
@@ -307,6 +314,16 @@
         sessionStorage.removeItem(KEY);
         if (draft) fields.forEach(f => { if (draft[f] != null && form.elements[f]) form.elements[f].value = draft[f]; });
     } catch (e) {}
+    // تعهّد الدفع عند الاستلام يظهر ويصير إلزامياً فقط حين يختاره الزبون
+    const pay = form.elements['payment_method'];
+    const codBox = document.getElementById('tsCodConfirm');
+    const syncCod = () => {
+        const cod = pay.value === 'cash_on_delivery';
+        codBox.hidden = !cod;
+        codBox.querySelector('input').required = cod;
+    };
+    pay.addEventListener('change', syncCod);
+    syncCod();
     document.querySelectorAll('[data-ts-ship-choice]').forEach(el => el.addEventListener('change', () => {
         try { sessionStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map(f => [f, form.elements[f]?.value])))); } catch (e) {}
         choice.requestSubmit ? choice.requestSubmit() : choice.submit();

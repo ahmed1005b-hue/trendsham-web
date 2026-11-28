@@ -45,7 +45,7 @@ class StoreShippingTest extends TestCase
     {
         return $overrides + [
             'shipping_name' => 'Sam', 'shipping_phone' => '0999999999', 'shipping_address' => 'دمشق - المزة',
-            'shipping_governorate' => 'دمشق', 'payment_method' => 'cash_on_delivery',
+            'shipping_governorate' => 'دمشق', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ];
     }
 

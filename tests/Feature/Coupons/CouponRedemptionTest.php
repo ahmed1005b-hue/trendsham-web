@@ -22,7 +22,7 @@ class CouponRedemptionTest extends TestCase
 
         $this->actingAs($customer)->withSession($choice === null ? [] : ['checkout_coupon' => $choice])
             ->post(route('customer.checkout.store'), [
-                'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery',
+                'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
             ]);
 
         return $customer->orders()->latest('id')->first();

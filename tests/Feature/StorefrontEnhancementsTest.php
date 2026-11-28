@@ -181,7 +181,7 @@ class StorefrontEnhancementsTest extends TestCase
             'shipping_name' => 'عميل',
             'shipping_phone' => '0999999999',
             'shipping_address' => 'عنوان تجريبي',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ])->assertCreated();
 
         $this->assertDatabaseHas('order_items', [
@@ -294,7 +294,7 @@ class StorefrontEnhancementsTest extends TestCase
             'shipping_name' => 'عميل',
             'shipping_phone' => '0999999999',
             'shipping_address' => 'عنوان',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ]);
         $this->assertSame($visit->id, OrderItem::firstOrFail()->storefront_visit_id);
     }

@@ -36,7 +36,7 @@ class SellerNewOrderTest extends TestCase
         return AppNotification::where('user_id', $s->user_id)->where('type', 'seller_new_order')->get();
     }
 
-    private const SHIPPING = ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery'];
+    private const SHIPPING = ['shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true];
 
     public function test_web_checkout_from_two_stores_notifies_each_seller_with_their_own_total(): void
     {

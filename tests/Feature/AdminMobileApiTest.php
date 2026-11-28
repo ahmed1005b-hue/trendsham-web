@@ -62,7 +62,7 @@ class AdminMobileApiTest extends TestCase
             'shipping_name' => 'زبون تجريبي',
             'shipping_phone' => '0999999999',
             'shipping_address' => 'دمشق',
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ]);
 
         return [$customer, Order::firstOrFail()];

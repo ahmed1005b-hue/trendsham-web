@@ -83,7 +83,7 @@ class SellerSuspensionTest extends TestCase
         $this->suspend();
 
         $this->actingAs($customer)->post(route('customer.checkout.store'), [
-            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery',
+            'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b', 'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true,
         ]);
 
         $this->assertSame(0, $customer->orders()->count());

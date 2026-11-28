@@ -29,7 +29,7 @@ class CheckoutRedemptionTest extends TestCase
         return $this->actingAs($u)->withSession($coupon === null ? [] : ['checkout_coupon' => $coupon])
             ->post(route('customer.checkout.store'), array_filter([
                 'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b',
-                'payment_method' => 'cash_on_delivery', 'use_points' => $points,
+                'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true, 'use_points' => $points,
             ], fn ($v) => $v !== null));
     }
 
@@ -39,7 +39,7 @@ class CheckoutRedemptionTest extends TestCase
 
         return $this->actingAs($u, 'sanctum')->postJson('/api/v1/checkout', array_filter([
             'shipping_name' => 'a', 'shipping_phone' => '0999999999', 'shipping_address' => 'b',
-            'payment_method' => 'cash_on_delivery', 'customer_coupon_id' => 0, 'use_points' => $points,
+            'payment_method' => 'cash_on_delivery', 'cod_confirmed' => true, 'customer_coupon_id' => 0, 'use_points' => $points,
         ], fn ($v) => $v !== null));
     }
 
