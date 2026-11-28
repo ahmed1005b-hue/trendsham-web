@@ -38,6 +38,9 @@ class StaffActivity extends Model
         'return.received' => 'أكّد استلام المرتجع :number',
         'return.refund' => 'سجّل استرداد :amount ل.س للإرجاع :number',
         'team.permissions' => 'حدّد أقسام الموظف :name: :sections',
+        'store.enter' => 'فتح لوحة متجر «:store» بإذن البائع',
+        'store.change' => 'في متجر «:store»: :what:item',
+        'store.leave' => 'خرج من لوحة متجر «:store»',
     ];
 
     /** مجموعات التصفية في صفحة السجل. */
@@ -48,6 +51,7 @@ class StaffActivity extends Model
         'chat' => 'محادثات العملاء',
         'return' => 'المرتجعات',
         'team' => 'الفريق',
+        'store' => 'لوحات المتاجر',
     ];
 
     protected $fillable = [
@@ -107,6 +111,8 @@ class StaffActivity extends Model
                 $key === 'sections' => collect(explode(',', (string) $value))
                     ->map(fn (string $section) => __(User::EMPLOYEE_SECTIONS[$section] ?? $section))
                     ->implode('، '),
+                $key === 'what' => __((string) $value),
+                $key === 'item' => $value === '' ? '' : ' «'.$value.'»',
                 default => (string) $value,
             })
             ->all();

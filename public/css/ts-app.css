@@ -186,6 +186,10 @@
             .ts-market-card__quickview { top:calc(.5rem + 37px); }
         }
 
+        /* شريط «وضع الدعم»: موظف داخل لوحة متجر بإذن البائع */
+        .ts-support-banner { position:sticky; top:0; z-index:1030; padding:.55rem 0; background:var(--ts-deal-soft); border-bottom:2px solid var(--ts-gold); color:var(--ts-deal-ink); font-weight:700; font-size:.92rem; }
+        .ts-support-banner i { margin-inline-end:.3rem; }
+
         /* ترقيم الصفحات بألوان الهوية */
         .pagination { --bs-pagination-color: var(--ts-emerald); --bs-pagination-hover-color: var(--ts-emerald-dark); --bs-pagination-focus-color: var(--ts-emerald-dark); --bs-pagination-active-bg: var(--ts-emerald); --bs-pagination-active-border-color: var(--ts-emerald); --bs-pagination-focus-box-shadow: 0 0 0 .2rem rgba(11,95,74,.18); flex-wrap: wrap; }
 

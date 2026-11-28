@@ -73,6 +73,7 @@ use App\Http\Controllers\Api\Seller\ReturnController as SellerReturnController;
 use App\Http\Controllers\Api\Seller\ShippingSettingsController as SellerShippingSettingsController;
 use App\Http\Controllers\Api\Seller\ShowcaseController as SellerShowcaseController;
 use App\Http\Controllers\Api\Seller\StoryController as SellerStoryController;
+use App\Http\Controllers\Api\Seller\SupportAccessController as SellerSupportAccessApiController;
 use App\Http\Controllers\Api\Seller\SupportController;
 use App\Http\Controllers\Api\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\Api\SellerReviewController;
@@ -318,6 +319,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/support', [SupportController::class, 'store'])->name('api.seller.support.store');
         Route::get('/support/{conversation}', [SupportController::class, 'show'])->name('api.seller.support.show');
         Route::post('/support/{conversation}/message', [SupportController::class, 'sendMessage'])->name('api.seller.support.message');
+
+        // إذن البائع لفريق الدعم بفتح لوحة متجره (يبقى حتى يُنهيه)
+        Route::get('/support-access', [SellerSupportAccessApiController::class, 'show'])->name('api.seller.support-access.show');
+        Route::post('/support-access', [SellerSupportAccessApiController::class, 'store'])->name('api.seller.support-access.grant');
+        Route::delete('/support-access', [SellerSupportAccessApiController::class, 'destroy'])->name('api.seller.support-access.revoke');
 
         // أسئلة المنتجات - الرد كبائع
         Route::get('/questions', [QuestionController::class, 'index'])->name('api.seller.questions.index');

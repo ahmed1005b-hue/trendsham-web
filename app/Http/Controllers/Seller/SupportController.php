@@ -5,21 +5,25 @@ namespace App\Http\Controllers\Seller;
 use App\Http\Controllers\Controller;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
+use App\Services\SellerSupportAccess;
 use App\Services\SellerSupportTeam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class SupportController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, SellerSupportAccess $access)
     {
         $vendor = $request->user()->sellerProfile;
         $conversations = $vendor->staffConversations()
             ->with('staff', 'messages')
             ->latest('last_message_at')
             ->get();
+        $supportGrant = $access->activeGrant($vendor);
+        $supportActions = $access->recentActions($vendor, 15)
+            ->map(fn ($activity) => ['description' => $access->describeForSeller($activity), 'at' => $activity->created_at]);
 
-        return view('seller.support.index', compact('conversations', 'vendor'));
+        return view('seller.support.index', compact('conversations', 'vendor', 'supportGrant', 'supportActions'));
     }
 
     public function create(Request $request)

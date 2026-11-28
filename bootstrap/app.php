@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureSellerHasStore;
 use App\Http\Middleware\EnsureTwoFactorSetup;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ForceUtf8;
+use App\Http\Middleware\GuardSupportAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetApiLocale;
 use App\Http\Middleware\SetLocale;
@@ -33,7 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
         // تغيير كلمة السر يُخرج جلسات الموقع الأخرى (يشترطه Auth::logoutOtherDevices)
         $middleware->authenticateSessions();
-        $middleware->appendToGroup('web', [ForceUtf8::class, SetLocale::class, 'throttle:writes']);
+        // GuardSupportAccess أخيراً: يحرس جلسة «وضع الدعم» (موظف في لوحة متجر بإذن البائع) مع كل طلب
+        $middleware->appendToGroup('web', [ForceUtf8::class, SetLocale::class, 'throttle:writes', GuardSupportAccess::class]);
         $middleware->appendToGroup('api', [ForceUtf8::class, SetApiLocale::class, 'throttle:api', 'throttle:writes']);
     })
     ->withExceptions(function (Exceptions $exceptions) {

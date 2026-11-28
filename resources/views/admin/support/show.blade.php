@@ -111,6 +111,29 @@
         </div>
     </div>
 
+    <!-- إذن البائع بفتح لوحة متجره -->
+    <div class="row mb-4">
+        <div class="col-12">
+            @if ($storeAccess)
+                <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-0">
+                    <span>
+                        <i class="bi bi-unlock me-1" aria-hidden="true"></i>
+                        {{ __('سمح البائع لفريق الدعم بفتح لوحة متجره منذ :time. كل ما تفعله داخلها يُسجَّل باسمك ويراه البائع.', ['time' => $storeAccess->created_at->diffForHumans()]) }}
+                    </span>
+                    <form action="{{ route($area.'.support-access.enter', $conversation->vendor) }}" method="POST" class="m-0">
+                        @csrf
+                        <button type="submit" class="btn btn-dark btn-sm">{{ __('فتح لوحة المتجر') }}</button>
+                    </form>
+                </div>
+            @else
+                <div class="alert alert-light border mb-0 small">
+                    <i class="bi bi-lock me-1" aria-hidden="true"></i>
+                    {{ __('لفتح لوحة هذا المتجر يجب أن يسمح البائع بذلك من صفحة الدعم في لوحته.') }}
+                </div>
+            @endif
+        </div>
+    </div>
+
     <!-- منطقة الرسائل -->
     <div class="row mb-4">
         <div class="col-12">

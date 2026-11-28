@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
+use App\Models\SellerSupportGrant;
 use App\Models\StaffConversation;
 use App\Models\StaffMessage;
+use App\Services\SellerSupportAccess;
 use App\Services\StaffActivityLog;
 use Illuminate\Http\Request;
 
@@ -16,17 +18,20 @@ class SupportController extends Controller
         $conversations = StaffConversation::with('vendor', 'messages')
             ->latest('last_message_at')
             ->get();
+        // المتاجر التي سمح أصحابها لفريق الدعم بفتح لوحاتها الآن
+        $openStoreIds = SellerSupportGrant::query()->active()->pluck('seller_profile_id')->flip();
 
-        return view('admin.support.index', compact('conversations'));
+        return view('admin.support.index', compact('conversations', 'openStoreIds'));
     }
 
-    public function show(Request $request, StaffConversation $conversation)
+    public function show(Request $request, StaffConversation $conversation, SellerSupportAccess $access)
     {
         $conversation->load('vendor', 'messages.sender');
         // رسائل البائع فقط: ردود المدير والموظفين تبقى «غير مقروءة» حتى يفتحها البائع
         $conversation->messages()->where('sender_id', $conversation->vendor->user_id)->whereNull('read_at')->update(['read_at' => now()]);
+        $storeAccess = $access->activeGrant($conversation->vendor);
 
-        return view('admin.support.show', compact('conversation'));
+        return view('admin.support.show', compact('conversation', 'storeAccess'));
     }
 
     public function sendMessage(Request $request, StaffConversation $conversation)

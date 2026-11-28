@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ChatConversation;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\SellerProfile;
 use App\Models\StaffActivity;
 use App\Models\StaffConversation;
 use App\Models\User;
@@ -25,6 +26,7 @@ class StaffActivityLog
         ChatConversation::class => 'chat',
         ReturnRequest::class => 'return',
         User::class => 'user',
+        SellerProfile::class => 'store',
     ];
 
     /** @param  array<string, scalar|null>  $properties */

@@ -52,6 +52,8 @@
     @include('partials.header')
 
 
+    @include('partials.support-access-banner')
+
     <main class="@yield('main_class', 'py-4')">
         @include('partials.offers-opt-in')
         @yield('content')

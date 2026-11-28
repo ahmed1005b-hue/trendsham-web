@@ -22,6 +22,50 @@
 
     <div class="row mb-4">
         <div class="col-12">
+            <div class="card border-{{ $supportGrant ? 'warning' : 'light' }}" id="support-access">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                        <div>
+                            <h5 class="card-title mb-1"><i class="bi bi-person-gear me-1" aria-hidden="true"></i>{{ __('دخول فريق الدعم إلى لوحة متجرك') }}</h5>
+                            @if ($supportGrant)
+                                <p class="mb-1 fw-bold text-warning-emphasis">{{ __('مسموح منذ :time. يبقى الإذن حتى تُنهيه.', ['time' => $supportGrant->created_at->diffForHumans()]) }}</p>
+                            @else
+                                <p class="mb-1 text-muted">{{ __('إذا واجهتك مشكلة في متجرك، اسمح لفريق الدعم بفتح لوحتك لحلها. يبقى الإذن حتى تُنهيه أنت.') }}</p>
+                            @endif
+                            <p class="small text-muted mb-0">{{ __('لا يستطيع الفريق حتى مع الإذن: سحب الأموال، أو رؤية بياناتك البنكية ووثائق الهوية، أو تغيير كلمة السر، أو قراءة محادثات عملائك، أو حذف منتجاتك.') }}</p>
+                        </div>
+                        @if ($supportGrant)
+                            <form action="{{ route('seller.support-access.revoke') }}" method="POST" class="m-0">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">{{ __('إنهاء الإذن') }}</button>
+                            </form>
+                        @else
+                            <form action="{{ route('seller.support-access.grant') }}" method="POST" class="m-0">
+                                @csrf
+                                <button type="submit" class="btn btn-primary">{{ __('اسمح لفريق الدعم بالدخول') }}</button>
+                            </form>
+                        @endif
+                    </div>
+                    @if ($supportActions->isNotEmpty())
+                        <hr>
+                        <h6 class="mb-2">{{ __('ما فعله فريق الدعم في متجرك') }}</h6>
+                        <ul class="list-unstyled small mb-0">
+                            @foreach ($supportActions as $action)
+                                <li class="d-flex justify-content-between gap-3 py-1 border-bottom">
+                                    <span>{{ $action['description'] }}</span>
+                                    <span class="text-muted text-nowrap">{{ $action['at']?->diffForHumans() }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">محادثات الدعم الخاصة بك</h5>

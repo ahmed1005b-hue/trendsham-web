@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\ShowcaseAdminController;
 use App\Http\Controllers\Admin\ShowcaseSlotAdminController;
 use App\Http\Controllers\Admin\StaffActivityController as AdminStaffActivityController;
 use App\Http\Controllers\Admin\StoryController as AdminStoryController;
+use App\Http\Controllers\Admin\SupportAccessController as StaffSupportAccessController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\TrashController as AdminTrashController;
 use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
@@ -77,6 +78,7 @@ use App\Http\Controllers\Seller\ReturnController as SellerReturnController;
 use App\Http\Controllers\Seller\ShippingSettingsController;
 use App\Http\Controllers\Seller\ShowcaseController as SellerShowcaseController;
 use App\Http\Controllers\Seller\StoryController as SellerStoryController;
+use App\Http\Controllers\Seller\SupportAccessController as SellerSupportAccessController;
 use App\Http\Controllers\Seller\SupportController;
 use App\Http\Controllers\Seller\WalletController as SellerWalletController;
 use App\Http\Controllers\SitemapController;
@@ -188,6 +190,7 @@ Route::post('/join/{token}/accept', [InvitationController::class, 'accept'])->na
 
 // الإشعارات - مشتركة لكل الأدوار المسجّلة
 Route::middleware('auth')->group(function () {
+    Route::post('/support-access/leave', [StaffSupportAccessController::class, 'leave'])->name('support-access.leave');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
@@ -351,6 +354,7 @@ Route::middleware(['auth', 'role:admin', 'admin.2fa'])->prefix('admin')->name('a
     Route::post('/support/{conversation}/message', [AdminSupportController::class, 'sendMessage'])->name('support.message');
     Route::post('/support/{conversation}/close', [AdminSupportController::class, 'close'])->name('support.close');
     Route::post('/support/{conversation}/reopen', [AdminSupportController::class, 'reopen'])->name('support.reopen');
+    Route::post('/stores/{store}/support-access', [StaffSupportAccessController::class, 'enter'])->name('support-access.enter');
 
     // عروض اليوم - إدارة
     Route::resource('/daily-deals', AdminDailyDealController::class)->except(['show'])
@@ -392,6 +396,7 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
         Route::post('/support/{conversation}/message', [AdminSupportController::class, 'sendMessage'])->name('support.message');
         Route::post('/support/{conversation}/close', [AdminSupportController::class, 'close'])->name('support.close');
         Route::post('/support/{conversation}/reopen', [AdminSupportController::class, 'reopen'])->name('support.reopen');
+        Route::post('/stores/{store}/support-access', [StaffSupportAccessController::class, 'enter'])->name('support-access.enter');
     });
 
     Route::middleware('employee.section:chats')->group(function () {
@@ -475,6 +480,8 @@ Route::middleware(['auth', 'role:seller', 'seller.store'])->prefix('seller')->na
     Route::post('/support', [SupportController::class, 'store'])->name('support.store');
     Route::get('/support/{conversation}', [SupportController::class, 'show'])->name('support.show');
     Route::post('/support/{conversation}/message', [SupportController::class, 'sendMessage'])->name('support.message');
+    Route::post('/support-access', [SellerSupportAccessController::class, 'store'])->name('support-access.grant');
+    Route::delete('/support-access', [SellerSupportAccessController::class, 'destroy'])->name('support-access.revoke');
 
     // مساحات العرض المؤجّرة (Showcases)
     // كوبونات البائع (يتحمّل خصمها من أرباحه)

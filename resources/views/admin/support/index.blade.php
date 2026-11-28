@@ -58,7 +58,7 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold">{{ $conv->vendor->user->name }}</td>
-                                    <td translate="no">{{ $conv->vendor->store_name }}</td>
+                                    <td><span translate="no">{{ $conv->vendor->store_name }}</span>@if (isset($openStoreIds[$conv->vendor_id]))<span class="badge text-bg-warning ms-1"><i class="bi bi-unlock" aria-hidden="true"></i> {{ __('سمح بفتح لوحته') }}</span>@endif</td>
                                     <td translate="no">{{ $conv->subject }}</td>
                                     <td>{{ $conv->last_message_at?->diffForHumans() }}</td>
                                     <td>
